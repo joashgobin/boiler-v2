@@ -669,7 +669,7 @@ exec bash
 
 	// init fiber session middleware
 	sessConfig := session.Config{
-		IdleTimeout:     50 * time.Minute,
+		IdleTimeout:     30 * time.Minute,
 		AbsoluteTimeout: 2 * time.Hour,
 		CookieSecure:    true,
 		CookieHTTPOnly:  true,
