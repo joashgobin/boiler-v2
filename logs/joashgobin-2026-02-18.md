@@ -2,3 +2,4 @@
 
 - Reduce idle timeout to 30 minutes
 - Updated csrf middleware
+- Testing login function

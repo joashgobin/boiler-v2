@@ -269,16 +269,23 @@ func (m *UserModel) EmailLoginAs(c fiber.Ctx, email string) error {
 }
 
 func (m *UserModel) LoginAs(c fiber.Ctx, email, password string) error {
+	log.Infof("Attempting to log in as: %v", email)
 	user, err := m.authenticate(email, password)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
 	}
+
+	log.Infof("Attempting to authenticate as: %v", email)
+
 	sess := session.FromContext(c)
+	log.Infof("Regenerating session: %v", sess)
 	if err := sess.Regenerate(); err != nil {
 		return fmt.Errorf("session error: %v", err)
 	}
 
 	sess.Set("user", user)
+	log.Infof("Logging in as: %v", user)
+
 	return nil
 }
 
