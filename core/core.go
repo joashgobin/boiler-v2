@@ -29,6 +29,7 @@ import (
 	"github.com/joashgobin/boiler-v2/email"
 	"github.com/joashgobin/boiler-v2/helpers"
 	"github.com/joashgobin/boiler-v2/payments"
+
 	// "go.rumenx.com/sitemap"
 	// fiberadapter "go.rumenx.com/sitemap/adapters/fiber"
 
@@ -677,6 +678,8 @@ exec bash
 		Extractor:       extractors.FromCookie("__Host-session_id"),
 	}
 	sessionStore := session.NewStore(sessConfig)
+	sessionStore.RegisterType(models.UserModel{})
+	sessionStore.RegisterType(map[string]string{})
 
 	// create csrf error handler
 	csrfErrorHandler := func(c fiber.Ctx, err error) error {
@@ -791,8 +794,8 @@ exec bash
 
 	app.Use(pprof.New(pprof.Config{Prefix: "/profiler"}))
 
-	app.Use(helpers.SessionLocalsMiddleware(sessionStore))
-	app.Use(helpers.SessionOldValuesMiddleware(sessionStore))
+	app.Use(helpers.SessionLocals(sessionStore))
+	app.Use(helpers.SessionOldValues(sessionStore))
 
 	environment := "dev"
 	if config.IsProduction {

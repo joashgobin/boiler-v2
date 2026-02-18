@@ -220,7 +220,7 @@ func (flash *FlashModel) ClearOld(c fiber.Ctx) {
 	}
 }
 
-func SessionLocalsMiddleware(store *session.Store) fiber.Handler {
+func SessionLocals(store *session.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		c.Set("Cache-Control", "private,max-age=0")
 
@@ -273,7 +273,7 @@ func SessionLocalsMiddleware(store *session.Store) fiber.Handler {
 	}
 }
 
-func SessionOldValuesMiddleware(store *session.Store) fiber.Handler {
+func SessionOldValues(store *session.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if c.Method() != "POST" {
 			return c.Next()

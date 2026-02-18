@@ -269,16 +269,14 @@ func (m *UserModel) EmailLoginAs(c fiber.Ctx, email string) error {
 }
 
 func (m *UserModel) LoginAs(c fiber.Ctx, email, password string) error {
-	log.Infof("Attempting to log in as: %v", email)
 	user, err := m.authenticate(email, password)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
 	}
 
-	log.Infof("Attempting to authenticate as: %v", email)
+	log.Infof("Attempting to authenticate as: %v", user)
 
 	sess := session.FromContext(c)
-	log.Infof("Regenerating session: %v", sess)
 	if err := sess.Regenerate(); err != nil {
 		return fmt.Errorf("session error: %v", err)
 	}
@@ -304,7 +302,7 @@ func (m *UserModel) Exists(email string) (bool, error) {
 	return exists, err
 }
 
-func RequireRoleMiddleware(store *session.Store, flash helpers.FlashInterface, role string) fiber.Handler {
+func RequireRole(store *session.Store, flash helpers.FlashInterface, role string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		sess, err := store.Get(c)
 		if err != nil {
