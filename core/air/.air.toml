@@ -9,7 +9,7 @@ tmp_dir = "tmp"
   entrypoint = "./tmp/main"
 # for templ projects
   # cmd = "templ generate && go build -ldflags '-s -w' -o ./tmp/main ."
-  cmd = "go build -gcflags='-m' -ldflags '-s -w' -o ./tmp/main ."
+  cmd = "go build -ldflags '-s -w' -o ./tmp/main ."
   delay = 100
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "static/gen", "views/partials", "static/img", "static/script","static/styles"]
   exclude_file = []

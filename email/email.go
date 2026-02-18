@@ -13,7 +13,7 @@ import (
 	ht "html/template"
 
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/joashgobin/boiler/helpers"
+	"github.com/joashgobin/boiler-v2/helpers"
 )
 
 //go:embed templates/*

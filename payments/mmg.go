@@ -29,7 +29,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 
 	// "github.com/joashgobin/boiler/email"
-	"github.com/joashgobin/boiler/helpers"
+	"github.com/joashgobin/boiler-v2/helpers"
 )
 
 // Environment represents a Postman environment file

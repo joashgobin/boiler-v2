@@ -13,12 +13,12 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/joashgobin/boiler/helpers"
+	"github.com/joashgobin/boiler-v2/helpers"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserModelInterface interface {
-	Insert(name, email, password string) error
+	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
 	LoginAs(c fiber.Ctx, email, password string) error
 	EmailLoginAs(c fiber.Ctx, email string) error
@@ -80,7 +80,7 @@ func (m *UserModel) ParseFromCSV(path string) error {
 	}
 	for _, record := range records {
 		if len(record) >= 3 {
-			m.Insert(record[0], record[1], "")
+			m.Create(record[0], record[1], "")
 			for _, role := range strings.Split(record[2], ";") {
 				m.AssignRole(record[1], role)
 			}
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS users (
 	`, "<appName>", appName), db)
 }
 
-func (m *UserModel) Insert(name, email, password string) error {
+func (m *UserModel) Create(name, email, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err

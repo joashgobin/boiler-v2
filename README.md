@@ -69,7 +69,7 @@ func main() {
 	}
     app, base := core.NewApp(config)
 
-	app.Get("/", func(c *ctx) error {
+	app.Get("/", func(c ctx) error {
 		return c.SendString("Welcome!")
 	})
 
@@ -183,14 +183,14 @@ Add the following to your *views/layouts/main.html* file:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App</title>
+    <title>My App</title>
     <script>
         function showBody(){
             document.body.classList.add('loaded');
         }
     </script>
-    <link rel="preload" as="style" href="{{min "mango-simplified.css"}}">
-    <link rel="stylesheet" media="none" onload="this.media='all';showBody()" href="{{min "mango-simplified.css"}}">
+    <link rel="preload" as="style" href="{{min "grug.css"}}">
+    <link rel="stylesheet" media="none" onload="this.media='all';showBody()" href="{{min "grug.css"}}">
     <link rel="stylesheet" media="none" onload="this.media='all'" href='{{min "main.css"}}'>
     <style>
     body {
@@ -204,15 +204,15 @@ Add the following to your *views/layouts/main.html* file:
 
     :root{
         --prim: white;
-        --sec: steelblue;
-        --accent: crimson;
+        --sec: #001a21;
+        --accent: #00adbf;
     }
+
 
     </style>
 
     {{template "views/partials/meta" .}}
     {{template "views/partials/flash-style" .}}
-    {{template "views/partials/modal-style" .}}
     {{template "views/partials/svg-pop" .}}
     {{template "views/partials/prefetch" .}}
     {{template "views/partials/website-preset" .}}
@@ -221,12 +221,11 @@ Add the following to your *views/layouts/main.html* file:
 
 </head>
 
-<body>
-    {{template "views/partials/modal-body" .}}
-    <header class="cluster bs cp">
+<body class="bb cp">
+    <header class="flex cp fixed pad">
         <a href="/" class="grow"><strong>My App</strong></a>
         <nav>
-            <ul class="cluster right sm">
+            <ul class="flex right sm">
                 {{if .user}}
                 <li><a href="/admin/">Dashboard</a></li>
                 <form method="post" action="/logout">
@@ -234,7 +233,7 @@ Add the following to your *views/layouts/main.html* file:
                     <button type="submit">Log out</button>
                 </form>
                 {{else}}
-                <li><a href="/login/">Login</a></li>
+                <li><a href="/products/">Products</a></li>
                 <li><a href="/about/">About</a></li>
                 {{end}}
             </ul>
@@ -244,12 +243,11 @@ Add the following to your *views/layouts/main.html* file:
         {{template "views/partials/flash-body" .}}
         {{embed}}
     </main>
-    <footer class="grid bs cp">
-    </footer>
-    {{template "views/partials/modal-logic" .}}
+    <footer class="grid gap-2 fit-3 bb cp pad-3"></footer>
     {{template "views/partials/swup" .}}
 </body>
 
 </html>
+
 
 ```
