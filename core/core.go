@@ -73,7 +73,6 @@ type AppConfig struct {
 	Port              string
 	AppName           string
 	Templates         *embed.FS
-	StaticFiles       *embed.FS
 	SiteInfo          *map[string]string
 	FuncMap           map[string]interface{}
 	IsProduction      bool
@@ -680,21 +679,20 @@ exec bash
 	}
 	sessionStore := session.NewStore(sessConfig)
 
-	// create csrf handler
+	// create csrf error handler
 	csrfErrorHandler := func(c fiber.Ctx, err error) error {
+		fmt.Printf("CSRF Error: %v Request: %v From: %v\n", err, c.OriginalURL(), c.IP())
 
-		// check accepted content types
 		switch c.Accepts("html", "json") {
 		case "json":
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "403 Forbidden",
 			})
 		case "html":
-			return c.Status(fiber.StatusForbidden).Render("views/partials/error", fiber.Map{
-				"Title":        "Error",
-				"Error":        "403 Forbidden",
-				"ErrorCode":    "403",
-				"ErrorMessage": err,
+			return c.Status(fiber.StatusForbidden).Render("error", fiber.Map{
+				"Title":     "Error",
+				"Error":     "403 Forbidden",
+				"ErrorCode": "403",
 			})
 		default:
 			return c.Status(fiber.StatusForbidden).SendString("403 Forbidden")
@@ -705,8 +703,8 @@ exec bash
 	csrfMiddleware := csrf.New(csrf.Config{
 		CookieName:        "__Host-csrf_",
 		CookieSecure:      true,
-		CookieHTTPOnly:    true, // Secure - blocks JavaScript
-		CookieSameSite:    "Lax",
+		CookieHTTPOnly:    true,
+		CookieSameSite:    "Strict",
 		CookieSessionOnly: true,
 		Extractor:         extractors.FromForm("csrf"),
 		Session:           sessionStore,
@@ -726,16 +724,14 @@ exec bash
 	log.SetOutput(iw)
 
 	// init static file serving
-	if config.StaticFiles != nil {
-		app.Get("/static/*", static.New("./static", static.Config{
-			Compress:      false,
-			ByteRange:     true,
-			Browse:        true,
-			IndexNames:    []string{"index.html"},
-			CacheDuration: 31536000 * time.Second,
-			MaxAge:        31536000,
-		}))
-	}
+	app.Get("/static/*", static.New("./static", static.Config{
+		Compress:      false,
+		ByteRange:     true,
+		Browse:        true,
+		IndexNames:    []string{"index.html"},
+		CacheDuration: 31536000 * time.Second,
+		MaxAge:        31536000,
+	}))
 
 	if config.Templates == nil {
 		if !helpers.FileExists("views/index.html") {

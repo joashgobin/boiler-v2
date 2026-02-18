@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/google/uuid"
 )
@@ -233,6 +234,9 @@ func SessionLocalsMiddleware(store *session.Store) fiber.Handler {
 
 		// add user to locals
 		c.Locals("user", sess.Get("user"))
+
+		csrfToken := csrf.TokenFromContext(c)
+		c.Locals("csrf", csrfToken)
 
 		// add old values to locals
 		if c.Query("show") == "retained" {
