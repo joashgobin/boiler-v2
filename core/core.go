@@ -29,6 +29,7 @@ import (
 	"github.com/joashgobin/boiler-v2/email"
 	"github.com/joashgobin/boiler-v2/helpers"
 	"github.com/joashgobin/boiler-v2/payments"
+	"github.com/joashgobin/boiler/helpers"
 
 	// "go.rumenx.com/sitemap"
 	// fiberadapter "go.rumenx.com/sitemap/adapters/fiber"
@@ -794,8 +795,8 @@ exec bash
 
 	app.Use(pprof.New(pprof.Config{Prefix: "/profiler"}))
 
-	app.Use(helpers.SessionLocals(sessionStore))
-	app.Use(helpers.SessionOldValues(sessionStore))
+	app.Use(helpers.IncludeSessionLocals(sessionStore))
+	app.Use(helpers.IncludeSessionOldValues(sessionStore))
 
 	environment := "dev"
 	if config.IsProduction {

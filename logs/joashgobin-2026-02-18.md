@@ -4,3 +4,4 @@
 - Updated csrf middleware
 - Testing login function
 - Updated middleware names
+- Rename middlewares
