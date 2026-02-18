@@ -1,0 +1,40 @@
+.card {
+    --padding: 1rem;
+    padding: var(--padding);
+    border: 1px solid grey;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.card>* {
+    overflow-wrap: break-word;
+}
+
+.card.borderless {
+    border: none;
+    border-width: 0;
+}
+
+.card.no-pad {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+}
+
+.card.no-pad>* {
+    padding-left: var(--padding);
+    padding-right: var(--padding);
+}
+
+.card.no-pad>img {
+    padding: 0;
+}
+
+.button {
+    border-radius: 1rem;
+    color: var(--text-color);
+    text-decoration: none;
+    border: 2px solid var(--text-color);
+    padding: 0.5rem 1rem;
+    margin-top: 1rem;
+}

@@ -1,0 +1,38 @@
+<style>
+    #flash {
+        text-align: center;
+        position: fixed;
+        top: -10rem;
+        background-color: black;
+        color: white;
+        padding: 0.5rem;
+        font-size: 1.4rem;
+        z-index: 1000;
+        border-radius: 1rem;
+        width: 100vw;
+        animation: none;
+    }
+
+    #flash.animate {
+        animation: shift-up 3s ease-out 1;
+    }
+
+    @keyframes shift-up {
+        0% {
+            top: -10rem;
+        }
+
+        10% {
+            top: 0;
+        }
+
+        80% {
+            top: 0;
+        }
+
+        100% {
+            top: -10rem;
+            display: none;
+        }
+    }
+</style>

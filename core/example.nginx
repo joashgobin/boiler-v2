@@ -1,0 +1,44 @@
+limit_req_zone $binary_remote_addr zone=<appName>:10m rate=50r/s;
+
+server {
+    server_name <ip> www.<ip>;
+
+    gzip on;
+    gzip_min_length 1100;
+    gzip_buffers 4 32k;
+    gzip_types text/plain application/x-javascript text/xml text/css;
+    gzip_vary on;
+
+
+
+    brotli on;
+    brotli_static on;
+    brotli_comp_level 11; # Recommended compression level
+    brotli_types *;
+
+    location / {
+        limit_req zone=<appName> burst=20 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://localhost:<port>;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /static/ {
+        limit_req zone=<appName> burst=20 nodelay;
+        limit_req_status 429;
+
+        alias /home/<user>/<appName>/static/;
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, must-revalidate";
+    }
+
+    location ~ \.map$ {
+        return 404;
+    }
+
+}

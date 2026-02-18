@@ -1,0 +1,14 @@
+<script>
+    function hideModal() {
+        var modal = document.querySelector(".modal");
+        modal.classList.add('hidden');
+    }
+
+    function showModal(imagePath) {
+        var modal = document.querySelector(".modal");
+        var modalFrame = document.querySelector(".modal-frame");
+        modal.classList.remove('hidden');
+        modalFrame.src = imagePath;
+        console.log(imagePath);
+    }
+</script>

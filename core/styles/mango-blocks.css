@@ -1,0 +1,100 @@
+.card {
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-bottom: 0.2rem;
+    box-shadow: var(--shadow), var(--highlight);
+    transition: transform 240ms;
+    align-self: stretch;
+}
+
+.card:nth-child(even) {
+    transition: transform 390ms;
+}
+
+.card.no-pad {
+    padding: 0;
+    padding-bottom: 2rem;
+}
+
+.card.card.no-pad>img {
+    border-radius: 1rem 1rem 0 0;
+}
+
+.card.no-pad>* {
+    margin: 0 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.card.no-pad>img {
+    margin: 0;
+    margin-bottom: 1rem;
+}
+
+.button {
+    border-radius: 1.5rem;
+    text-decoration: none;
+    padding: 1rem;
+    margin: 0.2rem;
+    margin-top: 1rem;
+    box-shadow: var(--shadow);
+    transition: transform 240ms;
+    transform: translateY(0);
+}
+
+.button:nth-child(even) {
+    transition: transform 340ms;
+}
+
+.transition-main {
+    transition: opacity 0.25s ease-in-out;
+    opacity: 1;
+}
+
+html.is-changing .transition-main {
+    transition: opacity 0.25s ease-in-out;
+    opacity: 1;
+}
+
+html.is-animating .transition-main {
+    opacity: 0;
+}
+
+html.is-animating :is(.button, .card) {
+    transform: translateY(6rem);
+}
+
+html.is-leaving :is(.button, .card) {
+    transform: translateY(6rem);
+}
+
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border: 1px solid rgba(255, 255, 255, 0.56);
+    padding: 1rem;
+    transition: transform 400ms;
+}
+
+html.is-animating :is(.glass) {
+    transform: translateY(6rem);
+}
+
+html.is-leaving :is(.glass) {
+    transform: translateY(6rem);
+}
+
+.img-bg {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    background: url('/static/img/bg.svg');
+    background-size: 120px;
+    filter: blur(4px) brightness(30%);
+    z-index: -100;
+    opacity: 0.1;
+}

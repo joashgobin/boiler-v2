@@ -1,0 +1,90 @@
+{{define "htmlBody"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sven Stores</title>
+    <style>
+        :root {
+            font-family: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+            font-weight: normal;
+        }
+
+        body {
+            background-color: wheat;
+            padding: 1rem;
+        }
+
+        .content {
+            background-color: white;
+            border-radius: 0.4rem;
+            border: 1px solid grey;
+        }
+
+        .main {
+            padding: 2rem;
+            padding-top: 1rem;
+        }
+
+        .header a {
+            display: flex;
+            background-color: black;
+            padding: 0.5rem 2rem;
+            color: white;
+            text-decoration: none;
+        }
+
+        .header img {
+            max-height: 3rem;
+            border-radius: 100%;
+            border: 2px solid white;
+            margin: 1rem 0rem;
+        }
+
+        .header strong {
+            font-size: 1.5rem;
+            margin: auto 0.8rem;
+            padding: 0;
+            line-height: 2rem;
+        }
+
+        .header p {
+            margin: auto 1rem;
+            padding: 0;
+            line-height: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="content">
+        <div class="main">
+            <h1>{{.Subject}}</h1>
+            <p>{{.Body | safeHTML}}</p>
+
+        <!--
+            <p>Kind regards<br>The CFB Team</p>
+            <small>
+                <em>To whom much is given, much is required.</em>
+            </small>
+        -->
+        </div>
+
+        <!--
+        <div class="header">
+            <a href="https://chickenfrybytes.com" target="_blank">
+                <img src="https://chickenfrybytes.com/img/logo_dark.png" alt="Logo">
+                <strong>Assistant</strong>
+                <p>All the help you need</p>
+            </a>
+        </div>
+        -->
+    </div>
+
+</body>
+
+</html>
+{{end}}

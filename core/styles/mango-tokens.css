@@ -1,0 +1,239 @@
+.bp {
+    --bg-color: var(--prim);
+    background-color: var(--bg-color);
+}
+
+.bs {
+    --bg-color: var(--sec);
+    background-color: var(--bg-color);
+}
+
+.cp {
+    --text-color: var(--prim);
+    color: var(--text-color);
+}
+
+.cs {
+    --text-color: var(--sec);
+    color: var(--text-color);
+}
+
+.ba {
+    --bg-color: var(--accent);
+    background-color: var(--bg-color);
+}
+
+.cm {
+    --text-color: color-mix(in hsl, var(--sec) 30%, white);
+    color: var(--text-color);
+}
+
+.bm {
+    --bg-color: color-mix(in hsl, var(--sec) 20%, white);
+    background-color: var(--bg-color);
+}
+
+.om {
+    border: 1px solid color-mix(in hsl, var(--sec) 30%, white);
+}
+
+.ca {
+    --text-color: var(--accent);
+    color: var(--text-color);
+}
+
+.bb {
+    --bg-color: var(--black);
+    background-color: var(--bg-color);
+}
+
+.cb {
+    --text-color: var(--black);
+    color: var(--text-color);
+}
+
+.ob {
+    border: 1px solid var(--black);
+}
+
+.op {
+    border: 1px solid var(--prim);
+}
+
+.os {
+    border: 1px solid var(--sec);
+}
+
+.oa {
+    border: 1px solid var(--accent);
+}
+
+.t-2 {
+    border-width: 2px;
+}
+
+.t-3 {
+    border-width: 3px;
+}
+
+.t-4 {
+    border-width: 4px;
+}
+
+.round {
+    border-radius: 1rem;
+}
+
+.round-2 {
+    border-radius: 1.5rem;
+}
+
+.round-3 {
+    border-radius: 2.0rem;
+}
+
+.round-4 {
+    border-radius: 2.5rem;
+}
+
+.margin {
+    margin: 1rem;
+}
+
+.pad {
+    padding: 1rem;
+}
+
+.pad-2 {
+    padding: 1.5rem;
+}
+
+.pad-3 {
+    padding: 2.0rem;
+}
+
+.pad-4 {
+    padding: 2.5rem;
+}
+
+.pad_2 {
+    padding: 0.2rem;
+}
+
+.pad_4 {
+    padding: 0.4rem;
+}
+
+.pad_5 {
+    padding: 0.5rem;
+}
+
+.no-pad {
+    padding: 0;
+}
+
+.tilt-l {
+    transform: rotateZ(-5deg);
+}
+
+.tilt-r {
+    transform: rotateZ(5deg);
+}
+
+.indent {
+    margin-inline-start: 1rem;
+}
+
+.invert {
+    filter: invert(100%);
+}
+
+.square {
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    width: 100%;
+}
+
+.circle {
+    border-radius: 100%;
+    object-fit: cover;
+    aspect-ratio: 1/1;
+    width: 100%;
+}
+
+.rect {
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    width: 100%;
+}
+
+.no-dec {
+    text-decoration: none;
+}
+
+.full-w {
+    width: 100%;
+}
+
+.full-h {
+    height: 100%;
+}
+
+.contain {
+    object-fit: contain;
+}
+
+.wrap {
+    hyphens: auto;
+    word-break: break-all;
+}
+
+.highlight {
+    box-shadow: var(--highlight);
+}
+
+.shadow {
+    box-shadow: var(--shadow);
+}
+
+.deep {
+    box-shadow: var(--deep-shadow);
+}
+
+.mute {
+    color: hsl(from var(--text-color) h s l / 0.8);
+}
+
+.mute-2 {
+    color: hsl(from var(--text-color) h s l / 0.6);
+}
+
+.mute-3 {
+    color: hsl(from var(--text-color) h s l / 0.4);
+}
+
+.darken {
+    background-color: hsl(from var(--bg-color) h s l / 0.85);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-2 {
+    background-color: hsl(from var(--bg-color) h s l / 0.9);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-3 {
+    background-color: hsl(from var(--bg-color) h s l / 0.95);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.c-grad {
+    background-image: radial-gradient(circle at bottom, hsl(from var(--bg-color) h s l / 0.3), var(--black) 30%);
+}
+
+.grad {
+    background-image: linear-gradient(to bottom, var(--black) 80%, hsl(from var(--bg-color) h s l / 0.2));
+}

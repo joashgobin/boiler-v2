@@ -1,0 +1,194 @@
+:root {
+    --humanist: Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', source-sans-pro, sans-serif;
+    --industrial: Bahnschrift, 'DIN Alternate', 'Franklin Gothic Medium', 'Nimbus Sans Narrow', sans-serif-condensed, sans-serif;
+    --system-ui: system-ui, sans-serif;
+    --body-font: var(--humanist);
+    --heading-font: var(--system-ui);
+    --prim: white;
+    --sec: royalblue;
+    --accent: pink;
+    --black: #222;
+    --measure: 75ch;
+    --s0: calc(1.1rem + 0.1vw);
+    --ratio: 1.15;
+    --s1: calc(var(--s0)*var(--ratio));
+    --s2: calc(var(--s1)*var(--ratio));
+    --s3: calc(var(--s2)*var(--ratio));
+    --s4: calc(var(--s3)*var(--ratio));
+    --s5: calc(var(--s4)*var(--ratio));
+    --s6: calc(var(--s5)*var(--ratio));
+    --shadow: 0 3px 4px 3px rgba(30, 30, 30, 0.2);
+    --deep-shadow: inset 0 3px 4px rgba(130, 130, 130, 0.7),
+        inset 0 0px 4px rgba(130, 130, 130, 0.7);
+    --highlight: inset 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+p,
+small {
+    color: hsl(from var(--text-color) h s l / 0.8);
+}
+
+strong {
+    color: var(--text-color);
+}
+
+body {
+    line-height: 1.5;
+    font-size: var(--s1);
+    font-family: var(--body-font);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    line-height: 1.3;
+    font-family: var(--heading-font);
+    font-weight: 500;
+}
+
+h1 {
+    font-size: var(--s5);
+}
+
+h2 {
+    font-size: var(--s4);
+}
+
+h3 {
+    font-size: var(--s3);
+    font-style: italic;
+}
+
+h4,
+h5 {
+    font-size: var(--s2);
+    font-style: italic;
+}
+
+h6 {
+    font-size: var(--s1);
+    font-style: italic;
+}
+
+
+header.fixed {
+    margin: 0;
+    margin-bottom: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+header nav ul li {
+    list-style-type: none;
+}
+
+header a {
+    padding: 0.5rem;
+}
+
+header form :is(button, input) {
+    background-color: transparent;
+    color: inherit;
+    border: none;
+    font-size: var(--s0);
+    font-family: var(--body-font);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+a {
+    color: inherit;
+    text-underline-offset: 3px;
+}
+
+main {
+    min-height: 100vh;
+}
+
+section {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    padding: 2rem 1.5rem;
+}
+
+section>div {
+    width: 100%;
+    max-width: var(--measure);
+}
+
+img {
+    max-inline-size: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+}
+
+input,
+label,
+textarea,
+select,
+button {
+    font-size: inherit;
+    font-family: inherit;
+    background-color: transparent;
+    color: inherit;
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+textarea {
+    field-sizing: content;
+}
+
+label a {
+    color: inherit;
+}
+
+button {
+    --text-color: var(--prim);
+    border: none;
+    border: 1px solid grey;
+    box-shadow: 1px 1px 1px 1px var(--text-color);
+}
+
+option {
+    background-color: var(--bg-color);
+}
+
+
+input,
+textarea {
+    border: 1px solid grey;
+}
+
+pre,
+code {
+    font-size: var(--s1);
+}
+
+.transition-main {
+    transition: opacity 0.25s ease-in-out;
+    opacity: 1;
+}
+
+html.is-changing .transition-main {
+    transition: opacity 0.25s ease-in-out;
+    opacity: 1;
+}
+
+html.is-animating .transition-main {
+    opacity: 0;
+}

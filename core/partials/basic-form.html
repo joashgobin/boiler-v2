@@ -1,0 +1,4 @@
+{{range $index,$field:=.Fields}}
+<label for="{{$field}}">{{$field}}</label>
+<input type="text" name="{{$field}}" value="{{use $.old $field}}">
+{{end}}

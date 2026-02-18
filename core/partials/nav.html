@@ -1,0 +1,7 @@
+<ul>
+    {{range split (Get "NavLinks") "|"}}
+    {{with split . ":"}}
+    <li><a href="{{index . 1}}">{{index . 0}}</a></li>
+    {{end}}
+    {{end}}
+</ul>

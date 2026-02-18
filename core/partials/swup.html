@@ -1,0 +1,26 @@
+<script src="/static/script/swup.js"></script>
+<script src="/static/script/swup-forms-plugin.js"></script>
+{{if not prod}}
+<script src="/static/script/swup-debug-plugin.js"></script>
+{{end}}
+<script>
+    const swup = new Swup({
+        containers: ['#swup', 'header', 'footer'],
+        cache: false,
+        {{if prod}}
+        plugins: [new SwupFormsPlugin()]
+        {{else}}
+        plugins: [new SwupFormsPlugin(), new SwupDebugPlugin()]
+        {{end}}
+    });
+
+    swup.hooks.on('page:view', (visit) => {
+        {{template "views/scripts".}}
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        {{template "views/scripts".}}
+    });
+
+
+</script>

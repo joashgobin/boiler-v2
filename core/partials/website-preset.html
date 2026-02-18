@@ -1,0 +1,48 @@
+<style>
+
+.rev-image{
+    transition: transform 500ms, opacity 1s;
+    transform: translateX(-10rem);
+    opacity:0;
+    border-radius: 1rem;
+}
+
+.rev-image[data-hx-revealed]{
+    transform: translateX(0);
+    opacity:1;
+}
+
+.rev{
+    transition: opacity 1s;
+    opacity:0;
+}
+
+.rev[data-hx-revealed="true"]{
+    opacity:1;
+}
+
+h1,h2,h3,h4,h5,h6{
+    font-weight: bold;
+}
+
+    footer{
+        padding: 4rem 2rem;
+    }
+
+    section{
+        padding: 3rem 1rem;
+    }
+
+    .card{
+        padding: 2rem 1rem;
+    }
+
+    .gen-image{
+        border-radius: 1rem;
+        object-fit: contain;
+        max-height: 100%;
+        width: 100%;
+    }
+
+</style>
+

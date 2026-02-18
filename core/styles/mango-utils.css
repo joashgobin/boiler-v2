@@ -1,0 +1,238 @@
+.flex {
+    --space: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+    align-items: center;
+    justify-content: center;
+}
+
+.grow {
+    flex-grow: 1;
+}
+
+.flex.right {
+    justify-content: flex-end;
+}
+
+.flex.left {
+    justify-content: flex-start;
+}
+
+.flex.top {
+    align-items: start;
+}
+
+.flex.bottom {
+    align-items: end;
+}
+
+.grid {
+    --space: 0.5rem;
+    --minimum: calc(var(--measure)/3);
+    display: grid;
+    gap: var(--space);
+    align-content: center;
+}
+
+.grid.split {
+    --minimum: calc(var(--measure)/5);
+}
+
+@supports (width: min(var(--minimum), 100%)) {
+    .grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(var(--minimum), 100%), 1fr));
+    }
+}
+
+/* alias for grid */
+.cols {
+    --space: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(25ch, 1fr));
+    gap: var(--space);
+    align-content: center;
+}
+
+.bg {
+    background-image: url("/static/img/double-bubble.png");
+    background-blend-mode: multiply;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* layout presets */
+.stack {
+    --space: 0.5rem;
+    display: grid;
+    gap: var(--space);
+    justify-items: center;
+    align-content: center;
+}
+
+.stack.top {
+    align-content: start;
+}
+
+.stack.bottom {
+    align-content: end;
+}
+
+.stack.left {
+    justify-items: start;
+}
+
+.stack.right {
+    justify-items: end;
+}
+
+.box {
+    border: 1px solid black;
+    padding: 1rem;
+}
+
+.center {
+    text-align: center;
+    max-inline-size: var(--measure);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cluster {
+    --space: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+    justify-content: center;
+    align-items: center;
+}
+
+.cluster.right {
+    justify-content: flex-end;
+}
+
+.cluster.left {
+    justify-content: flex-start;
+}
+
+.cluster.top {
+    align-items: start;
+}
+
+.cluster.bottom {
+    align-items: end;
+}
+
+.with-sidebar {
+    --gutter: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gutter);
+}
+
+.with-sidebar> :first-child {
+    flex-basis: 20rem;
+    flex-grow: 1;
+    margin-top: var(--top-gap);
+}
+
+.with-sidebar> :last-child {
+    flex-basis: 0;
+    flex-grow: 999;
+    min-inline-size: 60%;
+}
+
+.switcher {
+    --space: 0.5rem;
+    gap: var(--space);
+    display: flex;
+    flex-wrap: wrap;
+    --threshold: 30rem;
+}
+
+.switcher>* {
+    flex-grow: 1;
+    flex-basis: calc((var(--threshold) - 100%) * 999);
+}
+
+.switcher> :nth-last-child(n+4),
+.switcher> :nth-last-child(n+4)~* {
+    flex-basis: 100%;
+}
+
+.emph {
+    flex-grow: 2;
+}
+
+.cover {
+    --space: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 100vh;
+    padding: var(--space);
+}
+
+.cover>* {
+    margin-block: 1rem;
+}
+
+.cover>.emph {
+    margin-block: auto;
+}
+
+.cover> :first-child:not(.emph) {
+    margin-block-start: 0;
+}
+
+.cover> :last-child:not(.emph) {
+    margin-block-end: 0;
+}
+
+.frame {
+    --space: 0.5rem;
+    gap: var(--space);
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.frame>img,
+.frame>video {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+}
+
+.reel {
+    --space: 0.5rem;
+    gap: var(--space);
+    display: flex;
+    overflow-x: auto;
+}
+
+.reel>* {
+    min-width: 50%;
+    max-width: 100%;
+}
+
+/* spacing */
+
+.sm {
+    --space: 0.2rem;
+}
+
+.gap-2,
+.l {
+    --space: 1rem;
+}
+
+.gap-3,
+.xl {
+    --space: 1.5rem;
+}
+
+.gap-4,
+.xxl {
+    --space: 2rem;
+}

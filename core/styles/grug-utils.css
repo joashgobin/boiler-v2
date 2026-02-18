@@ -1,0 +1,159 @@
+.center {
+    text-align: center;
+}
+
+.flex {
+    --space: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.flex.right {
+    justify-content: flex-end;
+}
+
+.flex.left {
+    justify-content: flex-start;
+}
+
+.flex.top {
+    align-items: start;
+}
+
+.flex.bottom {
+    align-items: end;
+}
+
+.grow {
+    flex-grow: 1;
+}
+
+.grid {
+    --padding: 0.5rem;
+    --space: 0.5rem;
+    --item-count: 2;
+    --minimum: calc((var(--measure)*0.75 - (2*var(--padding) + (var(--item-count) - 1)*var(--space)))/(var(--item-count)));
+    padding: var(--padding);
+    display: grid;
+    gap: var(--space);
+    align-content: center;
+    width: 100%;
+}
+
+.fit-3 {
+    --item-count: 3;
+}
+
+.fit-4 {
+    --item-count: 4;
+}
+
+.fit-5 {
+    --item-count: 5;
+}
+
+.fit-6 {
+    --item-count: 6;
+}
+
+.fit-7 {
+    --item-count: 7;
+}
+
+@supports (width: min(var(--minimum), 100%)) {
+    .grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(var(--minimum), 100%), 1fr));
+    }
+}
+
+.stack {
+    --space: 0.5rem;
+    display: grid;
+    gap: var(--space);
+    justify-items: center;
+    align-content: center;
+}
+
+.stack :is(h1, h2, h3, h4, h5, h6) {
+    margin-top: 1rem;
+}
+
+.stack>p {
+    margin-bottom: 1rem;
+}
+
+.stack.top {
+    align-content: start;
+}
+
+.stack.bottom {
+    align-content: end;
+}
+
+.stack.left {
+    justify-items: start;
+}
+
+.stack.right {
+    justify-items: end;
+}
+
+.box {
+    border: 1px solid black;
+    padding: 1rem;
+}
+
+.center {
+    text-align: center;
+    max-inline-size: var(--measure);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.reel {
+    --space: 0.5rem;
+    gap: var(--space);
+    display: flex;
+    overflow-x: auto;
+}
+
+.reel>* {
+    min-width: 50%;
+    max-width: 100%;
+}
+
+.gap_1 {
+    --space: 0.1rem;
+}
+
+.gap_2 {
+    --space: 0.2rem;
+}
+
+.gap_3 {
+    --space: 0.3rem;
+}
+
+.gap_4 {
+    --space: 0.4rem;
+}
+
+.gap-5 {
+    --space: 0.5rem;
+}
+
+.gap {
+    --space: 1rem;
+}
+
+.gap-2 {
+    --space: 2rem;
+}
+
+.gap-3 {
+    --space: 3rem;
+}
