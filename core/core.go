@@ -153,7 +153,6 @@ func showElapsed(description string, start time.Time) {
 	}
 }
 
-// NewApp returns a configured fiber app with session, csrf and other middleware
 func NewApp(config AppConfig) (*fiber.App, Base) {
 	if config.User == "" {
 		fmt.Println("config error: user not specified e.g. john")
@@ -681,8 +680,7 @@ exec bash
 
 	// create csrf error handler
 	csrfErrorHandler := func(c fiber.Ctx, err error) error {
-		fmt.Printf("CSRF Error: %v Request: %v From: %v\n", err, c.OriginalURL(), c.IP())
-
+		log.Errorf("csrf error: %v request: %v from IP: %v", err, c.OriginalURL(), c.IP())
 		switch c.Accepts("html", "json") {
 		case "json":
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
@@ -704,13 +702,21 @@ exec bash
 		CookieName:        "__Host-csrf_",
 		CookieSecure:      true,
 		CookieHTTPOnly:    true,
-		CookieSameSite:    "Strict",
+		CookieSameSite:    "Lax",
 		CookieSessionOnly: true,
 		Extractor:         extractors.FromForm("csrf"),
 		Session:           sessionStore,
 		ErrorHandler:      csrfErrorHandler,
 		Storage:           storage,
 		SingleUseToken:    true,
+		TrustedOrigins: []string{
+			"http://127.0.0.1",
+			"http://127.0.0.1:" + config.Port,
+			"http://127.0.0.1:8081",
+			"http://localhost",
+			"http://localhost:" + config.Port,
+			"http://localhost:8081",
+		},
 	})
 
 	app.Use(csrfMiddleware)
