@@ -28,7 +28,6 @@ import (
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/session"
 
-	// "github.com/joashgobin/boiler/email"
 	"github.com/joashgobin/boiler-v2/helpers"
 )
 

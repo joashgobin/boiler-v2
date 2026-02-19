@@ -22,7 +22,7 @@ go 1.26.0
 
 require (
 	github.com/gofiber/fiber/v3 v3.0.0
-	github.com/joashgobin/boiler-v2 v0.0.29
+	github.com/joashgobin/boiler-v2 v0.0.35
 )
 
 replace github.com/joashgobin/boiler-v2 => ../boiler-v2

@@ -29,7 +29,6 @@ import (
 	"github.com/joashgobin/boiler-v2/email"
 	"github.com/joashgobin/boiler-v2/helpers"
 	"github.com/joashgobin/boiler-v2/payments"
-	"github.com/joashgobin/boiler/helpers"
 
 	// "go.rumenx.com/sitemap"
 	// fiberadapter "go.rumenx.com/sitemap/adapters/fiber"
@@ -175,7 +174,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 	start := time.Now()
 	gob.Register(map[string]string{})
-	gob.Register(models.User{})
+	gob.Register(models.UserModel{})
 
 	fingerprints := make(map[string]string, 50)
 	optimizations := make(map[string]string, 50)
