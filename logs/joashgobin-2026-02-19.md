@@ -4,3 +4,4 @@
 - Tweak code
 - Save session after regen
 - Defer session release
+- Update idle timeout

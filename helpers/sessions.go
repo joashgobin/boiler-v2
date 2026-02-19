@@ -3,6 +3,7 @@ package helpers
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
@@ -224,6 +225,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		c.Set("Cache-Control", "private,max-age=0")
 
 		sess, err := store.Get(c)
+		defer sess.Release()
 		if err != nil {
 			return err
 		}
@@ -247,12 +249,10 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		updatedSession := false
 
 		// set session expiry to shorter time if the user is not defined
-		/*
-			if sess.Get("user") == nil {
-				sess.SetIdleTimeout(1 * time.Minute)
-				updatedSession = true
-			}
-		*/
+		if sess.Get("user") == nil {
+			sess.SetIdleTimeout(1 * time.Minute)
+			updatedSession = true
+		}
 
 		// pass flash message to locals if indicated by Push()
 		if sess.Get("delayFlashClear") != nil {
