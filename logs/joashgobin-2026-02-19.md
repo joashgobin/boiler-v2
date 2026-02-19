@@ -2,3 +2,4 @@
 
 - Fixed module name and other issues
 - Tweak code
+- Save session after regen

@@ -21,7 +21,7 @@ type UserModelInterface interface {
 	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
 	LoginAs(store *session.Store, c fiber.Ctx, email, password string) error
-	EmailLoginAs(c fiber.Ctx, email string) error
+	EmailLoginAs(store *session.Store, c fiber.Ctx, email string) error
 	Exists(email string) (bool, error)
 	AssignRole(email, role string) error
 	RemoveRole(email, role string) error
@@ -254,17 +254,29 @@ func (m *UserModel) authenticate(email, password string) (User, error) {
 	return user, nil
 }
 
-func (m *UserModel) EmailLoginAs(c fiber.Ctx, email string) error {
+func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string) error {
 	user, err := m.emailAuthenticate(email)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
 	}
-	sess := session.FromContext(c)
+	if err != nil {
+		return fmt.Errorf("credentials error: %v", err)
+	}
+
+	sess, err := store.Get(c)
+	if err != nil {
+		return fmt.Errorf("get session error: %v", err)
+	}
+
 	if err := sess.Regenerate(); err != nil {
-		return fmt.Errorf("session error: %v", err)
+		return fmt.Errorf("regenerate session error: %v", err)
 	}
 
 	sess.Set("user", user)
+
+	if err := sess.Save(); err != nil {
+		return fmt.Errorf("save session error: %v", err)
+	}
 	return nil
 }
 
@@ -284,6 +296,10 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	}
 
 	sess.Set("user", user)
+
+	if err := sess.Save(); err != nil {
+		return fmt.Errorf("save session error: %v", err)
+	}
 
 	return nil
 }
