@@ -264,6 +264,7 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 	}
 
 	sess, err := store.Get(c)
+	defer sess.Release()
 	if err != nil {
 		return fmt.Errorf("get session error: %v", err)
 	}
@@ -287,6 +288,7 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	}
 
 	sess, err := store.Get(c)
+	defer sess.Release()
 	if err != nil {
 		return fmt.Errorf("get session error: %v", err)
 	}
