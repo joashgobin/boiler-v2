@@ -174,7 +174,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 	start := time.Now()
 	gob.Register(map[string]string{})
-	gob.Register(models.UserModel{})
+	gob.Register(models.User{})
 
 	fingerprints := make(map[string]string, 50)
 	optimizations := make(map[string]string, 50)
@@ -678,7 +678,7 @@ exec bash
 		Extractor:       extractors.FromCookie("__Host-session_id"),
 	}
 	sessionStore := session.NewStore(sessConfig)
-	sessionStore.RegisterType(models.UserModel{})
+	sessionStore.RegisterType(models.User{})
 	sessionStore.RegisterType(map[string]string{})
 
 	// create csrf error handler

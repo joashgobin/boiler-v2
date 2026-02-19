@@ -20,7 +20,7 @@ import (
 type UserModelInterface interface {
 	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
-	LoginAs(c fiber.Ctx, email, password string) error
+	LoginAs(store *session.Store, c fiber.Ctx, email, password string) error
 	EmailLoginAs(c fiber.Ctx, email string) error
 	Exists(email string) (bool, error)
 	AssignRole(email, role string) error
@@ -268,29 +268,33 @@ func (m *UserModel) EmailLoginAs(c fiber.Ctx, email string) error {
 	return nil
 }
 
-func (m *UserModel) LoginAs(c fiber.Ctx, email, password string) error {
+func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) error {
 	user, err := m.authenticate(email, password)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
 	}
 
-	log.Infof("Attempting to authenticate as: %v", user)
+	sess, err := store.Get(c)
+	if err != nil {
+		return fmt.Errorf("get session error: %v", err)
+	}
 
-	sess := session.FromContext(c)
 	if err := sess.Regenerate(); err != nil {
-		return fmt.Errorf("session error: %v", err)
+		return fmt.Errorf("regenerate session error: %v", err)
 	}
 
 	sess.Set("user", user)
-	log.Infof("Logging in as: %v", user)
 
 	return nil
 }
 
-func (m *UserModel) Logout(c fiber.Ctx) error {
-	sess := session.FromContext(c)
+func (m *UserModel) Logout(store *session.Store, c fiber.Ctx) error {
+	sess, err := store.Get(c)
+	if err != nil {
+		return fmt.Errorf("get session error: %v", err)
+	}
 	if err := sess.Reset(); err != nil {
-		return fmt.Errorf("session error: %v", err)
+		return fmt.Errorf("reset session error: %v", err)
 	}
 	return nil
 }
