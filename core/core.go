@@ -704,14 +704,17 @@ exec bash
 	csrfMiddleware := csrf.New(csrf.Config{
 		CookieName:        "__Host-csrf_",
 		CookieSecure:      true,
-		CookieHTTPOnly:    true,
+		CookieHTTPOnly:    false,
 		CookieSameSite:    "Lax",
-		CookieSessionOnly: true,
-		Extractor:         extractors.FromForm("csrf"),
-		Session:           sessionStore,
-		ErrorHandler:      csrfErrorHandler,
-		Storage:           storage,
-		SingleUseToken:    true,
+		CookieSessionOnly: false,
+		Extractor: extractors.Chain(
+			extractors.FromHeader("X-CSRF-Token"), // Secure first
+			extractors.FromForm("csrf"),           // Form fallback
+		),
+		Session:        sessionStore,
+		ErrorHandler:   csrfErrorHandler,
+		Storage:        storage,
+		SingleUseToken: true,
 		TrustedOrigins: []string{
 			"http://127.0.0.1",
 			"http://127.0.0.1:" + config.Port,
@@ -719,6 +722,7 @@ exec bash
 			"http://localhost",
 			"http://localhost:" + config.Port,
 			"http://localhost:8081",
+			"https://" + config.IP,
 		},
 	})
 

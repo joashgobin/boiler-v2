@@ -287,8 +287,7 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 		return fmt.Errorf("credentials error: %v", err)
 	}
 
-	sess, err := store.Get(c)
-	defer sess.Release()
+	sess := session.FromContext(c)
 	if err != nil {
 		return fmt.Errorf("get session error: %v", err)
 	}
@@ -299,21 +298,6 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 
 	sess.Set("user", user)
 
-	if err := sess.Save(); err != nil {
-		return fmt.Errorf("save session error: %v", err)
-	}
-
-	return nil
-}
-
-func (m *UserModel) Logout(store *session.Store, c fiber.Ctx) error {
-	sess, err := store.Get(c)
-	if err != nil {
-		return fmt.Errorf("get session error: %v", err)
-	}
-	if err := sess.Reset(); err != nil {
-		return fmt.Errorf("reset session error: %v", err)
-	}
 	return nil
 }
 
@@ -327,6 +311,7 @@ func (m *UserModel) Exists(email string) (bool, error) {
 func RequireRole(store *session.Store, flash helpers.FlashInterface, role string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		sess, err := store.Get(c)
+		defer sess.Release()
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}

@@ -5,3 +5,4 @@
 - Save session after regen
 - Defer session release
 - Update idle timeout
+- Too many tweaks
