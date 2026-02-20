@@ -2,3 +2,4 @@
 
 - Updated session.go
 - Testing save
+- Updated redirect

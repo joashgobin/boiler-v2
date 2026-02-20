@@ -306,8 +306,9 @@ func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		warning, err := EnsureFiberFormFields(c, keys)
 		if err != nil {
+			route := c.OriginalURL()
 			flash.Push(c, warning)
-			return c.Redirect().Back()
+			return c.Redirect().To(route + "?show=retained")
 		}
 		return c.Next()
 	}

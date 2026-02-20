@@ -269,9 +269,11 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 		return fmt.Errorf("get session error: %v", err)
 	}
 
-	if err := sess.Regenerate(); err != nil {
-		return fmt.Errorf("regenerate session error: %v", err)
-	}
+	/*
+		if err := sess.Regenerate(); err != nil {
+			return fmt.Errorf("regenerate session error: %v", err)
+		}
+	*/
 
 	sess.Set("user", user)
 
@@ -282,7 +284,7 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 }
 
 func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) error {
-	helpers.ShowContext(c)
+	// helpers.ShowContext(c)
 	user, err := m.authenticate(email, password)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
@@ -293,9 +295,11 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 		return fmt.Errorf("get session error: %v", err)
 	}
 
-	if err := sess.Regenerate(); err != nil {
-		return fmt.Errorf("regenerate session error: %v", err)
-	}
+	/*
+		if err := sess.Regenerate(); err != nil {
+			return fmt.Errorf("regenerate session error: %v", err)
+		}
+	*/
 
 	sess.Set("user", user)
 
