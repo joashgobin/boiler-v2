@@ -168,11 +168,6 @@ make deploy/app
 - Panic recovery
 - Algorithmic layouts via mango CSS
 
-## Template Engine Functions
-Some functions like the "icon" function require htmx. Add the following to "views/scripts.html":
-```
-htmx.process(document.body);
-```
 
 ## Swup JS/HTMX Template
 Add the following to your *views/layouts/main.html* file:

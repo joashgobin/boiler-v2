@@ -9,3 +9,4 @@
 - Tweaks to MMG
 - Tweak
 - Updated html template
+- Htmx is now packaged with swup 
