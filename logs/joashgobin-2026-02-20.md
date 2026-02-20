@@ -11,3 +11,4 @@
 - Updated html template
 - Htmx is now packaged with swup 
 - Process htmx at end
+- Revert
