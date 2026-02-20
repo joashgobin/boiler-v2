@@ -860,7 +860,7 @@ type MMGInterface interface {
 	Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string
 	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string
 	LoadHistory(merchantNumber int)
-	GetUserProducts(userEmail string) *[]string
+	GetUserProducts(userEmail string) []string
 	GetProduct(productCode string) MMGProduct
 	GetMerchant(merchantNumber int) MMGMerchant
 }
@@ -922,14 +922,14 @@ func (m *MMGModel) GetProduct(productCode string) MMGProduct {
 	return product
 }
 
-func (m *MMGModel) GetUserProducts(userEmail string) *[]string {
+func (m *MMGModel) GetUserProducts(userEmail string) []string {
 	query := `SELECT
 	productcode
 	FROM transactions WHERE user = ?`
 	rows, err := m.DB.Query(query, userEmail)
 	if err != nil {
 		log.Errorf("product query error: %v", err)
-		return &[]string{}
+		return []string{}
 	}
 	defer rows.Close()
 
@@ -946,9 +946,9 @@ func (m *MMGModel) GetUserProducts(userEmail string) *[]string {
 	}
 	if err := rows.Err(); err != nil {
 		log.Errorf("rows error: %v", err)
-		return &[]string{}
+		return []string{}
 	}
-	return &productCodes
+	return productCodes
 }
 
 func (m *MMGModel) LoadHistory(merchantNumber int) {

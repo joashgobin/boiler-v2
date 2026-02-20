@@ -6,3 +6,4 @@
 - Fixed payments
 - Tweaks
 - Reduce idle timeout
+- Tweaks to MMG
