@@ -23,7 +23,7 @@ type FlashInterface interface {
 	GetInt(c fiber.Ctx, key string, defaultValue ...int) int
 	Set(c fiber.Ctx, key string, value any) error
 	SetMany(c fiber.Ctx, pairs map[string]any) error
-	DeleteSession(c fiber.Ctx) error
+	DeleteSession(c fiber.Ctx)
 	UploadImage(c fiber.Ctx, imageFormName string) (string, error)
 	Prefetch(c fiber.Ctx, urls ...string)
 	KeepCached(c fiber.Ctx, maxAge int)
@@ -48,7 +48,11 @@ func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
 }
 
 func (flash *FlashModel) GetUser(c fiber.Ctx) interface{} {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		return nil
+	}
 	value := sess.Get("user")
 	return value
 }
@@ -69,12 +73,16 @@ func (flash *FlashModel) UploadImage(c fiber.Ctx, imageFormName string) (string,
 	return image, nil
 }
 
-func (flash *FlashModel) DeleteSession(c fiber.Ctx) error {
-	sess := session.FromContext(c)
-	if err := sess.Destroy(); err != nil {
-		return fmt.Errorf("session delete error: %v", err)
+func (flash *FlashModel) DeleteSession(c fiber.Ctx) {
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		log.Errorf("session delete error: %v", err)
 	}
-	return nil
+	if err := sess.Destroy(); err != nil {
+		log.Errorf("session delete error: %v", err)
+	}
+
 }
 
 type FlashModel struct {
@@ -82,7 +90,15 @@ type FlashModel struct {
 }
 
 func (flash *FlashModel) Get(c fiber.Ctx, key string, defaultValue ...any) any {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		// panic(err)
+		if len(defaultValue) > 0 {
+			return defaultValue[0]
+		}
+		return nil
+	}
 	value := sess.Get(key)
 	if value == nil {
 		if len(defaultValue) > 0 {
@@ -93,7 +109,14 @@ func (flash *FlashModel) Get(c fiber.Ctx, key string, defaultValue ...any) any {
 }
 
 func (flash *FlashModel) GetString(c fiber.Ctx, key string, defaultValue ...string) string {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		if len(defaultValue) > 0 {
+			return defaultValue[0]
+		}
+		return ""
+	}
 	value := sess.Get(key)
 	if value == nil {
 		if len(defaultValue) > 0 {
@@ -112,7 +135,14 @@ func (flash *FlashModel) GetString(c fiber.Ctx, key string, defaultValue ...stri
 }
 
 func (flash *FlashModel) GetInt(c fiber.Ctx, key string, defaultValue ...int) int {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		if len(defaultValue) > 0 {
+			return defaultValue[0]
+		}
+		return 0
+	}
 	value := sess.Get(key)
 	if value == nil {
 		if len(defaultValue) > 0 {
@@ -131,15 +161,29 @@ func (flash *FlashModel) GetInt(c fiber.Ctx, key string, defaultValue ...int) in
 }
 
 func (flash *FlashModel) Set(c fiber.Ctx, key string, value any) error {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		return err
+	}
 	sess.Set(key, value)
+	if err := sess.Save(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (flash *FlashModel) SetMany(c fiber.Ctx, pairs map[string]any) error {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		return err
+	}
 	for key, value := range pairs {
 		sess.Set(key, value)
+	}
+	if err := sess.Save(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -153,7 +197,11 @@ func (flash *FlashModel) Redirect(c fiber.Ctx, route string, message string, arg
 }
 
 func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		return err
+	}
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}
@@ -163,12 +211,22 @@ func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
 	// skip clearing flash message via locals
 	sess.Set("delayFlashClear", true)
 
+	if err := sess.Save(); err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
 	return nil
 }
 
 func (flash *FlashModel) ClearOld(c fiber.Ctx) {
-	sess := session.FromContext(c)
+	sess, err := flash.Store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		return
+	}
 	sess.Set("old", nil)
+	if err := sess.Save(); err != nil {
+		return
+	}
 }
 
 func IncludeSessionLocals(store *session.Store) fiber.Handler {
@@ -201,7 +259,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 
 		// set session expiry to shorter time if the user is not defined
 		if sess.Get("user") == nil {
-			sess.SetIdleTimeout(3 * time.Minute)
+			sess.SetIdleTimeout(5 * time.Minute)
 			updatedSession = true
 		}
 

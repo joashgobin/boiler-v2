@@ -282,6 +282,7 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 }
 
 func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) error {
+	helpers.ShowContext(c)
 	user, err := m.authenticate(email, password)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)

@@ -708,8 +708,7 @@ exec bash
 		CookieSameSite:    "Lax",
 		CookieSessionOnly: false,
 		Extractor: extractors.Chain(
-			extractors.FromHeader("X-CSRF-Token"), // Secure first
-			extractors.FromForm("csrf"),           // Form fallback
+			extractors.FromForm("csrf"),
 		),
 		Session:        sessionStore,
 		ErrorHandler:   csrfErrorHandler,
@@ -791,7 +790,10 @@ exec bash
 		Weak: false,
 	}))
 
-	app.Use(recover.New())
+	if config.IsProduction {
+		app.Use(recover.New())
+	}
+
 	app.Use(idempotency.New(idempotency.Config{
 		Storage: storage,
 	}))
@@ -813,5 +815,3 @@ exec bash
 	// return configured fiber app and base
 	return app, base
 }
-
-// fiber:context-methods migrated
