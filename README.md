@@ -189,8 +189,8 @@ Add the following to your *views/layouts/main.html* file:
             document.body.classList.add('loaded');
         }
     </script>
-    <link rel="preload" as="style" href="{{min "grug.css"}}">
-    <link rel="stylesheet" media="none" onload="this.media='all';showBody()" href="{{min "grug.css"}}">
+    <link rel="preload" as="style" href='{{min "grug.css"}}'>
+    <link rel="stylesheet" media="none" onload="this.media='all';showBody()" href='{{min "grug.css"}}'>
     <link rel="stylesheet" media="none" onload="this.media='all'" href='{{min "main.css"}}'>
     <style>
     body {

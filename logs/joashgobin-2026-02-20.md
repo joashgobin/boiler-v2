@@ -8,3 +8,4 @@
 - Reduce idle timeout
 - Tweaks to MMG
 - Tweak
+- Updated html template
