@@ -115,7 +115,7 @@ type TokenParams struct {
 
 func getTransactionMeta(data []byte) (string, error) {
 	log.Infof("GET META: %v", string(data))
-	r := regexp.MustCompile(`"key":\s*"(product_desc|description)",\s*"value":\s*"(.+?)"`)
+	r := regexp.MustCompile(`"key":\s*"(product_desc|description|descriptionText)",\s*"value":\s*"(.*?)"`)
 	matches := r.FindStringSubmatch(string(data))
 	if len(matches) > 1 {
 		// log.Infof("found transaction meta: %s", matches[2])
@@ -184,22 +184,14 @@ func (m *MMGModel) LoadMMGTransactionDetails(merchantNumber int, transactionRefe
 			if err != nil {
 				log.Errorf("error getting transaction meta: %v", err)
 			} else {
-				parts := strings.Split(metadata, "||")
 				user := ""
-				internalId := ""
-				productCode := parts[0]
-				if len(parts) > 1 {
-					internalId = parts[1]
-				}
-				if len(parts) > 2 {
-					user = parts[2]
-				}
+				productCode := ""
 				query := `
 					UPDATE transactions
-					SET metadata = ?, user = ?, internalid = ?, productcode = ?
+					SET metadata = ?, user = ?, productcode = ?
 					WHERE reference = ?
 					`
-				result, err := m.DB.Exec(query, metadata, user, internalId, productCode, transactionReference)
+				result, err := m.DB.Exec(query, metadata, user, productCode, transactionReference)
 				if err != nil {
 					log.Errorf("failed to update transaction ref %s: %v", transactionReference, err)
 					return
@@ -226,7 +218,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		// log.Infof("JSON: %v\n", data)
 		return
 	}
-	// log.Infof("RESPONSE: %v", response)
+	log.Infof("RESPONSE: %v", response)
 	var history []MMGTransaction
 	for _, transaction := range response.Transactions {
 		var mmgTransaction MMGTransaction
@@ -263,8 +255,9 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		amount,
 		currency,
 		category,
-		status
-	) VALUES (?,?,?,?,?,?,?,?)
+		status,
+		internalid
+	) VALUES (?,?,?,?,?,?,?,?,?)
 	`)
 	if err != nil {
 		log.Errorf("prepare statement error: %v\n", err)
@@ -288,6 +281,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 			txn.Currency,
 			txn.Category,
 			txn.Status,
+			txn.ExternalID,
 		)
 		if err != nil {
 			tx.Rollback()
