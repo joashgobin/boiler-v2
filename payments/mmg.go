@@ -24,12 +24,11 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/session"
 
-	// "github.com/joashgobin/boiler/email"
-	"github.com/joashgobin/boiler/helpers"
+	"github.com/joashgobin/boiler-v2/helpers"
 )
 
 // Environment represents a Postman environment file
@@ -658,7 +657,7 @@ func (m *MMGModel) GetMMGBalance(merchantNumber int) {
 }
 
 func FiberMMGSubscriptionMiddleware(db *sql.DB, store *session.Store) fiber.Handler {
-	return func(c *fiber.Ctx) error {
+	return func(c fiber.Ctx) error {
 		username := "123"
 		sess, err := store.Get(c)
 		if err != nil {
@@ -670,7 +669,7 @@ func FiberMMGSubscriptionMiddleware(db *sql.DB, store *session.Store) fiber.Hand
 		if subscribed != "yes" {
 			if !IsMMGSubscribed(db, 100, username) {
 				log.Infof("subscription not found for %s, redirecting to home", username)
-				return c.Redirect("/")
+				return c.Redirect().To("/")
 			}
 		}
 		sess.Set("mmg_subscribed", "yes")
