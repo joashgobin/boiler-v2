@@ -5,3 +5,4 @@
 - Updated redirect
 - Fixed payments
 - Tweaks
+- Reduce idle timeout
