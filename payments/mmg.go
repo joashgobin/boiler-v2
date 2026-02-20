@@ -24,11 +24,12 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/log"
-	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/session"
 
-	"github.com/joashgobin/boiler-v2/helpers"
+	// "github.com/joashgobin/boiler/email"
+	"github.com/joashgobin/boiler/helpers"
 )
 
 // Environment represents a Postman environment file
@@ -145,9 +146,7 @@ func (m *MMGModel) LoadMMGTransactionDetails(merchantNumber int, transactionRefe
 
 			var urlBuilder strings.Builder
 			urlBuilder.WriteString(baseUrl)
-			urlBuilder.WriteString(transactionReference)
 			url := urlBuilder.String()
-			// fmt.Printf("Making request to: %s\n", url)
 			method := "GET"
 
 			payload := strings.NewReader("{\"query\":\"\",\"variables\":{}}")
@@ -228,6 +227,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		// log.Infof("JSON: %v\n", data)
 		return
 	}
+	// log.Infof("RESPONSE: %v", response)
 	var history []MMGTransaction
 	for _, transaction := range response.Transactions {
 		var mmgTransaction MMGTransaction
@@ -415,7 +415,7 @@ func getMMGHistory(merchantNumber int, url string, resourceToken string) (string
 		log.Error("mmg history response body error: %v", err)
 		return "", nil
 	}
-	log.Infof("mmg history response body: %v", string(body))
+	// log.Infof("mmg history response body: %v", string(body))
 	return string(body), res
 }
 
@@ -437,11 +437,12 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int) {
 			var urlBuilder strings.Builder
 			urlBuilder.WriteString(baseUrl)
 			// urlBuilder.WriteString(strconv.Itoa(merchantNumber))
-			urlBuilder.WriteString("?offset=1")
+			urlBuilder.WriteString("?offset=100")
 			urlBuilder.WriteString("&fromdate=" + fromDate)
 			urlBuilder.WriteString("&todate=" + toDate)
 			urlBuilder.WriteString("&msisdn=" + strconv.Itoa(merchantNumber))
 			url := urlBuilder.String()
+			log.Infof("HISTORY URL: %s", url)
 
 			// retrieve resource token from database
 			resourceToken := getResourceToken(m.DB, merchantNumber)
@@ -464,9 +465,20 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int) {
 
 			// in case resource token is invalid
 			if strings.Contains(string(body), "clientAuthorisationError") {
+				log.Errorf("failed to use valid resource token: %v", res)
 
-				// log error and notify admin via email
-				log.Error("failed to use valid resource token: %v", res)
+				// request new resource token
+				newToken := m.LoadNewResourceToken(merchantNumber)
+
+				// resend request
+				body, _ := getMMGHistory(merchantNumber, url, newToken)
+				m.getTransactionData(body, merchantNumber, newToken)
+				return
+			}
+
+			// in case of multiple user sessions
+			if strings.Contains(string(body), "Multiple user session found") {
+				log.Errorf("failed to use valid resource token: %v", res)
 
 				// request new resource token
 				newToken := m.LoadNewResourceToken(merchantNumber)
@@ -484,7 +496,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int) {
 
 				// send request
 				body, _ := getMMGHistory(merchantNumber, url, newToken)
-				m.getTransactionData(body, merchantNumber, resourceToken)
+				m.getTransactionData(body, merchantNumber, newToken)
 				return
 			}
 
@@ -646,7 +658,7 @@ func (m *MMGModel) GetMMGBalance(merchantNumber int) {
 }
 
 func FiberMMGSubscriptionMiddleware(db *sql.DB, store *session.Store) fiber.Handler {
-	return func(c fiber.Ctx) error {
+	return func(c *fiber.Ctx) error {
 		username := "123"
 		sess, err := store.Get(c)
 		if err != nil {
@@ -658,7 +670,7 @@ func FiberMMGSubscriptionMiddleware(db *sql.DB, store *session.Store) fiber.Hand
 		if subscribed != "yes" {
 			if !IsMMGSubscribed(db, 100, username) {
 				log.Infof("subscription not found for %s, redirecting to home", username)
-				return c.Redirect().To("/")
+				return c.Redirect("/")
 			}
 		}
 		sess.Set("mmg_subscribed", "yes")

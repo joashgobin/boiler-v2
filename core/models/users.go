@@ -20,7 +20,9 @@ import (
 type UserModelInterface interface {
 	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
+	Authenticate(email, password string) (User, error)
 	LoginAs(store *session.Store, c fiber.Ctx, email, password string) error
+	EmailAuthenticate(email string) (User, error)
 	EmailLoginAs(store *session.Store, c fiber.Ctx, email string) error
 	Exists(email string) (bool, error)
 	AssignRole(email, role string) error
@@ -219,7 +221,7 @@ func (m *UserModel) RemoveRole(email, role string) error {
 	return nil
 }
 
-func (m *UserModel) emailAuthenticate(email string) (User, error) {
+func (m *UserModel) EmailAuthenticate(email string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles FROM users WHERE email = ?"
 	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles)
@@ -231,7 +233,7 @@ func (m *UserModel) emailAuthenticate(email string) (User, error) {
 	return user, nil
 }
 
-func (m *UserModel) authenticate(email, password string) (User, error) {
+func (m *UserModel) Authenticate(email, password string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles, hashed_password FROM users WHERE email = ?"
 	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles, &user.HashedPassword)
@@ -255,7 +257,7 @@ func (m *UserModel) authenticate(email, password string) (User, error) {
 }
 
 func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string) error {
-	user, err := m.emailAuthenticate(email)
+	user, err := m.EmailAuthenticate(email)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
 	}
@@ -285,7 +287,7 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 
 func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) error {
 	// helpers.ShowContext(c)
-	user, err := m.authenticate(email, password)
+	user, err := m.Authenticate(email, password)
 	if err != nil {
 		return fmt.Errorf("credentials error: %v", err)
 	}
