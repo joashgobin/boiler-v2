@@ -15,13 +15,13 @@
     });
 
     swup.hooks.on('page:view', (visit) => {
-        htmx.process(document.body);
         {{template "views/scripts".}}
+        htmx.process(document.body);
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        htmx.process(document.body);
         {{template "views/scripts".}}
+        htmx.process(document.body);
     });
 
 
