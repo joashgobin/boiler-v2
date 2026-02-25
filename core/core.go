@@ -53,6 +53,7 @@ type Base struct {
 	Store        *session.Store
 	Shelf        helpers.ShelfModelInterface
 	Flash        helpers.FlashInterface
+	Files        helpers.FilesInterface
 	Bank         helpers.BankInterface
 	MMG          payments.MMGInterface
 	Mail         email.MailInterface
@@ -669,7 +670,7 @@ exec bash
 
 	// init fiber session middleware
 	sessConfig := session.Config{
-		IdleTimeout:     15 * time.Minute,
+		IdleTimeout:     30 * time.Minute,
 		AbsoluteTimeout: 2 * time.Hour,
 		CookieSecure:    true,
 		CookieHTTPOnly:  true,
@@ -768,6 +769,7 @@ exec bash
 		Store:        sessionStore,
 		Shelf:        &helpers.ShelfModel{DB: db},
 		Flash:        &helpers.FlashModel{Store: sessionStore},
+		Files:        &helpers.FilesModel{},
 		Bank:         helpers.NewBank(storage, config.AppName),
 		MMG:          payments.NewMMG(db, &wg, config.AppName),
 		Anchor:       ":" + config.Port,
@@ -793,7 +795,6 @@ exec bash
 	if config.IsProduction {
 		app.Use(recover.New())
 	}
-
 	app.Use(idempotency.New(idempotency.Config{
 		Storage: storage,
 	}))

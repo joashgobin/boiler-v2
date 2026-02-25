@@ -2,14 +2,12 @@ package helpers
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/google/uuid"
 )
 
 type FlashInterface interface {
@@ -24,10 +22,11 @@ type FlashInterface interface {
 	Set(c fiber.Ctx, key string, value any) error
 	SetMany(c fiber.Ctx, pairs map[string]any) error
 	DeleteSession(c fiber.Ctx)
-	UploadImage(c fiber.Ctx, imageFormName string) (string, error)
 	Prefetch(c fiber.Ctx, urls ...string)
 	KeepCached(c fiber.Ctx, maxAge int)
 }
+
+var _ FlashInterface = (*FlashModel)(nil)
 
 func GetUser[T any](c fiber.Ctx, flash FlashInterface) T {
 	user := flash.Get(c, "user")
@@ -55,22 +54,6 @@ func (flash *FlashModel) GetUser(c fiber.Ctx) interface{} {
 	}
 	value := sess.Get("user")
 	return value
-}
-
-func (flash *FlashModel) UploadImage(c fiber.Ctx, imageFormName string) (string, error) {
-	file, err := c.FormFile(imageFormName)
-	if err != nil {
-		return "", err
-	}
-	filename := strings.Replace(uuid.New().String(), "-", "", -1)
-	fileExt := strings.Split(file.Filename, ".")[1]
-	image := fmt.Sprintf("%s.%s", filename, fileExt)
-
-	err = c.SaveFile(file, fmt.Sprintf("./uploads/%s", image))
-	if err != nil {
-		return "", err
-	}
-	return image, nil
 }
 
 func (flash *FlashModel) DeleteSession(c fiber.Ctx) {
