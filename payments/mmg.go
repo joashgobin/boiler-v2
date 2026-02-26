@@ -15,7 +15,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -114,7 +113,7 @@ type TokenParams struct {
 }
 
 func getTransactionMeta(data []byte) (string, error) {
-	log.Infof("GET META: %v", string(data))
+	// log.Infof("GET META: %v", string(data))
 	r := regexp.MustCompile(`"key":\s*"(product_desc|description|descriptionText)",\s*"value":\s*"(.*?)"`)
 	matches := r.FindStringSubmatch(string(data))
 	if len(matches) > 1 {
@@ -137,7 +136,7 @@ func (m *MMGModel) LoadMMGTransactionDetails(merchantNumber int, transactionRefe
 	helpers.Background(
 		func() {
 
-			log.Infof("LOOKUP: %s", transactionReference)
+			// log.Infof("LOOKUP: %s", transactionReference)
 
 			envStr := getEnvFileString(merchantNumber)
 			envMap := extractEnvMap(envStr)
@@ -185,13 +184,12 @@ func (m *MMGModel) LoadMMGTransactionDetails(merchantNumber int, transactionRefe
 				log.Errorf("error getting transaction meta: %v", err)
 			} else {
 				user := ""
-				productCode := ""
 				query := `
 					UPDATE transactions
-					SET metadata = ?, user = ?, productcode = ?
+					SET metadata = ?, user = ?
 					WHERE reference = ?
 					`
-				result, err := m.DB.Exec(query, metadata, user, productCode, transactionReference)
+				result, err := m.DB.Exec(query, metadata, user, transactionReference)
 				if err != nil {
 					log.Errorf("failed to update transaction ref %s: %v", transactionReference, err)
 					return
@@ -205,7 +203,7 @@ func (m *MMGModel) LoadMMGTransactionDetails(merchantNumber int, transactionRefe
 					log.Errorf("rows affected error: %v", sql.ErrNoRows)
 					return
 				}
-				log.Infof("updated metadata for transaction: %s", transactionReference)
+				// log.Infof("updated metadata for transaction: %s", transactionReference)
 			}
 		}, m.WaitGroup)
 }
@@ -218,7 +216,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		// log.Infof("JSON: %v\n", data)
 		return
 	}
-	log.Infof("RESPONSE: %v", response)
+	// log.Infof("RESPONSE: %v", response)
 	var history []MMGTransaction
 	for _, transaction := range response.Transactions {
 		var mmgTransaction MMGTransaction
@@ -285,16 +283,18 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		)
 		if err != nil {
 			tx.Rollback()
-			log.Errorf("❌ mmg transaction insert error: %v", err)
+			// log.Errorf("❌ mmg transaction insert error: %v", err)
 		} else {
 			log.Infof("✅ inserted %s) %s: %s -> %s (%f %s)\n", txn.Reference, txn.Category, txn.From, txn.To, txn.Amount, txn.Currency)
 		}
 	}
 	tx.Commit()
-	for _, txn := range history {
-		log.Infof("QUEUE LOOKUP: %v", txn)
-		m.LoadMMGTransactionDetails(merchantNumber, txn.Reference, resourceToken)
-	}
+	/*
+		for _, txn := range history {
+			// log.Infof("QUEUE LOOKUP: %v", txn)
+			m.LoadMMGTransactionDetails(merchantNumber, txn.Reference, resourceToken)
+		}
+	*/
 }
 
 func getEnvironmentData(merchantNumber int) (map[string]string, error) {
@@ -325,7 +325,7 @@ func getResourceToken(db *sql.DB, merchantNumber int) string {
 }
 
 func IsMMGSubscribed(db *sql.DB, thresholdAmount float64, userEmail string) bool {
-	log.Infof("checking for subscription for %s", userEmail)
+	// log.Infof("checking for subscription for %s", userEmail)
 	count := 0
 	total := float64(0)
 	query := `SELECT
@@ -362,7 +362,7 @@ func IsMMGSubscribed(db *sql.DB, thresholdAmount float64, userEmail string) bool
 	if err := rows.Err(); err != nil {
 		log.Errorf("rows error: %v", err)
 	}
-	log.Infof("found %d subscription(s) for %s of at least $%.2f, total $%.2f", count, userEmail, thresholdAmount, total)
+	// log.Infof("found %d subscription(s) for %s of at least $%.2f, total $%.2f", count, userEmail, thresholdAmount, total)
 	return count > 0
 }
 
@@ -435,7 +435,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int) {
 			urlBuilder.WriteString("&todate=" + toDate)
 			urlBuilder.WriteString("&msisdn=" + strconv.Itoa(merchantNumber))
 			url := urlBuilder.String()
-			log.Infof("HISTORY URL: %s", url)
+			// log.Infof("HISTORY URL: %s", url)
 
 			// retrieve resource token from database
 			resourceToken := getResourceToken(m.DB, merchantNumber)
@@ -543,7 +543,7 @@ func extractEnvMap(envStr string) *map[string]string {
 }
 
 func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
-	log.Infof("loading new resource token for %d...", merchantNumber)
+	// log.Infof("loading new resource token for %d...", merchantNumber)
 	method := "POST"
 
 	// get env values
@@ -584,7 +584,7 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 		return ""
 	}
 
-	log.Infof("response body: %v", string(body))
+	// log.Infof("response body: %v", string(body))
 	token, err := extractResourceTokenFromBody(body)
 
 	if err != nil {
@@ -592,7 +592,7 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 		// email.SendEmail(helpers.Getenv("ADMIN_EMAIL"), "MMG Failed Token Extraction", fmt.Sprintf("Response: %s<br>Merchant: %d", string(body), merchantNumber), "", m.WaitGroup)
 		return ""
 	}
-	log.Infof("new resource token: %s", token)
+	// log.Infof("new resource token: %s", token)
 	helpers.SetShelf(m.DB, "resource-token-"+strconv.Itoa(merchantNumber), token)
 	return token
 }
@@ -658,11 +658,11 @@ func FiberMMGSubscriptionMiddleware(db *sql.DB, store *session.Store) fiber.Hand
 			panic(err)
 		}
 		subscribed := sess.Get("mmg_subscribed")
-		log.Infof("subscribed: %v", subscribed)
+		// log.Infof("subscribed: %v", subscribed)
 		// log.Infof("keys: %v", sess.Keys())
 		if subscribed != "yes" {
 			if !IsMMGSubscribed(db, 100, username) {
-				log.Infof("subscription not found for %s, redirecting to home", username)
+				// log.Infof("subscription not found for %s, redirecting to home", username)
 				return c.Redirect().To("/")
 			}
 		}
@@ -802,15 +802,8 @@ func loadPublicKey(filename string) (*rsa.PublicKey, error) {
 
 func generateURL(token []byte, msisdn, clientID string) string {
 	tokenStr := base64.URLEncoding.EncodeToString(token)
-	// fmt.Printf("-- CHECKOUT URL PARAMS --\n")
-	// fmt.Printf("MSISDN: %s\n", msisdn)
-	// fmt.Printf("CLIENTID: %s\n", clientID)
-	// fmt.Printf("TOKEN: %s\n\n", tokenStr)
-
-	fmt.Printf("-- CHECKOUT URL --\n")
 	link := fmt.Sprintf("https://mmgpg.mmgtest.net/mmg-pg/web/payments?token=%s&merchantId=%s&X-Client-ID=%s\n",
 		tokenStr, msisdn, clientID)
-	fmt.Println(link)
 	return link
 }
 
@@ -819,7 +812,7 @@ func encrypt(data interface{}, publicKey *rsa.PublicKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-	log.Infof("Checkout Object:\n%s\n", jsonData)
+	// log.Infof("Checkout Object:\n%s\n", jsonData)
 
 	hash := sha256.New()
 	ciphertext, err := rsa.EncryptOAEP(hash, rand.Reader, publicKey, []byte(jsonData), nil)
@@ -843,7 +836,7 @@ func decrypt(ciphertext []byte, privateKey *rsa.PrivateKey) (map[string]interfac
 		return nil, fmt.Errorf("failed to unmarshal decrypted data: %w", err)
 	}
 
-	log.Infof("Decrypted response:", data)
+	// log.Infof("Decrypted response:", data)
 	return data, nil
 }
 
@@ -851,10 +844,10 @@ type MMGInterface interface {
 	RegisterMerchant(merchantNumber int, merchantName string) error
 	AddProduct(productCode, itemDescription string) error
 	AddProducts(productMap map[string]string)
-	Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string
+	// Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string
 	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string
 	LoadHistory(merchantNumber int)
-	GetUserProducts(userEmail string) []string
+	GetUserPurchases(userEmail string) []MMGPurchase
 	GetProduct(productCode string) MMGProduct
 	GetMerchant(merchantNumber int) MMGMerchant
 }
@@ -874,6 +867,13 @@ type MMGMerchant struct {
 type MMGProduct struct {
 	Code        string
 	Description string
+}
+
+type MMGPurchase struct {
+	ID          int
+	User        string
+	Description string
+	Amount      float64
 }
 
 func (m *MMGModel) GetMerchant(merchantNumber int) MMGMerchant {
@@ -916,33 +916,41 @@ func (m *MMGModel) GetProduct(productCode string) MMGProduct {
 	return product
 }
 
-func (m *MMGModel) GetUserProducts(userEmail string) []string {
-	query := `SELECT
-	productcode
-	FROM transactions WHERE user = ?`
+func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
+	var purchases []MMGPurchase
+
+	query := `
+	SELECT t.internalid, t.amount, p.user, p.description
+	FROM transactions t
+	JOIN purchases p
+	ON p.id = t.internalid
+	WHERE p.user = ?
+	`
 	rows, err := m.DB.Query(query, userEmail)
 	if err != nil {
-		log.Errorf("product query error: %v", err)
-		return []string{}
+		log.Errorf("mmg user purchases query error: %v", err)
+		return purchases
 	}
 	defer rows.Close()
 
-	var productCodes []string
 	for rows.Next() {
-		var productCode string
+		var purchase MMGPurchase
 		err := rows.Scan(
-			&productCode,
+			&purchase.ID,
+			&purchase.Amount,
+			&purchase.User,
+			&purchase.Description,
 		)
 		if err != nil {
-			log.Errorf("scan error: %v", err)
+			log.Errorf("mmg user purchases scan error: %v", err)
 		}
-		productCodes = append(productCodes, productCode)
+		purchases = append(purchases, purchase)
 	}
 	if err := rows.Err(); err != nil {
-		log.Errorf("rows error: %v", err)
-		return []string{}
+		log.Errorf("mmg user purchases rows error: %v", err)
+		return purchases
 	}
-	return productCodes
+	return purchases
 }
 
 func (m *MMGModel) LoadHistory(merchantNumber int) {
@@ -950,7 +958,6 @@ func (m *MMGModel) LoadHistory(merchantNumber int) {
 }
 
 func (m *MMGModel) AddProduct(productCode, itemDescription string) error {
-	// m.Products[productCode] = itemDescription
 
 	query := `
 	INSERT INTO products (code,description)
@@ -974,7 +981,6 @@ func (m *MMGModel) AddProduct(productCode, itemDescription string) error {
 }
 
 func (m *MMGModel) RegisterMerchant(merchantNumber int, merchantName string) error {
-	// m.Merchants[merchantNumber] = merchantName
 
 	query := `
 	INSERT INTO merchants (name,number)
@@ -997,40 +1003,19 @@ func (m *MMGModel) RegisterMerchant(merchantNumber int, merchantName string) err
 	return nil
 }
 
+/*
 func (m *MMGModel) Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string {
 	_, url := initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productCode, cost)
-	// insertPendingPurchase(m.DB, internalTransactionID, itemDescription, productCode, userEmail)
 	return url
 }
+*/
 
 func (m *MMGModel) CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string {
-	_, url := initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productDescription, cost)
-	// insertPendingPurchase(m.DB, internalTransactionID, itemDescription, productCode, userEmail)
+	url := m.initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productDescription, cost)
 	return url
 }
 
-func insertPendingPurchase(db *sql.DB, internalTransactionID string, itemDescription string, productCode, userEmail string) {
-	query := `
-		INSERT INTO purchases (timestamp, user, internalid, description, status, productcode)
-		VALUES (?, ?, ?, ?, ?, ?)
-		`
-	result, err := db.Exec(query, time.Now().Format("2006-01-02 15:04:05"), userEmail, internalTransactionID, itemDescription, "pending", productCode)
-	if err != nil {
-		log.Errorf("pending purchase error: %v", err)
-		return
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Errorf("pending purchase error: failed to check the affected rows: %v", err)
-		return
-	}
-	if rowsAffected == 0 {
-		log.Errorf("pending purchase error: %v", sql.ErrNoRows)
-		return
-	}
-}
-
-func initiateCheckout(userEmail string, merchantNumber int, merchantName, productCode string, cost float64) (string, string) {
+func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, merchantName, productDescription string, cost float64) string {
 	config, err := loadConfig(fmt.Sprintf("merchants/%d/setup.cfg", merchantNumber))
 	if err != nil {
 		log.Fatal(err)
@@ -1042,13 +1027,34 @@ func initiateCheckout(userEmail string, merchantNumber int, merchantName, produc
 	}
 
 	timestamp := time.Now().Unix()
-	internalTransactionID := url.QueryEscape(helpers.GetHash(helpers.GetHash(config.MerchantMsisdn) + "-" + userEmail + "-" + helpers.GetHash(productCode) + "-" + helpers.GetHash(time.Now().Format(time.RFC3339))))[:8] + "_" + fmt.Sprint(timestamp)
+	internalTransactionID := fmt.Sprint(timestamp)
+
+	query := `
+	INSERT INTO purchases (id,user,description)
+	VALUES (?,?,?)
+	`
+
+	result, err := m.DB.Exec(query, timestamp, userEmail, productDescription)
+	if err != nil {
+		log.Errorf("mmg purchase query exec error: %v", err)
+		return "/"
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Errorf("mmg purchase query rows error: %v", err)
+		return "/"
+	}
+	if rowsAffected == 0 {
+		log.Errorf("mmg purchase rows error: no purchases inserted")
+		return "/"
+	}
+
 	tokenParams := TokenParams{
 		SecretKey:             config.SecretKey,
 		Amount:                strconv.FormatFloat(cost, 'g', -1, 64),
 		MerchantID:            config.MerchantMsisdn,
-		MerchantTransactionID: fmt.Sprint(timestamp),
-		ProductDescription:    productCode + "||" + internalTransactionID + "||" + userEmail,
+		MerchantTransactionID: internalTransactionID,
+		ProductDescription:    productDescription,
 		RequestInitiationTime: timestamp,
 		MerchantName:          merchantName,
 	}
@@ -1056,9 +1062,10 @@ func initiateCheckout(userEmail string, merchantNumber int, merchantName, produc
 	token, err := encrypt(tokenParams, publicKey)
 	if err != nil {
 		log.Fatal(err)
+		return "/"
 	}
 
-	return internalTransactionID, generateURL(token, config.MerchantMsisdn, config.ClientID)
+	return generateURL(token, config.MerchantMsisdn, config.ClientID)
 }
 
 func NewMMG(db *sql.DB, wg *sync.WaitGroup, appName string) *MMGModel {
@@ -1079,9 +1086,14 @@ CREATE TABLE IF NOT EXISTS transactions (
 	status    VARCHAR(20) NOT NULL,
     metadata VARCHAR(100),
     user VARCHAR(100),
-	productcode VARCHAR(200),
-	internalid VARCHAR(40),
-    expiration_date DATETIME
+    expiration_date DATETIME,
+	internalid VARCHAR(40)
+);
+
+CREATE TABLE IF NOT EXISTS purchases (
+	id INTEGER UNIQUE,
+	user VARCHAR(100),
+	description LONGTEXT
 );
 
 CREATE TABLE IF NOT EXISTS merchants (
