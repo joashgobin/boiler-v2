@@ -494,6 +494,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int) {
 			}
 
 			m.getTransactionData(body, merchantNumber, resourceToken)
+			// log.Infof("LOAD HISTORY TIME: %v", time.Since(now).Seconds())
 		}, m.WaitGroup)
 }
 
