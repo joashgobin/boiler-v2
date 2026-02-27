@@ -412,90 +412,95 @@ func getMMGHistory(merchantNumber int, url string, resourceToken string) (string
 	return string(body), res
 }
 
-func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int) {
-	helpers.Background(
-		func() {
+func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) {
+	loadFunc := func() {
 
-			// build transaction history URL from timestamps
-			now := time.Now()
-			toDate := now.AddDate(0, 0, 0).Format("2006-01-02T15:04:05.000Z")
-			fromDate := now.AddDate(0, 0, -30).Format("2006-01-02T15:04:05.000Z")
+		// build transaction history URL from timestamps
+		now := time.Now()
+		toDate := now.AddDate(0, 0, 0).Format("2006-01-02T15:04:05.000Z")
+		fromDate := now.AddDate(0, 0, -30).Format("2006-01-02T15:04:05.000Z")
 
-			// get env values
-			envStr := getEnvFileString(merchantNumber)
-			envMap := extractEnvMap(envStr)
+		// get env values
+		envStr := getEnvFileString(merchantNumber)
+		envMap := extractEnvMap(envStr)
 
-			baseUrl := (*envMap)["BASE_URL_MWALLET"] + "/e-merchant-initiated-transactions/txn-history"
+		baseUrl := (*envMap)["BASE_URL_MWALLET"] + "/e-merchant-initiated-transactions/txn-history"
 
-			var urlBuilder strings.Builder
-			urlBuilder.WriteString(baseUrl)
-			// urlBuilder.WriteString(strconv.Itoa(merchantNumber))
-			urlBuilder.WriteString("?offset=100")
-			urlBuilder.WriteString("&fromdate=" + fromDate)
-			urlBuilder.WriteString("&todate=" + toDate)
-			urlBuilder.WriteString("&msisdn=" + strconv.Itoa(merchantNumber))
-			url := urlBuilder.String()
-			// log.Infof("HISTORY URL: %s", url)
+		var urlBuilder strings.Builder
+		urlBuilder.WriteString(baseUrl)
+		// urlBuilder.WriteString(strconv.Itoa(merchantNumber))
+		urlBuilder.WriteString("?offset=100")
+		urlBuilder.WriteString("&fromdate=" + fromDate)
+		urlBuilder.WriteString("&todate=" + toDate)
+		urlBuilder.WriteString("&msisdn=" + strconv.Itoa(merchantNumber))
+		url := urlBuilder.String()
+		// log.Infof("HISTORY URL: %s", url)
 
-			// retrieve resource token from database
-			resourceToken := getResourceToken(m.DB, merchantNumber)
+		// retrieve resource token from database
+		resourceToken := getResourceToken(m.DB, merchantNumber)
 
-			// in case resource token is empty
-			if resourceToken == "" {
-				log.Error("resource token returned empty")
-				newToken := m.LoadNewResourceToken(merchantNumber)
-
-				// send request
-				body, _ := getMMGHistory(merchantNumber, url, newToken)
-				m.getTransactionData(body, merchantNumber, newToken)
-				return
-			}
-
-			// log.Infof("resource token: %s", resourceToken)
+		// in case resource token is empty
+		if resourceToken == "" {
+			log.Error("resource token returned empty")
+			newToken := m.LoadNewResourceToken(merchantNumber)
 
 			// send request
-			body, res := getMMGHistory(merchantNumber, url, resourceToken)
+			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			m.getTransactionData(body, merchantNumber, newToken)
+			return
+		}
 
-			// in case resource token is invalid
-			if strings.Contains(string(body), "clientAuthorisationError") {
-				log.Errorf("failed to use valid resource token: %v", res)
+		// log.Infof("resource token: %s", resourceToken)
 
-				// request new resource token
-				newToken := m.LoadNewResourceToken(merchantNumber)
+		// send request
+		body, res := getMMGHistory(merchantNumber, url, resourceToken)
 
-				// resend request
-				body, _ := getMMGHistory(merchantNumber, url, newToken)
-				m.getTransactionData(body, merchantNumber, newToken)
-				return
-			}
+		// in case resource token is invalid
+		if strings.Contains(string(body), "clientAuthorisationError") {
+			log.Errorf("failed to use valid resource token: %v", res)
 
-			// in case of multiple user sessions
-			if strings.Contains(string(body), "Multiple user session found") {
-				log.Errorf("failed to use valid resource token: %v", res)
+			// request new resource token
+			newToken := m.LoadNewResourceToken(merchantNumber)
 
-				// request new resource token
-				newToken := m.LoadNewResourceToken(merchantNumber)
+			// resend request
+			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			m.getTransactionData(body, merchantNumber, newToken)
+			return
+		}
 
-				// resend request
-				body, _ := getMMGHistory(merchantNumber, url, newToken)
-				m.getTransactionData(body, merchantNumber, newToken)
-				return
-			}
+		// in case of multiple user sessions
+		if strings.Contains(string(body), "Multiple user session found") {
+			log.Errorf("failed to use valid resource token: %v", res)
 
-			// in case authentication fails
-			if strings.Contains(string(body), "Authentication failure") {
-				log.Errorf("authentication failed with token: %s", resourceToken)
-				newToken := m.LoadNewResourceToken(merchantNumber)
+			// request new resource token
+			newToken := m.LoadNewResourceToken(merchantNumber)
 
-				// send request
-				body, _ := getMMGHistory(merchantNumber, url, newToken)
-				m.getTransactionData(body, merchantNumber, newToken)
-				return
-			}
+			// resend request
+			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			m.getTransactionData(body, merchantNumber, newToken)
+			return
+		}
 
-			m.getTransactionData(body, merchantNumber, resourceToken)
-			// log.Infof("LOAD HISTORY TIME: %v", time.Since(now).Seconds())
-		}, m.WaitGroup)
+		// in case authentication fails
+		if strings.Contains(string(body), "Authentication failure") {
+			log.Errorf("authentication failed with token: %s", resourceToken)
+			newToken := m.LoadNewResourceToken(merchantNumber)
+
+			// send request
+			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			m.getTransactionData(body, merchantNumber, newToken)
+			return
+		}
+
+		m.getTransactionData(body, merchantNumber, resourceToken)
+		// log.Infof("LOAD HISTORY TIME: %v", time.Since(now).Seconds())
+	}
+
+	if blocking {
+		loadFunc()
+	} else {
+		helpers.Background(loadFunc, m.WaitGroup)
+	}
 }
 
 func getEnvFilePath(merchantNumber int, substr string) string {
@@ -848,6 +853,7 @@ type MMGInterface interface {
 	// Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string
 	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string
 	LoadHistory(merchantNumber int)
+	LoadHistorySync(merchantNumber int)
 	GetUserPurchases(userEmail string) []MMGPurchase
 	GetProduct(productCode string) MMGProduct
 	GetMerchant(merchantNumber int) MMGMerchant
@@ -955,7 +961,11 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 }
 
 func (m *MMGModel) LoadHistory(merchantNumber int) {
-	m.loadMMGTransactionHistory(merchantNumber)
+	m.loadMMGTransactionHistory(merchantNumber, false)
+}
+
+func (m *MMGModel) LoadHistorySync(merchantNumber int) {
+	m.loadMMGTransactionHistory(merchantNumber, true)
 }
 
 func (m *MMGModel) AddProduct(productCode, itemDescription string) error {
