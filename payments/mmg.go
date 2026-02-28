@@ -23,9 +23,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/gofiber/fiber/v3/middleware/session"
 
 	"github.com/joashgobin/boiler-v2/helpers"
 )
@@ -250,12 +248,13 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		reference,
 		source,
 		destination,
+		merchant,
 		amount,
 		currency,
 		category,
 		status,
 		internalid
-	) VALUES (?,?,?,?,?,?,?,?,?)
+	) VALUES (?,?,?,?,?,?,?,?,?,?)
 	`)
 	if err != nil {
 		log.Errorf("prepare statement error: %v\n", err)
@@ -275,6 +274,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 			txn.Reference,
 			txn.From,
 			txn.To,
+			merchantNumber,
 			txn.Amount,
 			txn.Currency,
 			txn.Category,
@@ -324,58 +324,11 @@ func getResourceToken(db *sql.DB, merchantNumber int) string {
 	return helpers.GetShelf(db, "resource-token-"+strconv.Itoa(merchantNumber))
 }
 
-func IsMMGSubscribed(db *sql.DB, thresholdAmount float64, userEmail string) bool {
-	// log.Infof("checking for subscription for %s", userEmail)
-	count := 0
-	total := float64(0)
-	query := `SELECT
-	timestamp, reference, source, destination, amount, currency, category, status, metadata
-	FROM transactions WHERE metadata COLLATE utf8mb4_bin LIKE ? AND amount >= ?`
-	rows, err := db.Query(query, fmt.Sprintf("%%%s%%", userEmail), thresholdAmount)
-	if err != nil {
-		log.Errorf("query error: %v", err)
-		return false
-	}
-	defer rows.Close()
-
-	var transactions []MMGTransaction
-	for rows.Next() {
-		var txn MMGTransaction
-		err := rows.Scan(
-			&txn.Timestamp,
-			&txn.Reference,
-			&txn.From,
-			&txn.To,
-			&txn.Amount,
-			&txn.Currency,
-			&txn.Category,
-			&txn.Status,
-			&txn.Metadata,
-		)
-		if err != nil {
-			log.Errorf("scan error: %v", err)
-		}
-		transactions = append(transactions, txn)
-		total += txn.Amount
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		log.Errorf("rows error: %v", err)
-	}
-	// log.Infof("found %d subscription(s) for %s of at least $%.2f, total $%.2f", count, userEmail, thresholdAmount, total)
-	return count > 0
-}
-
-func getMMGHistory(merchantNumber int, url string, resourceToken string) (string, *http.Response) {
-
-	// log.Infof("loading MMG history for %d...via %s", merchantNumber, url)
-
-	// get merchant environment details
+func requestMMGJSON(merchantNumber int, url string, resourceToken string) (string, *http.Response) {
+	// log.Infof("mmg json url: %v", url)
 	// get env values
 	envStr := getEnvFileString(merchantNumber)
 	envMap := extractEnvMap(envStr)
-
-	// baseUrl := (*envMap)["BASE_URL_MWALLET"] + "/e-merchant-initiated-transactions/txn-history"
 
 	// set up http client for request
 	method := "GET"
@@ -398,17 +351,17 @@ func getMMGHistory(merchantNumber int, url string, resourceToken string) (string
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Errorf("mmg history response error: %v", err)
+		log.Errorf("mmg json response error: %v", err)
 		return "", nil
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Error("mmg history response body error: %v", err)
+		log.Error("mmg json response body error: %v", err)
 		return "", nil
 	}
-	// log.Infof("mmg history response body: %v", string(body))
+	// log.Infof("mmg json response: %v", string(body))
 	return string(body), res
 }
 
@@ -428,7 +381,6 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 
 		var urlBuilder strings.Builder
 		urlBuilder.WriteString(baseUrl)
-		// urlBuilder.WriteString(strconv.Itoa(merchantNumber))
 		urlBuilder.WriteString("?offset=100")
 		urlBuilder.WriteString("&fromdate=" + fromDate)
 		urlBuilder.WriteString("&todate=" + toDate)
@@ -445,15 +397,13 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 			newToken := m.LoadNewResourceToken(merchantNumber)
 
 			// send request
-			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
 			m.getTransactionData(body, merchantNumber, newToken)
 			return
 		}
 
-		// log.Infof("resource token: %s", resourceToken)
-
 		// send request
-		body, res := getMMGHistory(merchantNumber, url, resourceToken)
+		body, res := requestMMGJSON(merchantNumber, url, resourceToken)
 
 		// in case resource token is invalid
 		if strings.Contains(string(body), "clientAuthorisationError") {
@@ -463,7 +413,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 			newToken := m.LoadNewResourceToken(merchantNumber)
 
 			// resend request
-			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
 			m.getTransactionData(body, merchantNumber, newToken)
 			return
 		}
@@ -476,7 +426,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 			newToken := m.LoadNewResourceToken(merchantNumber)
 
 			// resend request
-			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
 			m.getTransactionData(body, merchantNumber, newToken)
 			return
 		}
@@ -487,7 +437,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 			newToken := m.LoadNewResourceToken(merchantNumber)
 
 			// send request
-			body, _ := getMMGHistory(merchantNumber, url, newToken)
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
 			m.getTransactionData(body, merchantNumber, newToken)
 			return
 		}
@@ -595,7 +545,6 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 
 	if err != nil {
 		log.Error("failed to extract resource token")
-		// email.SendEmail(helpers.Getenv("ADMIN_EMAIL"), "MMG Failed Token Extraction", fmt.Sprintf("Response: %s<br>Merchant: %d", string(body), merchantNumber), "", m.WaitGroup)
 		return ""
 	}
 	// log.Infof("new resource token: %s", token)
@@ -603,81 +552,95 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 	return token
 }
 
-func (m *MMGModel) GetMMGBalance(merchantNumber int) {
-	helpers.Background(
-		func() {
-			// build request url
-			var urlBuilder strings.Builder
-			urlBuilder.WriteString("https://uat-api.mmg.gy/balancecheck/")
-			urlBuilder.WriteString(strconv.Itoa(merchantNumber))
-			url := urlBuilder.String()
-			// fmt.Printf("Making request to: %s\n", url)
-
-			// set the http method
-			method := "GET"
-
-			// initialize the http client
-			client := &http.Client{}
-			req, err := http.NewRequest(method, url, nil)
-			if err != nil {
-				fmt.Println(err)
-				return
+func (m *MMGModel) extractMMGBalanceFromBody(body string) MMGWallet {
+	// perform regex and extract merchant available balance
+	pattern := regexp.MustCompile(`"(availableBalance|currentBalance)":"(\d+)"`)
+	matches := pattern.FindAllStringSubmatch(body, -1)
+	availableBalance := 0
+	currentBalance := 0
+	for _, match := range matches {
+		switch match[1] {
+		case "availableBalance":
+			// fmt.Println("match for AB:", match)
+			newAB, err := strconv.Atoi(match[2])
+			if err == nil {
+				availableBalance = newAB
 			}
-			// get merchant environment details
-			pairs, err := getEnvironmentData(merchantNumber)
-			if err != nil {
-				return
+		case "currentBalance":
+			// fmt.Println("match for CB:", match)
+			newCB, err := strconv.Atoi(match[2])
+			if err == nil {
+				currentBalance = newCB
 			}
-			req.Header.Add("x-wss-token", "Bearer "+getResourceToken(nil, merchantNumber))
-			req.Header.Add("x-wss-mid", pairs["merchant_mid"])
-			req.Header.Add("x-wss-mkey", pairs["merchant_mkey"])
-			req.Header.Add("x-wss-msecret", pairs["merchant_msecret"])
-			req.Header.Add("x-wss-correlationid", helpers.GetRandomUUID())
-			req.Header.Add("x-api-key", helpers.Getenv("MMG_API_KEY"))
-			// for key, values := range req.Header {
-			// fmt.Printf("%s: %v\n", key, values)
-			// }
-
-			// perform the request
-			res, err := client.Do(req)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			defer res.Body.Close()
-
-			// output request body
-			body, err := io.ReadAll(res.Body)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Println(string(body))
-		}, m.WaitGroup)
+		}
+	}
+	return MMGWallet{AvailableBalance: availableBalance, CurrentBalance: currentBalance}
 }
 
-func FiberMMGSubscriptionMiddleware(db *sql.DB, store *session.Store) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		username := "123"
-		sess, err := store.Get(c)
-		if err != nil {
-			panic(err)
-		}
-		subscribed := sess.Get("mmg_subscribed")
-		// log.Infof("subscribed: %v", subscribed)
-		// log.Infof("keys: %v", sess.Keys())
-		if subscribed != "yes" {
-			if !IsMMGSubscribed(db, 100, username) {
-				// log.Infof("subscription not found for %s, redirecting to home", username)
-				return c.Redirect().To("/")
-			}
-		}
-		sess.Set("mmg_subscribed", "yes")
-		if err := sess.Save(); err != nil {
-			panic(err)
-		}
-		return c.Next()
+func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
+	// get env values
+	envStr := getEnvFileString(merchantNumber)
+	envMap := extractEnvMap(envStr)
+
+	baseUrl := (*envMap)["BASE_URL_MWALLET"] + "/e-merchant-initiated-transactions/balance"
+
+	var urlBuilder strings.Builder
+	urlBuilder.WriteString(baseUrl)
+	merchantNumberString := strconv.Itoa(merchantNumber)
+	urlBuilder.WriteString("?merchant_msisdn=" + merchantNumberString)
+	url := urlBuilder.String()
+
+	// retrieve resource token from database
+	resourceToken := getResourceToken(m.DB, merchantNumber)
+
+	// in case resource token is empty
+	if resourceToken == "" {
+		log.Error("resource token returned empty")
+		newToken := m.LoadNewResourceToken(merchantNumber)
+
+		// send request
+		body, _ := requestMMGJSON(merchantNumber, url, newToken)
+		return m.extractMMGBalanceFromBody(body)
 	}
+
+	// send request
+	body, res := requestMMGJSON(merchantNumber, url, resourceToken)
+
+	// in case resource token is invalid
+	if strings.Contains(string(body), "clientAuthorisationError") {
+		log.Errorf("failed to use valid resource token: %v", res)
+
+		// request new resource token
+		newToken := m.LoadNewResourceToken(merchantNumber)
+
+		// resend request
+		body, _ := requestMMGJSON(merchantNumber, url, newToken)
+		return m.extractMMGBalanceFromBody(body)
+	}
+
+	// in case of multiple user sessions
+	if strings.Contains(string(body), "Multiple user session found") {
+		log.Errorf("failed to use valid resource token: %v", res)
+
+		// request new resource token
+		newToken := m.LoadNewResourceToken(merchantNumber)
+
+		// resend request
+		body, _ := requestMMGJSON(merchantNumber, url, newToken)
+		return m.extractMMGBalanceFromBody(body)
+	}
+
+	// in case authentication fails
+	if strings.Contains(string(body), "Authentication failure") {
+		log.Errorf("authentication failed with token: %s", resourceToken)
+		newToken := m.LoadNewResourceToken(merchantNumber)
+
+		// send request
+		body, _ := requestMMGJSON(merchantNumber, url, newToken)
+		return m.extractMMGBalanceFromBody(body)
+	}
+
+	return m.extractMMGBalanceFromBody(body)
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -854,6 +817,7 @@ type MMGInterface interface {
 	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string
 	LoadHistory(merchantNumber int)
 	LoadHistorySync(merchantNumber int)
+	GetWallet(merchantNumber int) MMGWallet
 	GetUserPurchases(userEmail string) []MMGPurchase
 	GetProduct(productCode string) MMGProduct
 	GetMerchant(merchantNumber int) MMGMerchant
@@ -881,6 +845,11 @@ type MMGPurchase struct {
 	User        string
 	Description string
 	Amount      float64
+}
+
+type MMGWallet struct {
+	AvailableBalance int
+	CurrentBalance   int
 }
 
 func (m *MMGModel) GetMerchant(merchantNumber int) MMGMerchant {
@@ -1086,19 +1055,20 @@ func NewMMG(db *sql.DB, wg *sync.WaitGroup, appName string) *MMGModel {
 USE <appName>;
 
 CREATE TABLE IF NOT EXISTS transactions (
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    timestamp DATETIME NOT NULL,
-	reference VARCHAR(20) NOT NULL UNIQUE,
+    id INTEGER 	NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    timestamp 	DATETIME NOT NULL,
+	reference 	VARCHAR(20) NOT NULL UNIQUE,
 	source      VARCHAR(20) NOT NULL,
-	destination        VARCHAR(20) NOT NULL,
-	amount    DECIMAL(10,2) NOT NULL,
-	currency  VARCHAR(5) NOT NULL,
-	category  VARCHAR(30) NOT NULL,
-	status    VARCHAR(20) NOT NULL,
-    metadata VARCHAR(100),
-    user VARCHAR(100),
-    expiration_date DATETIME,
-	internalid VARCHAR(40)
+	destination VARCHAR(20) NOT NULL,
+	merchant	INTEGER,
+	amount		DECIMAL(10,2) NOT NULL,
+	currency 	VARCHAR(5) NOT NULL,
+	category  	VARCHAR(30) NOT NULL,
+	status    	VARCHAR(20) NOT NULL,
+    metadata 	VARCHAR(100),
+    user 		VARCHAR(100),
+    expiration_date 	DATETIME,
+	internalid 	VARCHAR(40)
 );
 
 CREATE TABLE IF NOT EXISTS purchases (
