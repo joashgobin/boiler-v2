@@ -813,10 +813,12 @@ type MMGInterface interface {
 	RegisterMerchant(merchantNumber int, merchantName string) error
 	AddProduct(productCode, itemDescription string) error
 	AddProducts(productMap map[string]string)
-	// Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string
-	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string
+	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string
+	// QueueHistory loads MMG history for merchant in a non-blocking way
+	QueueHistory(merchantNumber int)
+	// LoadHistory loads MMG history for merchant by blocking the current method
 	LoadHistory(merchantNumber int)
-	LoadHistorySync(merchantNumber int)
+	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
 	GetWallet(merchantNumber int) MMGWallet
 	GetUserPurchases(userEmail string) []MMGPurchase
 	GetProduct(productCode string) MMGProduct
@@ -930,11 +932,11 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 	return purchases
 }
 
-func (m *MMGModel) LoadHistory(merchantNumber int) {
+func (m *MMGModel) QueueHistory(merchantNumber int) {
 	m.loadMMGTransactionHistory(merchantNumber, false)
 }
 
-func (m *MMGModel) LoadHistorySync(merchantNumber int) {
+func (m *MMGModel) LoadHistory(merchantNumber int) {
 	m.loadMMGTransactionHistory(merchantNumber, true)
 }
 
@@ -991,12 +993,30 @@ func (m *MMGModel) Checkout(userEmail string, merchantNumber int, productCode st
 }
 */
 
-func (m *MMGModel) CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64) string {
-	url := m.initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productDescription, cost)
+type PurchaseType int
+
+const (
+	RegularPurchase PurchaseType = iota
+	Subscription
+)
+
+func getPurchaseTypeName(t PurchaseType) string {
+	switch t {
+	case Subscription:
+		return "subscription"
+	case RegularPurchase:
+		return "regular"
+	default:
+		return "regular"
+	}
+}
+
+func (m *MMGModel) CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string {
+	url := m.initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productDescription, cost, purchaseType)
 	return url
 }
 
-func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, merchantName, productDescription string, cost float64) string {
+func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, merchantName, purchaseDescription string, cost float64, purchaseType PurchaseType) string {
 	config, err := loadConfig(fmt.Sprintf("merchants/%d/setup.cfg", merchantNumber))
 	if err != nil {
 		log.Fatal(err)
@@ -1011,11 +1031,11 @@ func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, mercha
 	internalTransactionID := fmt.Sprint(timestamp)
 
 	query := `
-	INSERT INTO purchases (id,user,description)
-	VALUES (?,?,?)
+	INSERT INTO purchases (id,user,description,type)
+	VALUES (?,?,?,?)
 	`
 
-	result, err := m.DB.Exec(query, timestamp, userEmail, productDescription)
+	result, err := m.DB.Exec(query, timestamp, userEmail, purchaseDescription, getPurchaseTypeName(purchaseType))
 	if err != nil {
 		log.Errorf("mmg purchase query exec error: %v", err)
 		return "/"
@@ -1035,7 +1055,7 @@ func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, mercha
 		Amount:                strconv.FormatFloat(cost, 'g', -1, 64),
 		MerchantID:            config.MerchantMsisdn,
 		MerchantTransactionID: internalTransactionID,
-		ProductDescription:    productDescription,
+		ProductDescription:    purchaseDescription,
 		RequestInitiationTime: timestamp,
 		MerchantName:          merchantName,
 	}
@@ -1073,9 +1093,10 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 CREATE TABLE IF NOT EXISTS purchases (
-	id INTEGER UNIQUE,
-	user VARCHAR(100),
-	description LONGTEXT
+	id INTEGER UNIQUE NOT NULL,
+	user VARCHAR(100) NOT NULL,
+	description LONGTEXT NOT NULL,
+	type LONGTEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS merchants (

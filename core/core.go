@@ -669,6 +669,11 @@ exec bash
 	})
 
 	// init fiber session middleware
+	// sessEx = extractors.FromCookie("__Host-session_id_")
+	sessEx := extractors.FromCookie("__Host-session_id_local_" + config.AppName + "_")
+	if config.IsProduction {
+		sessEx = extractors.FromCookie("__Host-session_id_" + config.AppName + "_")
+	}
 	sessConfig := session.Config{
 		IdleTimeout:     30 * time.Minute,
 		AbsoluteTimeout: 2 * time.Hour,
@@ -676,7 +681,8 @@ exec bash
 		CookieHTTPOnly:  true,
 		CookieSameSite:  "Lax",
 		Storage:         storage,
-		Extractor:       extractors.FromCookie("__Host-session_id"),
+		// Extractor:       extractors.FromCookie("__Host-session_id"),
+		Extractor: sessEx,
 	}
 	sessionStore := session.NewStore(sessConfig)
 	sessionStore.RegisterType(models.User{})
