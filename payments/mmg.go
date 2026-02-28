@@ -552,7 +552,7 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 	return token
 }
 
-func (m *MMGModel) extractMMGBalanceFromBody(body string) MMGWallet {
+func (m *MMGModel) extractMMGBalanceFromBody(body string, merchantNumber int) MMGWallet {
 	// perform regex and extract merchant available balance
 	pattern := regexp.MustCompile(`"(availableBalance|currentBalance)":"(\d+)"`)
 	matches := pattern.FindAllStringSubmatch(body, -1)
@@ -574,7 +574,7 @@ func (m *MMGModel) extractMMGBalanceFromBody(body string) MMGWallet {
 			}
 		}
 	}
-	return MMGWallet{AvailableBalance: availableBalance, CurrentBalance: currentBalance}
+	return MMGWallet{MerchantNumber: merchantNumber, AvailableBalance: availableBalance, CurrentBalance: currentBalance}
 }
 
 func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
@@ -600,7 +600,7 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 
 		// send request
 		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body)
+		return m.extractMMGBalanceFromBody(body, merchantNumber)
 	}
 
 	// send request
@@ -615,7 +615,7 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 
 		// resend request
 		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body)
+		return m.extractMMGBalanceFromBody(body, merchantNumber)
 	}
 
 	// in case of multiple user sessions
@@ -627,7 +627,7 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 
 		// resend request
 		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body)
+		return m.extractMMGBalanceFromBody(body, merchantNumber)
 	}
 
 	// in case authentication fails
@@ -637,10 +637,10 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 
 		// send request
 		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body)
+		return m.extractMMGBalanceFromBody(body, merchantNumber)
 	}
 
-	return m.extractMMGBalanceFromBody(body)
+	return m.extractMMGBalanceFromBody(body, merchantNumber)
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -848,6 +848,7 @@ type MMGPurchase struct {
 }
 
 type MMGWallet struct {
+	MerchantNumber   int
 	AvailableBalance int
 	CurrentBalance   int
 }
