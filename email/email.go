@@ -50,6 +50,15 @@ CREATE TABLE IF NOT EXISTS magiclinks (
     result VARCHAR(200) NOT NULL,
 	used BOOLEAN
 );
+
+CREATE TABLE IF NOT EXISTS mail (
+	id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+	recipient VARCHAR(1000) NOT NULL,
+	cc VARCHAR(2000),
+	bcc VARCHAR(2000),
+	subject VARCHAR(1000) NOT NULL,
+	body LONGTEXT NOT NULL
+)
 `, map[string]string{"appName": appName})
 	return &MailModel{DB: db, WaitGroup: wg}
 }
@@ -174,6 +183,24 @@ func (m *MailModel) Send(to, bcc, subject string, swaps ...any) {
 		body = fmt.Sprintf(swaps[0].(string), swaps[1:]...)
 	} else {
 		body = swaps[0].(string)
+	}
+	query := `
+	INSERT INTO mail (recipient, bcc, subject, body)
+	VALUES (?,?,?,?)
+	`
+	result, err := m.DB.Exec(query, to, bcc, subject, body)
+	if err != nil {
+		log.Errorf("store email exec error: %v", err)
+		return
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Errorf("store email rows error: %v", err)
+		return
+	}
+	if rowsAffected == 0 {
+		log.Errorf("store email error: no rows affected")
+		return
 	}
 	SendEmail(to, subject, body, bcc, m.WaitGroup)
 }
