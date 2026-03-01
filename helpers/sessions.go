@@ -242,7 +242,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 
 		// set session expiry to shorter time if the user is not defined
 		if sess.Get("user") == nil {
-			sess.SetIdleTimeout(1 * time.Minute)
+			sess.SetIdleTimeout(5 * time.Minute)
 			updatedSession = true
 		}
 

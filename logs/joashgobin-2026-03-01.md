@@ -3,3 +3,4 @@
 - Updated gofiber
 - Log emails whether sent or not
 - Upgraded packages
+- Increase idle timeout to 5 minutes
