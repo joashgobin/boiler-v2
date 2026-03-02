@@ -847,6 +847,7 @@ type MMGPurchase struct {
 	User        string
 	Description string
 	Amount      float64
+	Timestamp   time.Time
 }
 
 type MMGWallet struct {
@@ -899,7 +900,7 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 	var purchases []MMGPurchase
 
 	query := `
-	SELECT t.internalid, t.amount, p.user, p.description
+	SELECT t.internalid, t.timestamp, t.amount, p.user, p.description
 	FROM transactions t
 	JOIN purchases p
 	ON p.id = t.internalid
@@ -916,6 +917,7 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 		var purchase MMGPurchase
 		err := rows.Scan(
 			&purchase.ID,
+			&purchase.Timestamp,
 			&purchase.Amount,
 			&purchase.User,
 			&purchase.Description,
@@ -1088,7 +1090,6 @@ CREATE TABLE IF NOT EXISTS transactions (
 	status    	VARCHAR(20) NOT NULL,
     metadata 	VARCHAR(100),
     user 		VARCHAR(100),
-    expiration_date 	DATETIME,
 	internalid 	VARCHAR(40)
 );
 
