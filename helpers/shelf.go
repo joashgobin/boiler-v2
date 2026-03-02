@@ -75,7 +75,7 @@ func (s *ShelfModel) SetMany(pairs map[string]string) error {
 }
 
 func SetShelf(db *sql.DB, key string, value string) {
-	log.Infof("setting in shelf: %s", key)
+	// log.Infof("setting in shelf: %s", key)
 	query := `
 		INSERT INTO shelf (name, value)
 		VALUES (?, ?)
@@ -96,11 +96,11 @@ func SetShelf(db *sql.DB, key string, value string) {
 		log.Errorf("%v", sql.ErrNoRows)
 		return
 	}
-	log.Infof("updated key-value pair: (%s, %s)", key, value)
+	// log.Infof("updated key-value pair: (%s, %s)", key, value)
 }
 
 func GetShelf(db *sql.DB, key string) string {
-	log.Infof("retrieving from shelf: %s", key)
+	// log.Infof("retrieving from shelf: %s", key)
 
 	var value string
 	query := "SELECT value FROM shelf WHERE name = ?"
