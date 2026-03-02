@@ -4,3 +4,4 @@
 - Remove shelf logs
 - Updated sitemap rendering
 - Updated sitemap rendering
+- Added sitemap to gitignore

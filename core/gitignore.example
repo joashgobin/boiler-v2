@@ -4,6 +4,7 @@ bin/
 fiber.sqlite3
 config.env
 static/gen/
+sitemap/
 merchants/
 <appName>.log
 *_templ.go
