@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/pahanini/go-sitemap-generator"
@@ -31,7 +32,7 @@ func (s *Sitemap) Get(c fiber.Ctx) error {
 		if !strings.HasSuffix(location, "http://") {
 			url = "https://" + s.baseURL + location
 		}
-		s.Generator.Add(sitemap.URL{Loc: url, Priority: "0.5"})
+		s.Generator.Add(sitemap.URL{Loc: url, Priority: "0.5", LastMod: time.Now().Format(time.RFC3339)})
 	}
 	s.Generator.Close()
 	return c.SendFile("./sitemap/sitemap.xml")

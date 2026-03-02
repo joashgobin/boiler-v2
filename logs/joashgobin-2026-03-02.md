@@ -5,3 +5,4 @@
 - Updated sitemap rendering
 - Updated sitemap rendering
 - Added sitemap to gitignore
+- Add last mod to sitemap
