@@ -30,15 +30,11 @@ import (
 	"github.com/joashgobin/boiler-v2/helpers"
 	"github.com/joashgobin/boiler-v2/payments"
 
-	// "go.rumenx.com/sitemap"
-	// fiberadapter "go.rumenx.com/sitemap/adapters/fiber"
-
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/etag"
 	"github.com/gofiber/fiber/v3/middleware/idempotency"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 
-	// "github.com/gofiber/contrib/v3/monitor"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v3/middleware/pprof"
 	"github.com/gofiber/fiber/v3/middleware/recover"
@@ -95,15 +91,9 @@ func (base *Base) Render(c fiber.Ctx, cmp templ.Component, input ...fiber.Map) e
 }
 
 func (base Base) Serve(app *fiber.App) {
-	/*
-		app.Get("/sitemap.xml", fiberadapter.Sitemap(func() *sitemap.Sitemap {
-			sm := sitemap.New()
-			for _, location := range base.SiteMap.Get() {
-				sm.Add(location, time.Now(), 1.0, sitemap.Daily)
-			}
-			return sm
-		}))
-	*/
+	app.Get("/sitemap.xml", func(c fiber.Ctx) error {
+		return base.SiteMap.Get(c)
+	})
 
 	app.Get("/qr-code", func(c fiber.Ctx) error {
 		return base.QR.Send(c, base.URL())

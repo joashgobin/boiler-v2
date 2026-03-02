@@ -1,13 +1,19 @@
 package helpers
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/gofiber/fiber/v3"
+	"github.com/pahanini/go-sitemap-generator"
+)
 
 type SitemapInterface interface {
 	Add(path string)
-	Get() []string
+	Get(c fiber.Ctx) error
 }
 type Sitemap struct {
 	baseURL   string
+	Generator *sitemap.Generator
 	locations []string
 }
 
@@ -15,14 +21,23 @@ func (s *Sitemap) Add(path string) {
 	if !strings.HasSuffix(path, "/") {
 		path = path + "/"
 	}
-	s.locations = append(s.locations, "https://"+s.baseURL+path)
+	s.locations = append(s.locations, path)
 }
 
-func (s *Sitemap) Get() []string {
-	return s.locations
+func (s *Sitemap) Get(c fiber.Ctx) error {
+	s.Generator.Open()
+	for _, location := range s.locations {
+		url := s.baseURL + location
+		s.Generator.Add(sitemap.URL{Loc: url, Priority: "0.5"})
+	}
+	s.Generator.Close()
+	return c.SendFile("./sitemap/sitemap.xml")
 }
 
 func NewSitemap(url string) *Sitemap {
-	sitemap := Sitemap{baseURL: url, locations: []string{}}
-	return &sitemap
+	sm := sitemap.New(sitemap.Options{
+		Dir:     "sitemap",
+		BaseURL: url,
+	})
+	return &Sitemap{Generator: sm}
 }
