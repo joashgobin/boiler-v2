@@ -28,6 +28,9 @@ func (s *Sitemap) Get(c fiber.Ctx) error {
 	s.Generator.Open()
 	for _, location := range s.locations {
 		url := s.baseURL + location
+		if !strings.HasSuffix(location, "http://") {
+			url = "https://" + s.baseURL + location
+		}
 		s.Generator.Add(sitemap.URL{Loc: url, Priority: "0.5"})
 	}
 	s.Generator.Close()
@@ -39,5 +42,5 @@ func NewSitemap(url string) *Sitemap {
 		Dir:     "sitemap",
 		BaseURL: url,
 	})
-	return &Sitemap{Generator: sm}
+	return &Sitemap{Generator: sm, baseURL: url}
 }

@@ -3,3 +3,4 @@
 - Include purchase timestamp
 - Remove shelf logs
 - Updated sitemap rendering
+- Updated sitemap rendering
