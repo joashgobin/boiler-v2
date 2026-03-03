@@ -589,19 +589,24 @@ func (m *MMGModel) extractMMGBalanceFromBody(body string, merchantNumber int) MM
 
 func (m *MMGModel) retrieveWallet(merchantNumber int) MMGWallet {
 	// create placeholder wallet
-	wallet := MMGWallet{MerchantNumber: 0, AvailableBalance: 0, CurrentBalance: 0}
+	wallet := MMGWallet{MerchantNumber: merchantNumber, AvailableBalance: 0, CurrentBalance: 0}
 	query := `
 	SELECT availablebalance,currentbalance
 	FROM wallets WHERE merchant = ?
 	`
 	row := m.DB.QueryRow(query, merchantNumber)
-	row.Scan(&wallet.AvailableBalance, &wallet.CurrentBalance)
+	err := row.Scan(&wallet.AvailableBalance, &wallet.CurrentBalance)
+	if err != nil {
+		log.Errorf("retrieve wallet error: %v", err)
+		return MMGWallet{MerchantNumber: 0, AvailableBalance: 0, CurrentBalance: 0}
+	}
+	fmt.Println("retrieved: %v", wallet)
 	return wallet
 }
 
 func (m *MMGModel) updateWallet(wallet MMGWallet) {
 	query := `
-	INSERT INTO wallet (merchant,availablebalance,currentbalance)
+	INSERT INTO wallets (merchant,availablebalance,currentbalance)
 	VALUES (?,?,?)
 	ON DUPLICATE KEY UPDATE
 		availablebalance = ?,
@@ -633,71 +638,92 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 	}
 
 	// log.Infof("loading wallet...")
-	// get env values
-	envStr := getEnvFileString(merchantNumber)
-	envMap := extractEnvMap(envStr)
+	loadFunc := func() MMGWallet {
+		// get env values
+		envStr := getEnvFileString(merchantNumber)
+		envMap := extractEnvMap(envStr)
 
-	baseUrl := (*envMap)["BASE_URL_MWALLET"] + "/e-merchant-initiated-transactions/balance"
+		baseUrl := (*envMap)["BASE_URL_MWALLET"] + "/e-merchant-initiated-transactions/balance"
 
-	var urlBuilder strings.Builder
-	urlBuilder.WriteString(baseUrl)
-	merchantNumberString := strconv.Itoa(merchantNumber)
-	urlBuilder.WriteString("?merchant_msisdn=" + merchantNumberString)
-	url := urlBuilder.String()
+		var urlBuilder strings.Builder
+		urlBuilder.WriteString(baseUrl)
+		merchantNumberString := strconv.Itoa(merchantNumber)
+		urlBuilder.WriteString("?merchant_msisdn=" + merchantNumberString)
+		url := urlBuilder.String()
 
-	// retrieve resource token from database
-	resourceToken := getResourceToken(m.DB, merchantNumber)
+		// retrieve resource token from database
+		resourceToken := getResourceToken(m.DB, merchantNumber)
 
-	// in case resource token is empty
-	if resourceToken == "" {
-		log.Error("resource token returned empty")
-		newToken := m.LoadNewResourceToken(merchantNumber)
+		// in case resource token is empty
+		if resourceToken == "" {
+			log.Error("resource token returned empty")
+			newToken := m.LoadNewResourceToken(merchantNumber)
 
-		// send request
-		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body, merchantNumber)
-	}
-
-	// send request
-	body, res := requestMMGJSON(merchantNumber, url, resourceToken)
-
-	// in case resource token is invalid
-	if strings.Contains(string(body), "clientAuthorisationError") {
-		log.Errorf("failed to use valid resource token: %v", res)
-
-		// request new resource token
-		newToken := m.LoadNewResourceToken(merchantNumber)
-
-		// resend request
-		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body, merchantNumber)
-	}
-
-	// in case of multiple user sessions
-	if strings.Contains(string(body), "Multiple user session found") {
-		log.Errorf("failed to use valid resource token: %v", res)
-
-		// request new resource token
-		newToken := m.LoadNewResourceToken(merchantNumber)
-
-		// resend request
-		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body, merchantNumber)
-	}
-
-	// in case authentication fails
-	if strings.Contains(string(body), "Authentication failure") {
-		log.Errorf("authentication failed with token: %s", resourceToken)
-		newToken := m.LoadNewResourceToken(merchantNumber)
+			// send request
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
+			return m.extractMMGBalanceFromBody(body, merchantNumber)
+		}
 
 		// send request
-		body, _ := requestMMGJSON(merchantNumber, url, newToken)
-		return m.extractMMGBalanceFromBody(body, merchantNumber)
+		body, res := requestMMGJSON(merchantNumber, url, resourceToken)
+
+		// in case resource token is invalid
+		if strings.Contains(string(body), "clientAuthorisationError") {
+			log.Errorf("failed to use valid resource token: %v", res)
+
+			// request new resource token
+			newToken := m.LoadNewResourceToken(merchantNumber)
+
+			// resend request
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
+			return m.extractMMGBalanceFromBody(body, merchantNumber)
+		}
+
+		// in case of multiple user sessions
+		if strings.Contains(string(body), "Multiple user session found") {
+			log.Errorf("failed to use valid resource token: %v", res)
+
+			// request new resource token
+			newToken := m.LoadNewResourceToken(merchantNumber)
+
+			// resend request
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
+			return m.extractMMGBalanceFromBody(body, merchantNumber)
+		}
+
+		// in case authentication fails
+		if strings.Contains(string(body), "Authentication failure") {
+			log.Errorf("authentication failed with token: %s", resourceToken)
+			newToken := m.LoadNewResourceToken(merchantNumber)
+
+			// send request
+			body, _ := requestMMGJSON(merchantNumber, url, newToken)
+			return m.extractMMGBalanceFromBody(body, merchantNumber)
+		}
+
+		newData := m.extractMMGBalanceFromBody(body, merchantNumber)
+		// store wallet into cache
+		m.Bank.SetBytes(cacheKey, helpers.ToBytes(newData), m.DefaultCacheTime)
+		// update wallet in database
+		m.updateWallet(newData)
+		// return wallet
+		return newData
 	}
 
-	newData := m.extractMMGBalanceFromBody(body, merchantNumber)
-	m.Bank.SetBytes(cacheKey, helpers.ToBytes(newData), m.DefaultCacheTime)
-	return newData
+	currentWallet := m.retrieveWallet(merchantNumber)
+	// return direct result of load function if current wallet does not exist
+	if currentWallet.MerchantNumber == 0 {
+		newWallet := loadFunc()
+		// log.Infof("loaded new wallet: %v", newWallet)
+		return newWallet
+	}
+	// background load wallet into database
+	helpers.Background(func() {
+		// log.Infof("update wallet for merchant: %v", merchantNumber)
+		loadFunc()
+	}, m.WaitGroup)
+	// return current wallet in database
+	return currentWallet
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -1182,8 +1208,8 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE TABLE IF NOT EXISTS wallets (
 	merchant INTEGER 		NOT NULL UNIQUE,
-	availablebalance		DECIMAL(10,2) NOT NULL,
-	currentbalance			DECIMAL(10,2) NOT NULL
+	availablebalance		INTEGER NOT NULL,
+	currentbalance			INTEGER NOT NULL
 )
 
 	`, "<appName>", appName), db)
