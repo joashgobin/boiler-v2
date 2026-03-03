@@ -587,6 +587,18 @@ func (m *MMGModel) extractMMGBalanceFromBody(body string, merchantNumber int) MM
 	return MMGWallet{MerchantNumber: merchantNumber, AvailableBalance: availableBalance, CurrentBalance: currentBalance}
 }
 
+func (m *MMGModel) retrieveWallet(merchantNumber int) MMGWallet {
+	// create placeholder wallet
+	wallet := MMGWallet{MerchantNumber: 0, AvailableBalance: 0, CurrentBalance: 0}
+	query := `
+	SELECT availablebalance,currentbalance
+	FROM wallets WHERE merchant = ?
+	`
+	row := m.DB.QueryRow(query, merchantNumber)
+	row.Scan(&wallet.AvailableBalance, &wallet.CurrentBalance)
+	return wallet
+}
+
 func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 
 	cacheKey := "mmg-" + strconv.Itoa(merchantNumber) + "-wallet"
@@ -1110,39 +1122,45 @@ func NewMMG(db *sql.DB, bank helpers.BankInterface, wg *sync.WaitGroup, appName 
 USE <appName>;
 
 CREATE TABLE IF NOT EXISTS transactions (
-    id INTEGER 	NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    timestamp 	DATETIME NOT NULL,
-	reference 	VARCHAR(20) NOT NULL UNIQUE,
-	source      VARCHAR(20) NOT NULL,
-	destination VARCHAR(20) NOT NULL,
-	merchant	INTEGER,
-	amount		DECIMAL(10,2) NOT NULL,
-	currency 	VARCHAR(5) NOT NULL,
-	category  	VARCHAR(30) NOT NULL,
-	status    	VARCHAR(20) NOT NULL,
-    metadata 	VARCHAR(100),
-    user 		VARCHAR(100),
-	internalid 	VARCHAR(40)
+    id INTEGER 		NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    timestamp 		DATETIME NOT NULL,
+	reference 		VARCHAR(20) NOT NULL UNIQUE,
+	source      	VARCHAR(20) NOT NULL,
+	destination 	VARCHAR(20) NOT NULL,
+	merchant		INTEGER,
+	amount			DECIMAL(10,2) NOT NULL,
+	currency 		VARCHAR(5) NOT NULL,
+	category  		VARCHAR(30) NOT NULL,
+	status    		VARCHAR(20) NOT NULL,
+    metadata 		VARCHAR(100),
+    user 			VARCHAR(100),
+	internalid 		VARCHAR(40)
 );
 
 CREATE TABLE IF NOT EXISTS purchases (
-	id INTEGER UNIQUE NOT NULL,
-	user VARCHAR(100) NOT NULL,
-	description LONGTEXT NOT NULL,
-	type LONGTEXT NOT NULL
+	id 				INTEGER UNIQUE NOT NULL,
+	user 			VARCHAR(100) NOT NULL,
+	description 	LONGTEXT NOT NULL,
+	type 			LONGTEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS merchants (
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
-	number INTEGER NOT NULL UNIQUE
+    id 				INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name 			VARCHAR(100) NOT NULL,
+	number 			INTEGER NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS products (
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    code VARCHAR(100) NOT NULL UNIQUE,
-	description VARCHAR(300) NOT NULL
+    id 				INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    code 			VARCHAR(100) NOT NULL UNIQUE,
+	description 	VARCHAR(300) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS wallets (
+	merchant INTEGER 		NOT NULL UNIQUE,
+	availablebalance		DECIMAL(10,2) NOT NULL,
+	currentbalance			DECIMAL(10,2) NOT NULL
+)
 
 	`, "<appName>", appName), db)
 
