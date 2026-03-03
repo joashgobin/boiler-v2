@@ -599,6 +599,30 @@ func (m *MMGModel) retrieveWallet(merchantNumber int) MMGWallet {
 	return wallet
 }
 
+func (m *MMGModel) updateWallet(wallet MMGWallet) {
+	query := `
+	INSERT INTO wallet (merchant,availablebalance,currentbalance)
+	VALUES (?,?,?)
+	ON DUPLICATE KEY UPDATE
+		availablebalance = ?,
+		currentbalance = ?
+	`
+	result, err := m.DB.Exec(query,
+		wallet.MerchantNumber,
+		wallet.AvailableBalance,
+		wallet.CurrentBalance,
+		wallet.AvailableBalance,
+		wallet.CurrentBalance,
+	)
+	if err != nil {
+		log.Errorf("store mmg wallet exec error: %v", err)
+	}
+	_, err = result.RowsAffected()
+	if err != nil {
+		log.Errorf("store mmg wallet rows error: %v", err)
+	}
+}
+
 func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 
 	cacheKey := "mmg-" + strconv.Itoa(merchantNumber) + "-wallet"
