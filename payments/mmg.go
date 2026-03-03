@@ -600,7 +600,7 @@ func (m *MMGModel) retrieveWallet(merchantNumber int) MMGWallet {
 		log.Errorf("retrieve wallet error: %v", err)
 		return MMGWallet{MerchantNumber: 0, AvailableBalance: 0, CurrentBalance: 0}
 	}
-	fmt.Println("retrieved: %v", wallet)
+	// fmt.Println("retrieved: %v", wallet)
 	return wallet
 }
 
