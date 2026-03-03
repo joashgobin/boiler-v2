@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"image/jpeg"
@@ -737,25 +736,4 @@ func ToSlice[T any](input any) []T {
 	default:
 		return []T{}
 	}
-}
-
-func ToBytes(p interface{}) []byte {
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(p)
-	if err != nil {
-		log.Errorf("to bytes error: %v", err)
-	}
-	// fmt.Println("uncompressed size (bytes): ", len(buf.Bytes()))
-	return buf.Bytes()
-}
-
-func ToStruct[T any](s []byte) T {
-	p := new(T)
-	dec := gob.NewDecoder(bytes.NewReader(s))
-	err := dec.Decode(&p)
-	if err != nil {
-		log.Errorf("to struct error: %v", err)
-	}
-	return *p
 }

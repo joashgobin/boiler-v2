@@ -1,9 +1,12 @@
 package helpers
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"time"
 
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/storage/valkey"
 )
 
@@ -74,4 +77,25 @@ func BytesToSlice[T any](bytes []byte) []T {
 		return []T{}
 	}
 	return decoded
+}
+
+func ToBytes(p interface{}) []byte {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(p)
+	if err != nil {
+		log.Errorf("to bytes error: %v", err)
+	}
+	// fmt.Println("uncompressed size (bytes): ", len(buf.Bytes()))
+	return buf.Bytes()
+}
+
+func BytesToStruct[T any](s []byte) T {
+	p := new(T)
+	dec := gob.NewDecoder(bytes.NewReader(s))
+	err := dec.Decode(&p)
+	if err != nil {
+		log.Errorf("to struct error: %v", err)
+	}
+	return *p
 }

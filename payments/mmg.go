@@ -592,11 +592,11 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 	cacheKey := "mmg-" + strconv.Itoa(merchantNumber) + "-wallet"
 	data := m.Bank.GetBytes(cacheKey)
 	if len(data) > 0 {
-		log.Infof("wallet cache found. skipping load...")
-		return helpers.ToStruct[MMGWallet](data)
+		// log.Infof("wallet cache found. skipping load...")
+		return helpers.BytesToStruct[MMGWallet](data)
 	}
 
-	log.Infof("loading wallet...")
+	// log.Infof("loading wallet...")
 	// get env values
 	envStr := getEnvFileString(merchantNumber)
 	envMap := extractEnvMap(envStr)
