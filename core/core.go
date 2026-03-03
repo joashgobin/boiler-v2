@@ -757,6 +757,8 @@ exec bash
 
 	// init email model
 	mailModel := email.NewMailModel(db, &wg, config.AppName)
+	// init bank model
+	bank := helpers.NewBank(storage, config.AppName)
 
 	// init base
 	base := Base{
@@ -766,8 +768,8 @@ exec bash
 		Shelf:        &helpers.ShelfModel{DB: db},
 		Flash:        &helpers.FlashModel{Store: sessionStore},
 		Files:        &helpers.FilesModel{},
-		Bank:         helpers.NewBank(storage, config.AppName),
-		MMG:          payments.NewMMG(db, &wg, config.AppName),
+		Bank:         bank,
+		MMG:          payments.NewMMG(db, bank, &wg, config.AppName),
 		Anchor:       ":" + config.Port,
 		QR:           helpers.NewQR(),
 		Mail:         mailModel,

@@ -6,3 +6,4 @@
 - Updated sitemap rendering
 - Added sitemap to gitignore
 - Add last mod to sitemap
+- Added caching to wallet and history for MMG merchants

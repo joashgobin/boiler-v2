@@ -366,8 +366,18 @@ func requestMMGJSON(merchantNumber int, url string, resourceToken string) (strin
 }
 
 func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) {
+	if !blocking {
+		m.ClearCache(merchantNumber)
+	}
+	cacheKey := "mmg-" + strconv.Itoa(merchantNumber) + "-history"
+	cacheString := m.Bank.GetString(cacheKey)
+	if cacheString != "" {
+		// log.Infof("history cache found. skipping load...")
+		return
+	}
+	m.Bank.SetString(cacheKey, cacheKey, m.DefaultCacheTime)
+	// log.Infof("loading history...")
 	loadFunc := func() {
-
 		// build transaction history URL from timestamps
 		now := time.Now()
 		toDate := now.AddDate(0, 0, 0).Format("2006-01-02T15:04:05.000Z")
@@ -578,6 +588,15 @@ func (m *MMGModel) extractMMGBalanceFromBody(body string, merchantNumber int) MM
 }
 
 func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
+
+	cacheKey := "mmg-" + strconv.Itoa(merchantNumber) + "-wallet"
+	data := m.Bank.GetBytes(cacheKey)
+	if len(data) > 0 {
+		log.Infof("wallet cache found. skipping load...")
+		return helpers.ToStruct[MMGWallet](data)
+	}
+
+	log.Infof("loading wallet...")
 	// get env values
 	envStr := getEnvFileString(merchantNumber)
 	envMap := extractEnvMap(envStr)
@@ -640,7 +659,9 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 		return m.extractMMGBalanceFromBody(body, merchantNumber)
 	}
 
-	return m.extractMMGBalanceFromBody(body, merchantNumber)
+	newData := m.extractMMGBalanceFromBody(body, merchantNumber)
+	m.Bank.SetBytes(cacheKey, helpers.ToBytes(newData), m.DefaultCacheTime)
+	return newData
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -818,6 +839,8 @@ type MMGInterface interface {
 	QueueHistory(merchantNumber int)
 	// LoadHistory loads MMG history for merchant by blocking the current method
 	LoadHistory(merchantNumber int)
+	// ClearCache forces removal of the transaction history cache indicator for LoadHistory. Automatically run by QueueHistory
+	ClearCache(merchantNumber int)
 	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
 	GetWallet(merchantNumber int) MMGWallet
 	GetUserPurchases(userEmail string) []MMGPurchase
@@ -826,8 +849,10 @@ type MMGInterface interface {
 }
 
 type MMGModel struct {
-	DB        *sql.DB
-	WaitGroup *sync.WaitGroup
+	DB               *sql.DB
+	WaitGroup        *sync.WaitGroup
+	Bank             helpers.BankInterface
+	DefaultCacheTime time.Duration
 }
 
 var _ MMGInterface = (*MMGModel)(nil)
@@ -940,6 +965,13 @@ func (m *MMGModel) QueueHistory(merchantNumber int) {
 
 func (m *MMGModel) LoadHistory(merchantNumber int) {
 	m.loadMMGTransactionHistory(merchantNumber, true)
+}
+
+func (m *MMGModel) ClearCache(merchantNumber int) {
+	cacheKey := "mmg-" + strconv.Itoa(merchantNumber) + "-history"
+	m.Bank.Delete(cacheKey)
+	cacheKey = "mmg-" + strconv.Itoa(merchantNumber) + "-wallet"
+	m.Bank.Delete(cacheKey)
 }
 
 func (m *MMGModel) AddProduct(productCode, itemDescription string) error {
@@ -1071,7 +1103,7 @@ func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, mercha
 	return generateURL(token, config.MerchantMsisdn, config.ClientID)
 }
 
-func NewMMG(db *sql.DB, wg *sync.WaitGroup, appName string) *MMGModel {
+func NewMMG(db *sql.DB, bank helpers.BankInterface, wg *sync.WaitGroup, appName string) *MMGModel {
 
 	// create database
 	helpers.RunMigration(strings.ReplaceAll(`
@@ -1114,5 +1146,10 @@ CREATE TABLE IF NOT EXISTS products (
 
 	`, "<appName>", appName), db)
 
-	return &MMGModel{DB: db, WaitGroup: wg}
+	return &MMGModel{
+		DB:               db,
+		WaitGroup:        wg,
+		Bank:             bank,
+		DefaultCacheTime: time.Minute * 5,
+	}
 }
