@@ -20,10 +20,10 @@ import (
 type UserModelInterface interface {
 	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
-	Authenticate(email, password string) (User, error)
-	LoginAs(store *session.Store, c fiber.Ctx, email, password string) error
-	EmailAuthenticate(email string) (User, error)
-	EmailLoginAs(store *session.Store, c fiber.Ctx, email string) error
+	authenticate(email, password string) (User, error)
+	LoginAs(store *session.Store, c fiber.Ctx, email, password string) (User, error)
+	emailAuthenticate(email string) (User, error)
+	EmailLoginAs(store *session.Store, c fiber.Ctx, email string) (User, error)
 	Exists(email string) (bool, error)
 	AssignRole(email, role string) error
 	RemoveRole(email, role string) error
@@ -41,7 +41,15 @@ type User struct {
 }
 
 type UserModel struct {
-	DB *sql.DB
+	DB                 *sql.DB
+	sessionIdleTimeout time.Duration
+}
+
+func NewUserModel(db *sql.DB, sessionIdleTimeout time.Duration) *UserModel {
+	return &UserModel{
+		DB:                 db,
+		sessionIdleTimeout: sessionIdleTimeout,
+	}
 }
 
 var _ UserModelInterface = (*UserModel)(nil)
@@ -221,7 +229,7 @@ func (m *UserModel) RemoveRole(email, role string) error {
 	return nil
 }
 
-func (m *UserModel) EmailAuthenticate(email string) (User, error) {
+func (m *UserModel) emailAuthenticate(email string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles FROM users WHERE email = ?"
 	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles)
@@ -229,11 +237,10 @@ func (m *UserModel) EmailAuthenticate(email string) (User, error) {
 		return User{}, err
 	}
 	user.Email = email
-	// log.Info("user sign-in: ", user.Email)
 	return user, nil
 }
 
-func (m *UserModel) Authenticate(email, password string) (User, error) {
+func (m *UserModel) authenticate(email, password string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles, hashed_password FROM users WHERE email = ?"
 	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles, &user.HashedPassword)
@@ -256,60 +263,49 @@ func (m *UserModel) Authenticate(email, password string) (User, error) {
 	return user, nil
 }
 
-func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string) error {
-	user, err := m.EmailAuthenticate(email)
+func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string) (User, error) {
+	user, err := m.emailAuthenticate(email)
 	if err != nil {
-		return fmt.Errorf("credentials error: %v", err)
+		return User{}, fmt.Errorf("credentials error: %v", err)
 	}
 	if err != nil {
-		return fmt.Errorf("credentials error: %v", err)
+		return User{}, fmt.Errorf("credentials error: %v", err)
 	}
 
 	sess, err := store.Get(c)
 	defer sess.Release()
 	if err != nil {
-		return fmt.Errorf("get session error: %v", err)
+		return User{}, fmt.Errorf("get session error: %v", err)
 	}
-
-	/*
-		if err := sess.Regenerate(); err != nil {
-			return fmt.Errorf("regenerate session error: %v", err)
-		}
-	*/
 
 	sess.Set("user", user)
+	sess.SetIdleTimeout(m.sessionIdleTimeout)
 
 	if err := sess.Save(); err != nil {
-		return fmt.Errorf("save session error: %v", err)
+		return User{}, fmt.Errorf("save session error: %v", err)
 	}
-	return nil
+	return user, nil
 }
 
-func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) error {
-	// helpers.ShowContext(c)
-	user, err := m.Authenticate(email, password)
+func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) (User, error) {
+	user, err := m.authenticate(email, password)
 	if err != nil {
-		return fmt.Errorf("credentials error: %v", err)
+		return User{}, fmt.Errorf("credentials error: %v", err)
 	}
 
 	sess, err := store.Get(c)
 	if err != nil {
-		return fmt.Errorf("get session error: %v", err)
+		return User{}, fmt.Errorf("get session error: %v", err)
 	}
-
-	/*
-		if err := sess.Regenerate(); err != nil {
-			return fmt.Errorf("regenerate session error: %v", err)
-		}
-	*/
 
 	sess.Set("user", user)
+	sess.SetIdleTimeout(m.sessionIdleTimeout)
 
 	if err := sess.Save(); err != nil {
-		return fmt.Errorf("save session error: %v", err)
+		return User{}, fmt.Errorf("save session error: %v", err)
 	}
 
-	return nil
+	return user, nil
 }
 
 func (m *UserModel) Exists(email string) (bool, error) {

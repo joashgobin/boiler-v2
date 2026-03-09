@@ -66,15 +66,17 @@ type Base struct {
 }
 
 type AppConfig struct {
-	User              string
-	IP                string
-	Port              string
-	AppName           string
-	Templates         *embed.FS
-	SiteInfo          *map[string]string
-	FuncMap           map[string]interface{}
-	IsProduction      bool
-	ReduceMemoryUsage bool
+	User                   string
+	IP                     string
+	Port                   string
+	AppName                string
+	Templates              *embed.FS
+	SiteInfo               *map[string]string
+	FuncMap                map[string]interface{}
+	IsProduction           bool
+	ReduceMemoryUsage      bool
+	SessionIdleTimeout     time.Duration
+	SessionAbsoluteTimeout time.Duration
 }
 
 func (base *Base) URL() string {
@@ -664,15 +666,20 @@ exec bash
 	if config.IsProduction {
 		sessEx = extractors.FromCookie("__Host-session_id_" + config.AppName + "_")
 	}
+
+	sessionIdleTimeout := time.Minute * 5
+	sessionAbsoluteTimeout := time.Hour * 3
+	if config.SessionAbsoluteTimeout != 0 {
+		sessionAbsoluteTimeout = config.SessionAbsoluteTimeout
+	}
 	sessConfig := session.Config{
-		IdleTimeout:     30 * time.Minute,
-		AbsoluteTimeout: 2 * time.Hour,
+		IdleTimeout:     sessionIdleTimeout,
+		AbsoluteTimeout: sessionAbsoluteTimeout,
 		CookieSecure:    true,
 		CookieHTTPOnly:  true,
 		CookieSameSite:  "Lax",
 		Storage:         storage,
-		// Extractor:       extractors.FromCookie("__Host-session_id"),
-		Extractor: sessEx,
+		Extractor:       sessEx,
 	}
 	sessionStore := session.NewStore(sessConfig)
 	sessionStore.RegisterType(models.User{})
@@ -762,7 +769,7 @@ exec bash
 
 	// init base
 	base := Base{
-		Users:        &models.UserModel{DB: db},
+		Users:        models.NewUserModel(db, config.SessionIdleTimeout),
 		DB:           db,
 		Store:        sessionStore,
 		Shelf:        &helpers.ShelfModel{DB: db},
