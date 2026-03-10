@@ -42,14 +42,12 @@ type User struct {
 }
 
 type UserModel struct {
-	DB                 *sql.DB
-	sessionIdleTimeout time.Duration
+	DB *sql.DB
 }
 
-func NewUserModel(db *sql.DB, sessionIdleTimeout time.Duration) *UserModel {
+func NewUserModel(db *sql.DB) *UserModel {
 	return &UserModel{
-		DB:                 db,
-		sessionIdleTimeout: sessionIdleTimeout,
+		DB: db,
 	}
 }
 
@@ -283,7 +281,7 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 	}
 
 	sess.Set("user", user)
-	sess.SetIdleTimeout(m.sessionIdleTimeout)
+	// sess.SetIdleTimeout(m.sessionIdleTimeout)
 
 	if err := sess.Save(); err != nil {
 		return User{}, fmt.Errorf("save session error: %v", err)
@@ -307,7 +305,7 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	}
 
 	sess.Set("user", user)
-	sess.SetIdleTimeout(m.sessionIdleTimeout)
+	// sess.SetIdleTimeout(m.sessionIdleTimeout)
 
 	if err := sess.Save(); err != nil {
 		return User{}, fmt.Errorf("save session error: %v", err)

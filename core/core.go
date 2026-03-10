@@ -672,6 +672,9 @@ exec bash
 	if config.SessionAbsoluteTimeout != 0 {
 		sessionAbsoluteTimeout = config.SessionAbsoluteTimeout
 	}
+	if config.SessionIdleTimeout != 0 && config.SessionIdleTimeout < sessionAbsoluteTimeout {
+		sessionIdleTimeout = config.SessionIdleTimeout
+	}
 	sessConfig := session.Config{
 		IdleTimeout:     sessionIdleTimeout,
 		AbsoluteTimeout: sessionAbsoluteTimeout,
@@ -769,7 +772,7 @@ exec bash
 
 	// init base
 	base := Base{
-		Users:        models.NewUserModel(db, config.SessionIdleTimeout),
+		Users:        models.NewUserModel(db),
 		DB:           db,
 		Store:        sessionStore,
 		Shelf:        &helpers.ShelfModel{DB: db},

@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
@@ -225,6 +226,11 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		}
 
 		updatedSession := false
+
+		if sess.Get("user") == nil {
+			sess.SetIdleTimeout(time.Minute * 3)
+			updatedSession = true
+		}
 
 		// pass flash message to locals if indicated by Push()
 		if sess.Get("delayFlashClear") != nil {
