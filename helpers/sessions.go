@@ -230,7 +230,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		updatedSession := false
 
 		if sess.Get("user") == nil {
-			sess.SetIdleTimeout(time.Minute * 3)
+			sess.SetIdleTimeout(time.Minute * 2)
 			updatedSession = true
 		}
 
