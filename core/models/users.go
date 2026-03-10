@@ -24,6 +24,7 @@ type UserModelInterface interface {
 	LoginAs(store *session.Store, c fiber.Ctx, email, password string) (User, error)
 	emailAuthenticate(email string) (User, error)
 	EmailLoginAs(store *session.Store, c fiber.Ctx, email string) (User, error)
+	Logout(store *session.Store, c fiber.Ctx) error
 	Exists(email string) (bool, error)
 	AssignRole(email, role string) error
 	RemoveRole(email, role string) error
@@ -273,9 +274,12 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 	}
 
 	sess, err := store.Get(c)
-	defer sess.Release()
 	if err != nil {
 		return User{}, fmt.Errorf("get session error: %v", err)
+	}
+	defer sess.Release()
+	if err := sess.Reset(); err != nil {
+		return User{}, fmt.Errorf("reset session error: %v", err)
 	}
 
 	sess.Set("user", user)
@@ -294,9 +298,12 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	}
 
 	sess, err := store.Get(c)
-	defer sess.Release()
 	if err != nil {
 		return User{}, fmt.Errorf("get session error: %v", err)
+	}
+	defer sess.Release()
+	if err := sess.Reset(); err != nil {
+		return User{}, fmt.Errorf("reset session error: %v", err)
 	}
 
 	sess.Set("user", user)
@@ -307,6 +314,19 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	}
 
 	return user, nil
+}
+
+func (m *UserModel) Logout(store *session.Store, c fiber.Ctx) error {
+	session, err := store.Get(c)
+	if err != nil {
+		return err
+	}
+	defer session.Release()
+
+	if err := session.Destroy(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *UserModel) Exists(email string) (bool, error) {

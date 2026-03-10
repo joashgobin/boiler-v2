@@ -20,7 +20,6 @@ type FlashInterface interface {
 	GetInt(c fiber.Ctx, key string, defaultValue ...int) int
 	Set(c fiber.Ctx, key string, value any) error
 	SetMany(c fiber.Ctx, pairs map[string]any) error
-	DeleteSession(c fiber.Ctx)
 	Prefetch(c fiber.Ctx, urls ...string)
 	KeepCached(c fiber.Ctx, maxAge int)
 }
@@ -53,18 +52,6 @@ func (flash *FlashModel) GetUser(c fiber.Ctx) interface{} {
 	}
 	value := sess.Get("user")
 	return value
-}
-
-func (flash *FlashModel) DeleteSession(c fiber.Ctx) {
-	sess, err := flash.Store.Get(c)
-	defer sess.Release()
-	if err != nil {
-		log.Errorf("session delete error: %v", err)
-	}
-	if err := sess.Destroy(); err != nil {
-		log.Errorf("session delete error: %v", err)
-	}
-
 }
 
 type FlashModel struct {
