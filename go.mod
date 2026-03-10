@@ -12,6 +12,7 @@ require (
 	github.com/gofiber/template/html/v3 v3.0.2
 	github.com/google/uuid v1.6.0
 	github.com/kolesa-team/go-webp v1.0.5
+	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/spf13/viper v1.21.0
 	github.com/tdewolff/minify/v2 v2.24.10
@@ -35,7 +36,6 @@ require (
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
@@ -53,6 +53,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/image v0.36.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 )

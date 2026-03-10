@@ -294,6 +294,7 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	}
 
 	sess, err := store.Get(c)
+	defer sess.Release()
 	if err != nil {
 		return User{}, fmt.Errorf("get session error: %v", err)
 	}
