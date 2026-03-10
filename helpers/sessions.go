@@ -218,6 +218,8 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		csrfToken := csrf.TokenFromContext(c)
 		c.Locals("csrf", csrfToken)
 
+		c.Locals("_messages", c.Redirect().Messages())
+
 		// add old values to locals
 		if c.Query("show") == "retained" {
 			c.Locals("old", sess.Get("old"))

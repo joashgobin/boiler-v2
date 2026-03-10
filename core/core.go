@@ -696,14 +696,8 @@ exec bash
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "403 Forbidden",
 			})
-		case "html":
-			return c.Status(fiber.StatusForbidden).Render("error", fiber.Map{
-				"Title":     "Error",
-				"Error":     "403 Forbidden",
-				"ErrorCode": "403",
-			})
 		default:
-			return c.Status(fiber.StatusForbidden).SendString("403 Forbidden")
+			return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v", err)).Back()
 		}
 	}
 
