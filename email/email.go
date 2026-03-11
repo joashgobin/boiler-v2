@@ -63,13 +63,48 @@ CREATE TABLE IF NOT EXISTS mail (
 	return &MailModel{DB: db, WaitGroup: wg}
 }
 
+type Mail struct {
+	ID        int
+	Recipient string
+	CC        sql.NullString
+	BCC       sql.NullString
+	Subject   string
+	Body      string
+}
+
 type MailInterface interface {
 	Send(to, bcc, subject string, swaps ...any)
+	GetAll(filter string) []Mail
 	NotifyAdmin(subject string, swaps ...any)
 	GetMagicLink(email, purpose, urlPrefix string) string
 	GetMagicLinks() []MagicLink
 	IsMagicLinkValid(link string) bool
 	SetMagicLinkResult(value, result string) string
+}
+
+var _ MailInterface = (*MailModel)(nil)
+
+func (m *MailModel) GetAll(filter string) []Mail {
+	var mail []Mail
+	query := `
+	SELECT id,recipient,cc,bcc,subject,body
+	FROM mail
+	`
+	rows, err := m.DB.Query(query)
+	if err != nil {
+		log.Errorf("get mail query error: %v", err)
+		return nil
+	}
+	for rows.Next() {
+		var newMail Mail
+		err := rows.Scan(&newMail.ID, &newMail.Recipient, &newMail.CC, &newMail.BCC, &newMail.Subject, &newMail.Body)
+		if err != nil {
+			log.Errorf("get mail row scan error: %v", err)
+			return nil
+		}
+		mail = append(mail, newMail)
+	}
+	return mail
 }
 
 func (m *MailModel) GetMagicLinks() []MagicLink {
