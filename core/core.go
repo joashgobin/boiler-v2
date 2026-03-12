@@ -45,21 +45,23 @@ import (
 
 type Base struct {
 	// public variables
-	Users        models.UserModelInterface
 	DB           *sql.DB
 	Store        *session.Store
-	Shelf        helpers.ShelfModelInterface
-	Flash        helpers.FlashInterface
-	Files        helpers.FilesInterface
-	Bank         helpers.BankInterface
-	MMG          payments.MMGInterface
-	Mail         email.MailInterface
-	Anchor       string
 	Engine       *html.Engine
-	QR           helpers.QRInterface
 	WaitGroup    *sync.WaitGroup
-	SiteMap      helpers.SitemapInterface
 	ImageChannel *chan *helpers.SafeImage
+	Anchor       string
+
+	// public interfaces
+	Users   models.UserModelInterface
+	Shelf   helpers.ShelfModelInterface
+	Flash   helpers.FlashInterface
+	Files   helpers.FilesInterface
+	Bank    helpers.BankInterface
+	MMG     payments.MMGInterface
+	Mail    email.MailInterface
+	QR      helpers.QRInterface
+	SiteMap helpers.SitemapInterface
 
 	// private variables
 	isProd bool
@@ -72,13 +74,13 @@ type AppConfig struct {
 	IP                     string
 	Port                   string
 	AppName                string
-	Templates              *embed.FS
-	SiteInfo               *map[string]string
 	FuncMap                map[string]interface{}
 	IsProduction           bool
 	ReduceMemoryUsage      bool
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
+	Templates              *embed.FS
+	SiteInfo               *map[string]string
 }
 
 func (base *Base) URL() string {
