@@ -535,23 +535,11 @@ exec bash
 		"extern": func(key string) ht.HTML {
 			return ht.HTML(externalPresets[key])
 		},
-		"Minify": func(s string) string {
-			return "/" + fingerprints[s]
-		},
-		"Min": func(s string) string {
-			return "/" + fingerprints[s]
-		},
 		"minify": func(s string) string {
 			return "/" + fingerprints[s]
 		},
 		"min": func(s string) string {
 			return "/" + fingerprints[s]
-		},
-		"Optimize": func(s string) string {
-			return "/" + optimizations[s]
-		},
-		"Opt": func(s string) string {
-			return "/" + optimizations[s]
 		},
 		"optimize": func(s string) string {
 			return "/" + optimizations[s]
@@ -559,10 +547,10 @@ exec bash
 		"opt": func(s string) string {
 			return "/" + optimizations[s]
 		},
-		"ToUpper": func(s string) string {
+		"toUpper": func(s string) string {
 			return strings.ToUpper(s)
 		},
-		"ToLower": func(s string) string {
+		"toLower": func(s string) string {
 			return strings.ToLower(s)
 		},
 		"in": func(outer string, inner string) bool {
@@ -615,13 +603,6 @@ exec bash
 		"mimeType": func(name string) string {
 			ext := filepath.Ext(name)
 			return mime.TypeByExtension(ext)
-		},
-		"Use": func(values map[string]string, key string) string {
-			value, exists := values[key]
-			if exists {
-				return value
-			}
-			return ""
 		},
 		"use": func(values map[string]string, key string) string {
 			value, exists := values[key]
