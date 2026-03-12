@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"database/sql"
 	"embed"
 	"encoding/gob"
@@ -54,6 +55,7 @@ type Base struct {
 	MMG          payments.MMGInterface
 	Mail         email.MailInterface
 	Anchor       string
+	Engine       *html.Engine
 	QR           helpers.QRInterface
 	WaitGroup    *sync.WaitGroup
 	SiteMap      helpers.SitemapInterface
@@ -87,9 +89,34 @@ func (base *Base) URL() string {
 	}
 }
 
-func (base *Base) Render(c fiber.Ctx, cmp templ.Component, input ...fiber.Map) error {
+func (base *Base) RenderTempl(c fiber.Ctx, cmp templ.Component, input ...fiber.Map) error {
 	c.Set("Content-Type", "text/html")
 	return cmp.Render(c.RequestCtx(), c.Response().BodyWriter())
+}
+
+func (base *Base) RenderCached(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) error {
+	templateKey := templatePath + "-render"
+	templateContent := base.Bank.GetString(templateKey)
+	if len(templateContent) > 0 {
+		// log.Infof("using cache for %s", templatePath)
+		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+		return c.SendString(templateContent)
+	}
+	layoutFile := "views/layouts/main"
+	if len(layouts) > 0 {
+		layoutFile = layouts[0]
+	}
+
+	var buf bytes.Buffer
+	err := base.Engine.Render(&buf, templatePath, input, layoutFile)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+	// log.Infof("rendering %s", templatePath)
+	htmlOutput := buf.String()
+	base.Bank.SetString(templateKey, htmlOutput, 30*time.Second)
+	c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+	return c.SendString(htmlOutput)
 }
 
 func (base Base) Serve(app *fiber.App) {
@@ -775,6 +802,7 @@ exec bash
 		Bank:         bank,
 		MMG:          payments.NewMMG(db, bank, &wg, config.AppName),
 		Anchor:       ":" + config.Port,
+		Engine:       engine,
 		QR:           helpers.NewQR(),
 		Mail:         mailModel,
 		WaitGroup:    &wg,
