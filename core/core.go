@@ -135,13 +135,14 @@ func (base Base) Serve(app *fiber.App) {
 		return c.SendString("<img alt='" + finalPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + finalPath + "' width=100%>")
 	})
 
-	app.Get("/cmp/:name", func(c fiber.Ctx) error {
-		name := c.Params("name")
-		cmp := base.Bank.GetString("cmp-" + name)
+	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
+		hash := c.Params("hash")
+		key := "cmp-" + hash
+		cmp := base.Bank.GetString(key)
 		if len(cmp) == 0 {
-			newContent := base.Shelf.Get("cmp-" + name)
+			newContent := base.Shelf.Get(key)
 			// log.Infof("loading component '%s' into valkey", name)
-			base.Bank.SetString("cmp-"+name, newContent, time.Hour*24*365)
+			base.Bank.SetString(key, newContent, time.Hour*24*365)
 			cmp = newContent
 		} else {
 			base.Flash.KeepCached(c, 60*5)
@@ -256,7 +257,8 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 	}
 
 	// save components into shelf
-	err = helpers.SaveComponents(config.Templates, shelf, bank)
+	cmpLog := map[string]string{}
+	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -676,7 +678,7 @@ exec bash
 			return ht.HTML(strings.ReplaceAll(links, "(())", optimizations["img/favicon.png"]))
 		},
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
-			return ht.HTML(`<div hx-get="/cmp/` + name + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
+			return ht.HTML(`<div hx-get="/cmp/` + cmpLog[name] + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
 		},
 	})
 

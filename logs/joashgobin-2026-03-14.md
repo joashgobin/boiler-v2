@@ -4,3 +4,4 @@
 - Set cache for components to 5 minutes
 - Fix set many in shelf
 - Update new content for empty cmps
+- Fixed loading by using map
