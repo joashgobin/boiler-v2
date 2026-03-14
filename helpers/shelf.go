@@ -2,8 +2,10 @@ package helpers
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v3/log"
+	"strings"
 )
 
 type ShelfModelInterface interface {
@@ -47,35 +49,30 @@ func (s *ShelfModel) GetMany(filter string) map[string]string {
 }
 
 func (s *ShelfModel) SetMany(pairs map[string]string) error {
-	/*
-		if len(pairs) == 0 {
-			return fmt.Errorf("shelf set many error: no values passed")
-		}
-		placeholders := make([]string, len(pairs))
-		values := make([]interface{}, 0)
-		count := 0
-		for i, pair := range pairs {
-			placeholders[count] = "(?, ?)"
-			count++
-			values = append(values, i, pair)
-		}
-		query := fmt.Sprintf(`
+	if len(pairs) == 0 {
+		return fmt.Errorf("shelf set many error: no values passed")
+	}
+	placeholders := make([]string, len(pairs))
+	values := make([]interface{}, 0)
+	count := 0
+	for i, pair := range pairs {
+		placeholders[count] = "(?, ?)"
+		count++
+		values = append(values, i, pair)
+	}
+	query := fmt.Sprintf(`
 			INSERT INTO shelf (name, value)
 			VALUES %s
 			ON DUPLICATE KEY UPDATE
 				value = VALUES(value)
 			`, strings.Join(placeholders, ","))
-		_, err := s.DB.Exec(query, values...)
-		// log.Infof("inserting multiple values:\n%v", query)
-		if err != nil {
-			log.Errorf("multiple insert error: %v", err)
-			return err
-		}
-		// log.Infof("updated key-value pairs: %v", pairs)
-	*/
-	for key, value := range pairs {
-		s.Set(key, value)
+	_, err := s.DB.Exec(query, values...)
+	// log.Infof("inserting multiple values:\n%v", query)
+	if err != nil {
+		log.Errorf("multiple insert error: %v", err)
+		return err
 	}
+	// log.Infof("updated key-value pairs: %v", pairs)
 	return nil
 }
 
