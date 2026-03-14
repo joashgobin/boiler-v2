@@ -140,8 +140,9 @@ func (base Base) Serve(app *fiber.App) {
 		cmp := base.Bank.GetString("cmp-" + name)
 		if len(cmp) == 0 {
 			newContent := base.Shelf.Get("cmp-" + name)
-			log.Infof("loading component '%s' into valkey", name)
+			// log.Infof("loading component '%s' into valkey", name)
 			base.Bank.SetString("cmp-"+name, newContent, time.Hour*24*365)
+			cmp = newContent
 		} else {
 			base.Flash.KeepCached(c, 60*5)
 		}
