@@ -5,3 +5,4 @@
 - Fix set many in shelf
 - Update new content for empty cmps
 - Fixed loading by using map
+- Cache components for a year

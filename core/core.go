@@ -145,7 +145,7 @@ func (base Base) Serve(app *fiber.App) {
 			base.Bank.SetString(key, newContent, time.Hour*24*365)
 			cmp = newContent
 		} else {
-			base.Flash.KeepCached(c, 60*5)
+			base.Flash.KeepCached(c, 60*60*24*365)
 		}
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 		return c.SendString(cmp)
