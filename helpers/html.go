@@ -1,0 +1,46 @@
+package helpers
+
+import (
+	"embed"
+	"fmt"
+	"regexp"
+)
+
+func SaveComponents(fs *embed.FS, shelf ShelfModelInterface, bank BankInterface) error {
+	if fs == nil {
+		return fmt.Errorf("files not embedded")
+	}
+	viewFiles, err := GetEmbedFiles(fs, "views")
+	if err != nil {
+		return err
+	}
+	for _, file := range viewFiles {
+		// fmt.Printf("saving components from %s\n", file)
+		ExtractComponents(fs, file, shelf, bank)
+	}
+	return nil
+}
+
+func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfModelInterface, bank BankInterface) error {
+	data, err := fs.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %v", err)
+	}
+
+	re := regexp.MustCompile(fmt.Sprintf(`{{\s*cmp\s+"(.*?)"\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
+	results := re.FindAllStringSubmatch(string(data), -1)
+	cmpMap := make(map[string]string, len(results))
+	for _, v := range results {
+		if len(v) > 2 {
+			// fmt.Println(v[1], v[2])
+			key := "cmp-" + v[1]
+			cmpMap[key] = v[2]
+			bank.Delete(key)
+		}
+	}
+	err = shelf.SetMany(cmpMap)
+	if err != nil {
+		return fmt.Errorf("extract component error: %v", err)
+	}
+	return nil
+}

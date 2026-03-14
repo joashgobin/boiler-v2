@@ -135,11 +135,15 @@ func (base Base) Serve(app *fiber.App) {
 		return c.SendString("<img alt='" + finalPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + finalPath + "' width=100%>")
 	})
 
-	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
-		base.Flash.KeepCached(c, 60*60*24*365)
-		cmp := base.Bank.GetString("cmp-" + c.Params("hash"))
+	app.Get("/cmp/:name", func(c fiber.Ctx) error {
+		name := c.Params("name")
+		cmp := base.Bank.GetString("cmp-" + name)
 		if len(cmp) == 0 {
-			return c.SendStatus(500)
+			newContent := base.Shelf.Get("cmp-" + name)
+			log.Infof("loading component '%s' into valkey", name)
+			base.Bank.SetString("cmp-"+name, newContent, time.Hour*24*365)
+		} else {
+			base.Flash.KeepCached(c, 60*5)
 		}
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 		return c.SendString(cmp)
@@ -208,6 +212,35 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 	gob.Register(map[string]string{})
 	gob.Register(models.User{})
 
+	// declare database URIs
+	var dbURI string = os.Getenv("FIBER_USER_URI")
+
+	// init database connection
+	db, err := helpers.OpenDB(dbURI + config.AppName + "?parseTime=true&multiStatements=true")
+	if err != nil {
+		log.Fatal(err)
+		return nil, Base{}
+	}
+
+	// run special migrations
+	helpers.InitShelf(db, config.AppName)
+	models.InitUsers(db, config.AppName)
+
+	shelf := &helpers.ShelfModel{DB: db}
+
+	// init storage middleware
+	storage := valkey.New(valkey.Config{
+		InitAddress: []string{"localhost:6379"},
+		Username:    "",
+		Password:    "",
+		SelectDB:    0,
+		Reset:       false,
+		TLSConfig:   nil,
+	})
+
+	// init bank model
+	bank := helpers.NewBank(storage, config.AppName)
+
 	fingerprints := make(map[string]string, 50)
 	optimizations := make(map[string]string, 50)
 
@@ -215,11 +248,14 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 	helpers.GenerateFingerprintsForFolder("static", "static/gen", ".css", &fingerprints)
 
 	// optimize css files for used class names
-	err := helpers.SaveCSSClasses(config.Templates, "static/gen/mango-opt.css",
+	err = helpers.SaveCSSClasses(config.Templates, "static/gen/mango-opt.css",
 		"static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
 	if err != nil {
 		log.Errorf("failed to crunch CSS: %v", err)
 	}
+
+	// save components into shelf
+	err = helpers.SaveComponents(config.Templates, shelf, bank)
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -381,19 +417,6 @@ exec bash
 	// register presets
 	formPresets := helpers.FormPresets()
 	externalPresets := helpers.ExternalPresets()
-
-	// init storage middleware
-	storage := valkey.New(valkey.Config{
-		InitAddress: []string{"localhost:6379"},
-		Username:    "",
-		Password:    "",
-		SelectDB:    0,
-		Reset:       false,
-		TLSConfig:   nil,
-	})
-
-	// init bank model
-	bank := helpers.NewBank(storage, config.AppName)
 
 	// add functions to template engine
 	engine.AddFuncMap(map[string]interface{}{
@@ -651,14 +674,8 @@ exec bash
 			`
 			return ht.HTML(strings.ReplaceAll(links, "(())", optimizations["img/favicon.png"]))
 		},
-		"cmp": func(snippet ht.HTML) ht.HTML {
-			hash := helpers.GetHash(string(snippet))
-			key := "cmp-" + hash
-			content := bank.GetString(key)
-			if len(content) == 0 {
-				bank.SetString(key, string(snippet), time.Hour*24*365)
-			}
-			return ht.HTML(`<div hx-get="/cmp/` + hash + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
+		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
+			return ht.HTML(`<div hx-get="/cmp/` + name + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
 		},
 	})
 
@@ -675,9 +692,6 @@ exec bash
 	showElapsed("template engine load time", start)
 
 	// fiber specific configuration
-
-	// declare database URIs
-	var dbURI string = os.Getenv("FIBER_USER_URI")
 
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
@@ -784,13 +798,6 @@ exec bash
 		}
 	}
 
-	// init database connection
-	db, err := helpers.OpenDB(dbURI + config.AppName + "?parseTime=true&multiStatements=true")
-	if err != nil {
-		log.Fatal(err)
-		return app, Base{}
-	}
-
 	// init email model
 	mailModel := email.NewMailModel(db, &wg, config.AppName)
 
@@ -799,7 +806,7 @@ exec bash
 		Users:        models.NewUserModel(db),
 		DB:           db,
 		Store:        sessionStore,
-		Shelf:        &helpers.ShelfModel{DB: db},
+		Shelf:        shelf,
 		Flash:        &helpers.FlashModel{Store: sessionStore},
 		Files:        &helpers.FilesModel{},
 		Bank:         bank,
@@ -816,10 +823,6 @@ exec bash
 		domain: config.IP,
 		port:   config.Port,
 	}
-
-	// run special migrations
-	helpers.InitShelf(db, config.AppName)
-	models.InitUsers(db, config.AppName)
 
 	app.Use(etag.New(etag.Config{
 		Weak: false,
