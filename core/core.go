@@ -135,6 +135,16 @@ func (base Base) Serve(app *fiber.App) {
 		return c.SendString("<img alt='" + finalPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + finalPath + "' width=100%>")
 	})
 
+	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
+		base.Flash.KeepCached(c, 60*60*24*365)
+		cmp := base.Bank.GetString("cmp-" + c.Params("hash"))
+		if len(cmp) == 0 {
+			return c.SendStatus(500)
+		}
+		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+		return c.SendString(cmp)
+	})
+
 	go func() {
 		if err := app.Listen(base.Anchor, fiber.ListenConfig{EnablePrefork: true}); err != nil {
 			log.Panic(err)
@@ -371,6 +381,19 @@ exec bash
 	// register presets
 	formPresets := helpers.FormPresets()
 	externalPresets := helpers.ExternalPresets()
+
+	// init storage middleware
+	storage := valkey.New(valkey.Config{
+		InitAddress: []string{"localhost:6379"},
+		Username:    "",
+		Password:    "",
+		SelectDB:    0,
+		Reset:       false,
+		TLSConfig:   nil,
+	})
+
+	// init bank model
+	bank := helpers.NewBank(storage, config.AppName)
 
 	// add functions to template engine
 	engine.AddFuncMap(map[string]interface{}{
@@ -628,6 +651,15 @@ exec bash
 			`
 			return ht.HTML(strings.ReplaceAll(links, "(())", optimizations["img/favicon.png"]))
 		},
+		"cmp": func(snippet ht.HTML) ht.HTML {
+			hash := helpers.GetHash(string(snippet))
+			key := "cmp-" + hash
+			content := bank.GetString(key)
+			if len(content) == 0 {
+				bank.SetString(key, string(snippet), time.Hour*24*365)
+			}
+			return ht.HTML(`<div hx-get="/cmp/` + hash + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
+		},
 	})
 
 	// add other func map
@@ -646,16 +678,6 @@ exec bash
 
 	// declare database URIs
 	var dbURI string = os.Getenv("FIBER_USER_URI")
-
-	// init storage middleware
-	storage := valkey.New(valkey.Config{
-		InitAddress: []string{"localhost:6379"},
-		Username:    "",
-		Password:    "",
-		SelectDB:    0,
-		Reset:       false,
-		TLSConfig:   nil,
-	})
 
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
@@ -771,8 +793,6 @@ exec bash
 
 	// init email model
 	mailModel := email.NewMailModel(db, &wg, config.AppName)
-	// init bank model
-	bank := helpers.NewBank(storage, config.AppName)
 
 	// init base
 	base := Base{
