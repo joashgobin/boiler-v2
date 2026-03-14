@@ -7,3 +7,4 @@
 - Fixed loading by using map
 - Cache components for a year
 - Caching no longer uses shelf 
+- Cache from bank as well

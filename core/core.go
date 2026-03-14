@@ -145,6 +145,7 @@ func (base Base) Serve(app *fiber.App) {
 		if len(templateContent) > 0 {
 			// log.Infof("using cache for %s", templatePath)
 			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			base.Flash.KeepCached(c, 60*60*24*365)
 			return c.SendString(templateContent)
 		}
 
