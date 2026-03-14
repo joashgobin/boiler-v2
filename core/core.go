@@ -137,18 +137,28 @@ func (base Base) Serve(app *fiber.App) {
 
 	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
 		hash := c.Params("hash")
-		key := "cmp-" + hash
-		cmp := base.Bank.GetString(key)
-		if len(cmp) == 0 {
-			newContent := base.Shelf.Get(key)
-			// log.Infof("loading component '%s' into valkey", name)
-			base.Bank.SetString(key, newContent, time.Hour*24*365)
-			cmp = newContent
-		} else {
-			base.Flash.KeepCached(c, 60*60*24*365)
+		templateKey := "cmp-" + hash
+		templatePath := "views/cmp/cmp-" + hash
+		// log.Infof("attempting to render %s", templatePath)
+
+		templateContent := base.Bank.GetString(templateKey)
+		if len(templateContent) > 0 {
+			// log.Infof("using cache for %s", templatePath)
+			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			return c.SendString(templateContent)
 		}
+
+		var buf bytes.Buffer
+		err := base.Engine.Render(&buf, templatePath, nil, "")
+		if err != nil {
+			return c.Status(500).SendString(err.Error())
+		}
+		// log.Infof("rendering %s", templatePath)
+		htmlOutput := buf.String()
+		base.Bank.SetString(templateKey, htmlOutput, 30*time.Minute)
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-		return c.SendString(cmp)
+		base.Flash.KeepCached(c, 60*60*24*365)
+		return c.SendString(htmlOutput)
 	})
 
 	go func() {
@@ -258,7 +268,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 	// save components into shelf
 	cmpLog := map[string]string{}
-	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
+	err = helpers.SaveComponents(config.Templates, bank, &cmpLog)
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -366,6 +376,7 @@ exec bash
 	if !fiber.IsChild() {
 		helpers.CreateDirectory("views/layouts")
 		helpers.CreateDirectory("views/partials")
+		helpers.CreateDirectory("views/cmp")
 		helpers.CreateDirectory("static/styles")
 		helpers.CreateDirectory("static/gen/img")
 		helpers.CreateDirectory("static/img")
