@@ -42,6 +42,7 @@ body {
     line-height: 1.5;
     font-size: var(--s1);
     font-family: var(--body-font);
+    color: var(--black);
 }
 
 h1,
