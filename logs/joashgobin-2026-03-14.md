@@ -11,3 +11,4 @@
 - Updated interface name
 - Remove old files
 - Disable get cache buster param for htmx
+- Fix cache busting in htmx
