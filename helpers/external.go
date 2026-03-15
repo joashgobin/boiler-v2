@@ -20,10 +20,9 @@ func ExternalPresets() map[string]string {
 	`
 
 	presets["htmx"] = `
-	<script>
+	<script defer src="/static/script/htmx.min.js">
         htmx.config.getCacheBusterParam = false;
 	</script>
-	<script defer src="/static/script/htmx.min.js"></script>
 	<style>
 	.htmx-settling img {
 	  opacity: 0;
