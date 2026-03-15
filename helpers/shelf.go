@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type ShelfModelInterface interface {
+type ShelfInterface interface {
 	Set(key string, value string)
 	Get(key string) string
 	GetMany(filter string) map[string]string
