@@ -10,3 +10,4 @@
 - Cache from bank as well
 - Updated interface name
 - Remove old files
+- Disable get cache buster param for htmx

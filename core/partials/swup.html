@@ -15,11 +15,13 @@
     });
 
     swup.hooks.on('page:view', (visit) => {
+        htmx.config.getCacheBusterParam = false;
         htmx.process(document.body);
         {{template "views/scripts".}}
     });
 
     document.addEventListener('DOMContentLoaded', () => {
+        htmx.config.getCacheBusterParam = false;
         htmx.process(document.body);
         {{template "views/scripts".}}
     });
