@@ -23,16 +23,6 @@
     background-color: var(--bg-color);
 }
 
-.cm {
-    --text-color: color-mix(in hsl, var(--sec) 30%, white);
-    color: var(--text-color);
-}
-
-.bm {
-    --bg-color: color-mix(in hsl, var(--sec) 20%, white);
-    background-color: var(--bg-color);
-}
-
 .om {
     border: 1px solid color-mix(in hsl, var(--sec) 30%, white);
 }
@@ -286,4 +276,24 @@
 
 .roof_5 {
     margin-top: 0.5rem;
+}
+
+.bkeep-90 {
+    background-color: hsl(from var(--bg-color) h s l / 0.9);
+}
+
+.bkeep-80 {
+    background-color: hsl(from var(--bg-color) h s l / 0.8);
+}
+
+.bkeep-70 {
+    background-color: hsl(from var(--bg-color) h s l / 0.7);
+}
+
+.bkeep-60 {
+    background-color: hsl(from var(--bg-color) h s l / 0.6);
+}
+
+.bkeep-50 {
+    background-color: hsl(from var(--bg-color) h s l / 0.5);
 }
