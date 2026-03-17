@@ -89,9 +89,11 @@ Note the following:
 We can then embed the view files into the app using go embed:
 ```sh
 mkdir -p views/layouts
+mkdir -p views/cmp
 touch views/layouts/main.html
 touch views/index.html
 touch views/scripts.html
+touch views/cmp/test.html
 ```
 
 Run the program:
