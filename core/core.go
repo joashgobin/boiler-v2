@@ -10,6 +10,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -435,6 +436,23 @@ exec bash
 
 	// add functions to template engine
 	engine.AddFuncMap(map[string]interface{}{
+		"whatsapp": func(phoneNumber string, message ...string) ht.HTML {
+			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
+			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
+			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "+", "")
+			if len(message) > 0 {
+				link := fmt.Sprintf("<a href='https://wa.me/%s?text=%s'>%s</a>", phoneNumberStripped, phoneNumber, url.QueryEscape(message[0]))
+				return ht.HTML(link)
+			}
+			link := fmt.Sprintf("<a href='https://wa.me/%s'>%s</a>", phoneNumberStripped, phoneNumber)
+			return ht.HTML(link)
+		},
+		"tel": func(phoneNumber string, message ...string) ht.HTML {
+			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
+			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
+			link := fmt.Sprintf("<a href='tel:%s'>%s</a>", phoneNumberStripped, phoneNumber)
+			return ht.HTML(link)
+		},
 		"humanDate": func(t time.Time) string {
 			return t.UTC().Format("Jan 02, 2006")
 		},
