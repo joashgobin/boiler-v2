@@ -21,10 +21,10 @@ type UserModelInterface interface {
 	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
 	authenticate(email, password string) (User, error)
-	LoginAs(store *session.Store, c fiber.Ctx, email, password string) (User, error)
+	LoginAs(c fiber.Ctx, email, password string) (User, error)
 	emailAuthenticate(email string) (User, error)
-	EmailLoginAs(store *session.Store, c fiber.Ctx, email string) (User, error)
-	Logout(store *session.Store, c fiber.Ctx) error
+	EmailLoginAs(c fiber.Ctx, email string) (User, error)
+	Logout(c fiber.Ctx) error
 	Exists(email string) (bool, error)
 	AssignRole(email, role string) error
 	RemoveRole(email, role string) error
@@ -42,12 +42,14 @@ type User struct {
 }
 
 type UserModel struct {
-	DB *sql.DB
+	db    *sql.DB
+	store *session.Store
 }
 
-func NewUserModel(db *sql.DB) *UserModel {
+func NewUserModel(newDB *sql.DB, newStore *session.Store) *UserModel {
 	return &UserModel{
-		DB: db,
+		db:    newDB,
+		store: newStore,
 	}
 }
 
@@ -59,7 +61,7 @@ func (m *UserModel) GetAll(limit int) []User {
 	SELECT id,name,email,roles,created FROM users
 	LIMIT ?
 	`
-	rows, err := m.DB.Query(query, limit)
+	rows, err := m.db.Query(query, limit)
 	if err != nil {
 		log.Errorf("get all users exec error: %v", err)
 		return users
@@ -124,7 +126,7 @@ func (m *UserModel) Create(name, email, password string) error {
 	INSERT INTO users (name, email, roles, hashed_password, created)
     VALUES(?, ?, ?, ?, UTC_TIMESTAMP())
 	`
-	_, err = m.DB.Exec(stmt, name, email, "|user|", string(hashedPassword))
+	_, err = m.db.Exec(stmt, name, email, "|user|", string(hashedPassword))
 	if err != nil {
 		var mySQLError *mysql.MySQLError
 		if errors.As(err, &mySQLError) {
@@ -147,7 +149,7 @@ func (m *UserModel) UpdatePassword(email, password string) error {
 	SET hashed_password = ?
 	WHERE email = ?
 	`
-	_, err = m.DB.Exec(query, hashedPassword, email)
+	_, err = m.db.Exec(query, hashedPassword, email)
 	if err != nil {
 		return fmt.Errorf("update password exec error: %v", err)
 	}
@@ -160,7 +162,7 @@ func (m *UserModel) AssignRole(email, role string) error {
 	var roles string
 	var id int
 
-	err := m.DB.QueryRow(selectStmt, email).Scan(&id, &roles)
+	err := m.db.QueryRow(selectStmt, email).Scan(&id, &roles)
 
 	if err != nil {
 		return err
@@ -176,7 +178,7 @@ func (m *UserModel) AssignRole(email, role string) error {
 		SET roles = ?
 		WHERE email = ?
 		`
-		result, err := m.DB.Exec(updateStmt, newRoles, email)
+		result, err := m.db.Exec(updateStmt, newRoles, email)
 		if err != nil {
 			return err
 		}
@@ -196,7 +198,7 @@ func (m *UserModel) RemoveRole(email, role string) error {
 	var roles string
 	var id int
 
-	err := m.DB.QueryRow(selectStmt, id).Scan(&id, &roles)
+	err := m.db.QueryRow(selectStmt, id).Scan(&id, &roles)
 
 	if err != nil {
 		return err
@@ -214,7 +216,7 @@ func (m *UserModel) RemoveRole(email, role string) error {
 		SET roles = ?
 		WHERE email = ?
 		`
-		result, err := m.DB.Exec(updateStmt, newRoles, email)
+		result, err := m.db.Exec(updateStmt, newRoles, email)
 		if err != nil {
 			return err
 		}
@@ -231,7 +233,7 @@ func (m *UserModel) RemoveRole(email, role string) error {
 func (m *UserModel) emailAuthenticate(email string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles FROM users WHERE email = ?"
-	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles)
+	err := m.db.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles)
 	if err != nil {
 		return User{}, err
 	}
@@ -242,7 +244,7 @@ func (m *UserModel) emailAuthenticate(email string) (User, error) {
 func (m *UserModel) authenticate(email, password string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles, hashed_password FROM users WHERE email = ?"
-	err := m.DB.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles, &user.HashedPassword)
+	err := m.db.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles, &user.HashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return user, ErrInvalidCredentials
@@ -262,7 +264,7 @@ func (m *UserModel) authenticate(email, password string) (User, error) {
 	return user, nil
 }
 
-func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string) (User, error) {
+func (m *UserModel) EmailLoginAs(c fiber.Ctx, email string) (User, error) {
 	user, err := m.emailAuthenticate(email)
 	if err != nil {
 		return User{}, fmt.Errorf("credentials error: %v", err)
@@ -271,7 +273,7 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 		return User{}, fmt.Errorf("credentials error: %v", err)
 	}
 
-	sess, err := store.Get(c)
+	sess, err := m.store.Get(c)
 	if err != nil {
 		return User{}, fmt.Errorf("get session error: %v", err)
 	}
@@ -289,13 +291,13 @@ func (m *UserModel) EmailLoginAs(store *session.Store, c fiber.Ctx, email string
 	return user, nil
 }
 
-func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password string) (User, error) {
+func (m *UserModel) LoginAs(c fiber.Ctx, email, password string) (User, error) {
 	user, err := m.authenticate(email, password)
 	if err != nil {
 		return User{}, fmt.Errorf("credentials error: %v", err)
 	}
 
-	sess, err := store.Get(c)
+	sess, err := m.store.Get(c)
 	if err != nil {
 		return User{}, fmt.Errorf("get session error: %v", err)
 	}
@@ -314,8 +316,8 @@ func (m *UserModel) LoginAs(store *session.Store, c fiber.Ctx, email, password s
 	return user, nil
 }
 
-func (m *UserModel) Logout(store *session.Store, c fiber.Ctx) error {
-	session, err := store.Get(c)
+func (m *UserModel) Logout(c fiber.Ctx) error {
+	session, err := m.store.Get(c)
 	if err != nil {
 		return err
 	}
@@ -330,7 +332,7 @@ func (m *UserModel) Logout(store *session.Store, c fiber.Ctx) error {
 func (m *UserModel) Exists(email string) (bool, error) {
 	var exists bool
 	stmt := "SELECT EXISTS(SELECT true FROM users WHERE email = ?)"
-	err := m.DB.QueryRow(stmt, email).Scan(&exists)
+	err := m.db.QueryRow(stmt, email).Scan(&exists)
 	return exists, err
 }
 

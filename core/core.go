@@ -836,7 +836,7 @@ exec bash
 
 	// init base
 	base := Base{
-		Users:        models.NewUserModel(db),
+		Users:        models.NewUserModel(db, sessionStore),
 		DB:           db,
 		Store:        sessionStore,
 		Shelf:        shelf,
