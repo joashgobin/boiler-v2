@@ -685,10 +685,11 @@ exec bash
 			ext := filepath.Ext(name)
 			return mime.TypeByExtension(ext)
 		},
-		"use": func(values map[string]string, key string) string {
-			value, exists := values[key]
-			if exists {
-				return value
+		"use": func(values []fiber.OldInputData, key string) string {
+			for _, old := range values {
+				if old.Key == key {
+					return old.Value
+				}
 			}
 			return ""
 		},
@@ -871,7 +872,6 @@ exec bash
 	app.Use(pprof.New(pprof.Config{Prefix: "/profiler"}))
 
 	app.Use(helpers.IncludeSessionLocals(sessionStore))
-	app.Use(helpers.IncludeSessionOldValues(sessionStore))
 
 	environment := "dev"
 	if config.IsProduction {

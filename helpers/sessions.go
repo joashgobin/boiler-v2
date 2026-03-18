@@ -221,11 +221,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		c.Locals("_messages", c.Redirect().Messages())
 
 		// add old values to locals
-		if c.Query("show") == "retained" {
-			c.Locals("old", sess.Get("old"))
-		} else {
-			c.Locals("old", map[string]string{})
-		}
+		c.Locals("old", c.Redirect().OldInputs())
 
 		updatedSession := false
 
@@ -254,32 +250,12 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 	}
 }
 
-func IncludeSessionOldValues(store *session.Store) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		if c.Method() != "POST" {
-			return c.Next()
-		}
-		sess, err := store.Get(c)
-		defer sess.Release()
-		if err != nil {
-			log.Errorf("error getting session: %v", err)
-		}
-		oldValues := MapFromFormBody(c, true)
-		sess.Set("old", oldValues)
-		if err := sess.Save(); err != nil {
-			log.Errorf("error saving session: %v", err)
-		}
-		return c.Next()
-	}
-}
-
 func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		warning, err := EnsureFiberFormFields(c, keys)
 		if err != nil {
-			route := c.OriginalURL()
 			flash.Push(c, warning)
-			return c.Redirect().To(route + "?show=retained")
+			return c.Redirect().WithInput().Back()
 		}
 		return c.Next()
 	}
