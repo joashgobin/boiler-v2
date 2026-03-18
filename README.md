@@ -225,9 +225,9 @@ Add the following to your *views/layouts/main.html* file:
             <ul class="flex right sm">
                 {{if .user}}
                 <li><a href="/admin/">Dashboard</a></li>
-                <form method="post" action="/logout">
+                <form method="post" action="/logout" data-swup-form>
                     <input type="hidden" name="csrf" value="{{.csrf}}">
-                    <button type="submit">Log out</button>
+                    <input class="round ba no-dec" type="submit" name="submit" value="Log out">
                 </form>
                 {{else}}
                 <li><a href="/products/">Products</a></li>

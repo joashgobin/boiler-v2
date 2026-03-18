@@ -2,3 +2,4 @@
 
 - Added template engine functions for whatsapp and tel
 - Refactored dependencies for user model interface
+- Updated template
