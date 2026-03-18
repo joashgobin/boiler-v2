@@ -4,3 +4,4 @@
 - Refactored dependencies for user model interface
 - Updated template
 - Eliminated middleware used to include old form values
+- Added more bkeep classes
