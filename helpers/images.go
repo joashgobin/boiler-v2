@@ -79,14 +79,14 @@ func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, e
 		if !entry.IsDir() && slices.Contains(exts, filepath.Ext(entry.Name())) {
 			fullPath := filepath.Join(folderPath, entry.Name())
 			// fmt.Println("converting", fullPath)
-			ConvertInlineWebp(imageChannel, fullPath, "static/gen/img", 1200)
+			ConvertInlineWebp(imageChannel, fullPath, "static/gen/img", 1000)
 		}
 	}
 }
 
 func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir string, dimensions ...int) string {
 	width := 500
-	intermediateWidth := 1200
+	intermediateWidth := 1000
 
 	if len(dimensions) > 0 {
 		width = dimensions[0]
