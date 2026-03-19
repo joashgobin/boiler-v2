@@ -113,6 +113,20 @@ func (base *Base) RenderString(c fiber.Ctx, htmlString string) error {
 	return c.SendString(htmlOutput)
 }
 
+func (base *Base) GetTemplateString(htmlString string) string {
+	tmpl, err := template.New("webpage").Funcs(base.Engine.Funcmap).Parse(htmlString)
+	if err != nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil)
+	if err != nil {
+		return ""
+	}
+	htmlOutput := buf.String()
+	return htmlOutput
+}
+
 func (base *Base) RenderCached(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) error {
 	templateKey := templatePath + "-render"
 	templateContent := base.Bank.GetString(templateKey)
@@ -155,17 +169,19 @@ func (base Base) Serve(app *fiber.App) {
 	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
 		hash := c.Params("hash")
 		templateKey := "cmp-" + hash
-		// log.Infof("attempting to render %s", templatePath)
 
 		templateContent := base.Bank.GetString(templateKey)
 		if len(templateContent) > 0 {
-			// log.Infof("using cache for %s", templatePath)
+			// log.Infof("using cache for %s", templateKey)
 			base.Flash.KeepCached(c, 60*60*24*365)
 			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return c.SendString(templateContent)
 		}
-		htmlContent := base.Shelf.Get(templateKey)
-		base.Bank.SetString(templateKey, htmlContent, 3*time.Minute)
+		// log.Infof("rendering %s", templateKey)
+		htmlContent := base.GetTemplateString(base.Shelf.Get(templateKey))
+		if htmlContent != "" {
+			base.Bank.SetString(templateKey, htmlContent, 3*time.Minute)
+		}
 		return base.RenderString(c, htmlContent)
 	})
 

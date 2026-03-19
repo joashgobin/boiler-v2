@@ -5,3 +5,4 @@
 - Set default target width to 500 px
 - Set default intermediate width to 1000 px
 - Moved component rendering to shelf
+- Updated html content rendering
