@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/gob"
 	"fmt"
+	"html/template"
 	ht "html/template"
 	"io"
 	"mime"
@@ -97,6 +98,21 @@ func (base *Base) RenderTempl(c fiber.Ctx, cmp templ.Component, input ...fiber.M
 	return cmp.Render(c.RequestCtx(), c.Response().BodyWriter())
 }
 
+func (base *Base) RenderString(c fiber.Ctx, htmlString string) error {
+	tmpl, err := template.New("webpage").Funcs(base.Engine.Funcmap).Parse(htmlString)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+	htmlOutput := buf.String()
+	c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+	return c.SendString(htmlOutput)
+}
+
 func (base *Base) RenderCached(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) error {
 	templateKey := templatePath + "-render"
 	templateContent := base.Bank.GetString(templateKey)
@@ -139,28 +155,18 @@ func (base Base) Serve(app *fiber.App) {
 	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
 		hash := c.Params("hash")
 		templateKey := "cmp-" + hash
-		templatePath := "views/cmp/cmp-" + hash
 		// log.Infof("attempting to render %s", templatePath)
 
 		templateContent := base.Bank.GetString(templateKey)
 		if len(templateContent) > 0 {
 			// log.Infof("using cache for %s", templatePath)
-			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			base.Flash.KeepCached(c, 60*60*24*365)
+			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return c.SendString(templateContent)
 		}
-
-		var buf bytes.Buffer
-		err := base.Engine.Render(&buf, templatePath, nil, "")
-		if err != nil {
-			return c.Status(500).SendString(err.Error())
-		}
-		// log.Infof("rendering %s", templatePath)
-		htmlOutput := buf.String()
-		base.Bank.SetString(templateKey, htmlOutput, 30*time.Minute)
-		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-		base.Flash.KeepCached(c, 60*60*24*365)
-		return c.SendString(htmlOutput)
+		htmlContent := base.Shelf.Get(templateKey)
+		base.Bank.SetString(templateKey, htmlContent, 3*time.Minute)
+		return base.RenderString(c, htmlContent)
 	})
 
 	go func() {
@@ -270,7 +276,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 	// save components into shelf
 	cmpLog := map[string]string{}
-	err = helpers.SaveComponents(config.Templates, bank, &cmpLog)
+	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -378,7 +384,6 @@ exec bash
 	if !fiber.IsChild() {
 		helpers.CreateDirectory("views/layouts")
 		helpers.CreateDirectory("views/partials")
-		helpers.CreateDirectory("views/cmp")
 		helpers.CreateDirectory("static/styles")
 		helpers.CreateDirectory("static/gen/img")
 		helpers.CreateDirectory("static/img")
