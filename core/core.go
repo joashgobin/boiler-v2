@@ -182,6 +182,7 @@ func (base Base) Serve(app *fiber.App) {
 		if htmlContent != "" {
 			base.Bank.SetString(templateKey, htmlContent, 3*time.Minute)
 		}
+		base.Flash.KeepCached(c, 60*60*24*365)
 		return base.RenderString(c, htmlContent)
 	})
 
