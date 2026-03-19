@@ -85,7 +85,7 @@ func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, e
 }
 
 func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir string, dimensions ...int) string {
-	width := 600
+	width := 500
 	intermediateWidth := 1200
 
 	if len(dimensions) > 0 {
@@ -125,7 +125,7 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	outputName := filepath.Base(outputPath)
 	tempPath := filepath.Dir(inputPath) + "/" + outputName
 
-	dimStr := "600x"
+	dimStr := "500x"
 	if len(dimensions) > 0 {
 		dimStr = fmt.Sprintf("%dx", dimensions[0])
 	}
