@@ -769,7 +769,7 @@ exec bash
 		sessEx = extractors.FromCookie("__Host-session_id_" + config.AppName + "_")
 	}
 
-	sessionIdleTimeout := time.Minute * 5
+	sessionIdleTimeout := time.Minute * 15
 	sessionAbsoluteTimeout := time.Hour * 3
 	if config.SessionAbsoluteTimeout != 0 {
 		sessionAbsoluteTimeout = config.SessionAbsoluteTimeout
