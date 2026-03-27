@@ -230,6 +230,7 @@ func showElapsed(description string, start time.Time) {
 func imageWorker(workerID int, start time.Time, imageJobs <-chan *helpers.SafeImage) {
 	for si := range imageJobs {
 		si.ProcessImage(start)
+		// fmt.Printf("worker %d done...\n", workerID)
 		/*
 			go func() {
 				// log.Infof("received safe image from image channel: %v", si)
