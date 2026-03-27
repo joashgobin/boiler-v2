@@ -227,6 +227,18 @@ func showElapsed(description string, start time.Time) {
 	}
 }
 
+func imageWorker(workerID int, start time.Time, imageJobs <-chan *helpers.SafeImage) {
+	for si := range imageJobs {
+		si.ProcessImage(start)
+		/*
+			go func() {
+				// log.Infof("received safe image from image channel: %v", si)
+				si.ProcessImage(start)
+			}()
+		*/
+	}
+}
+
 func NewApp(config AppConfig) (*fiber.App, Base) {
 	if config.User == "" {
 		fmt.Println("config error: user not specified e.g. john")
@@ -428,11 +440,8 @@ exec bash
 	var wg sync.WaitGroup
 
 	go func() {
-		for si := range imageChannel {
-			go func() {
-				// log.Infof("received safe image from image channel: %v", si)
-				si.ProcessImage(start)
-			}()
+		for i := range 4 {
+			go imageWorker(i, start, imageChannel)
 		}
 	}()
 
