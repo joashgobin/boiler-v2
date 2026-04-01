@@ -210,10 +210,11 @@ func (base Base) Serve(app *fiber.App) {
 		// log.Infof("rendering %s", templateKey)
 		htmlContent := base.GetTemplateString(base.Shelf.Get(templateKey))
 		if htmlContent != "" {
-			base.Bank.SetString(templateKey, htmlContent, 3*time.Minute)
+			base.Bank.SetString(templateKey, htmlContent, 10*time.Minute)
 		}
 		base.Flash.KeepCached(c, 60*60*24*365)
-		return base.RenderString(c, htmlContent)
+		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+		return c.SendString(htmlContent)
 	})
 
 	go func() {
