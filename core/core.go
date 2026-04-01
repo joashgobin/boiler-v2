@@ -85,6 +85,29 @@ type AppConfig struct {
 	SiteInfo               *map[string]string
 }
 
+// 64 Kb pool buffer max size
+const maxPoolBufferSize = 64 << 10
+
+var bufferPool = sync.Pool{
+	New: func() any {
+		return new(bytes.Buffer)
+	},
+}
+
+func GetBuffer() *bytes.Buffer {
+	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	// log.Info("getting buffer to pool")
+	return buf
+}
+
+func PutBuffer(buf *bytes.Buffer) {
+	if buf.Cap() <= maxPoolBufferSize {
+		bufferPool.Put(buf)
+		// log.Info("returning buffer to pool")
+	}
+}
+
 func (base *Base) URL() string {
 	if base.isProd {
 		return "https://" + base.domain
@@ -103,8 +126,10 @@ func (base *Base) RenderString(c fiber.Ctx, htmlString string) error {
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, nil)
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+
+	err = tmpl.Execute(buf, nil)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
@@ -118,12 +143,15 @@ func (base *Base) GetTemplateString(htmlString string) string {
 	if err != nil {
 		return ""
 	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, nil)
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+
+	err = tmpl.Execute(buf, nil)
 	if err != nil {
 		return ""
 	}
 	htmlOutput := buf.String()
+	// log.Infof("length: %v", buf.Len())
 	return htmlOutput
 }
 
@@ -140,8 +168,10 @@ func (base *Base) RenderCached(c fiber.Ctx, templatePath string, input fiber.Map
 		layoutFile = layouts[0]
 	}
 
-	var buf bytes.Buffer
-	err := base.Engine.Render(&buf, templatePath, input, layoutFile)
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+
+	err := base.Engine.Render(buf, templatePath, input, layoutFile)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
