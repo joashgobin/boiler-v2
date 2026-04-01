@@ -139,7 +139,9 @@ func (base *Base) RenderString(c fiber.Ctx, htmlString string) error {
 }
 
 func (base *Base) GetTemplateString(htmlString string) string {
+	// now := time.Now()
 	tmpl, err := template.New("webpage").Funcs(base.Engine.Funcmap).Parse(htmlString)
+	// log.Infof("get template string time: %v", time.Since(now).Microseconds())
 	if err != nil {
 		return ""
 	}
