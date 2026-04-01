@@ -211,8 +211,8 @@ func (base Base) Serve(app *fiber.App) {
 		htmlContent := base.GetTemplateString(base.Shelf.Get(templateKey))
 		if htmlContent != "" {
 			base.Bank.SetString(templateKey, htmlContent, 10*time.Minute)
+			base.Flash.KeepCached(c, 60*60*24*365)
 		}
-		base.Flash.KeepCached(c, 60*60*24*365)
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 		return c.SendString(htmlContent)
 	})
