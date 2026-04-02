@@ -86,7 +86,7 @@ func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, e
 }
 
 func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir string, dimensions ...int) string {
-	now := time.Now()
+	// now := time.Now()
 	width := 500
 	intermediateWidth := 1000
 
