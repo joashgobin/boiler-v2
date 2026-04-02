@@ -3,6 +3,7 @@ package helpers
 import (
 	"os/exec"
 	"slices"
+	"strconv"
 
 	"fmt"
 	"os"
@@ -85,6 +86,7 @@ func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, e
 }
 
 func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir string, dimensions ...int) string {
+	now := time.Now()
 	width := 500
 	intermediateWidth := 1000
 
@@ -94,10 +96,25 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir stri
 	fromDir := filepath.Dir(srcPath)
 	// start := time.Now()
 	hashString := GetFileHash(srcPath)
+	// log.Infof("*image hash gen time: %v", time.Since(now))
 
-	outputPath := fmt.Sprintf("%s_%dx.%s.webp",
-		strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
-			filepath.Ext(srcPath)), width, hashString)
+	/*
+		outputPath := fmt.Sprintf("%s_%dx.%s.webp",
+			strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+				filepath.Ext(srcPath)), width, hashString)
+	*/
+
+	var outputBuilder strings.Builder
+	outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+		filepath.Ext(srcPath)))
+	outputBuilder.WriteString("_")
+	outputBuilder.WriteString(strconv.Itoa(width))
+	outputBuilder.WriteString("x.")
+	outputBuilder.WriteString(hashString)
+	outputBuilder.WriteString(".webp")
+	outputPath := outputBuilder.String()
+
+	// log.Infof("image output path time: %v", time.Since(now))
 
 	if !FileExists(outputPath) {
 		intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
@@ -113,10 +130,12 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir stri
 		}
 
 		*imageChannel <- &si
+		// log.Infof("image lookup time: %v", time.Since(now))
 		return srcPath
 
 		// si.ProcessImage(time.Now())
 	}
+	// log.Infof("image lookup time: %v", time.Since(now))
 	return outputPath
 }
 
