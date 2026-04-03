@@ -60,7 +60,6 @@ type Base struct {
 	Flash   helpers.FlashInterface
 	Files   helpers.FilesInterface
 	Bank    helpers.BankInterface
-	LRU     helpers.LRUInterface
 	MMG     payments.MMGInterface
 	Mail    email.MailInterface
 	QR      helpers.QRInterface
@@ -913,7 +912,6 @@ exec bash
 		Flash:        &helpers.FlashModel{Store: sessionStore},
 		Files:        &helpers.FilesModel{},
 		Bank:         bank,
-		LRU:          lru,
 		MMG:          payments.NewMMG(db, bank, &wg, config.AppName),
 		Anchor:       ":" + config.Port,
 		Engine:       engine,

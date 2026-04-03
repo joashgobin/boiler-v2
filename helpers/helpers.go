@@ -283,7 +283,7 @@ func ReplaceSpecial(text string) string {
 }
 
 func GetFileHash(srcPath string) string {
-	fileInfo, err := os.Stat(srcPath)
+	fileInfo, err := os.Lstat(srcPath)
 	if err != nil {
 		log.Errorf("error getting file hash: %v", err)
 		return ""
@@ -367,11 +367,14 @@ func CombineAndFingerprint(finalPath string, fileListPtr *map[string]string, fil
 }
 
 func FileExists(filePath string) bool {
-	info, err := os.Lstat(filePath)
-	if os.IsNotExist(err) {
+	_, err := os.Lstat(filePath)
+	if err == nil {
+		return true
+	}
+	if errors.Is(err, os.ErrNotExist) {
 		return false
 	}
-	return !info.IsDir()
+	return false
 }
 
 func FolderExists(folderPath string) bool {
