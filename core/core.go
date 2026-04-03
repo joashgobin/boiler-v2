@@ -321,6 +321,9 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 		TLSConfig:   nil,
 	})
 
+	// init LRU
+	lru := helpers.NewLRU()
+
 	// init bank model
 	bank := helpers.NewBank(storage, config.AppName)
 
@@ -485,7 +488,7 @@ exec bash
 		helpers.GenerateFavicon("static/img/favicon.png", "static/gen/img/")
 
 		// convert images to Webp
-		// helpers.ConvertInlineWebpFolder(&imageChannel, "static/img/", ".jpg", ".png","jpeg")
+		// helpers.ConvertInlineWebpFolder(&imageChannel, lru,"static/img/", ".jpg", ".png","jpeg")
 	}
 	showElapsed("app favicon generation time", start)
 
@@ -534,13 +537,13 @@ exec bash
 			return ht.HTMLAttr("class='rev' hx-trigger='revealed'")
 		},
 		"intersect": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(`
 <img alt="` + outputPath + `" class="rev-image" hx-trigger="revealed" src="` + outputPath + `">
 			`)
 		},
 		"intersects": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(`
 <img alt="` + outputPath + `" class="rev-image" hx-trigger="revealed" src="` + outputPath + `">
 			`)
@@ -612,39 +615,39 @@ exec bash
 			`)
 		},
 		"gen": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(outputPath)
 		},
 		"gens": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(outputPath)
 		},
 		"preload": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<link rel='preload' href='" + outputPath + "' as='image' fetchpriority='high'>")
 		},
 		"preloads": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<link rel='preload' href='" + outputPath + "' as='image' fetchpriority='high'>")
 		},
 		"him": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			htmxString := `<div class="full-w" hx-get="/image?path=` + outputPath + `" hx-trigger="revealed" hx-swap="outerHTML">
 				            </div>`
 			return ht.HTML(htmxString)
 		},
 		"hims": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			htmxString := `<div class="full-w" hx-get="/image?path=` + outputPath + `" hx-trigger="revealed" hx-swap="outerHTML">
 				            </div>`
 			return ht.HTML(htmxString)
 		},
 		"lazy": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<img loading='lazy' decode='async' alt='" + outputPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + outputPath + "'>")
 		},
 		"lazys": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<img loading='lazy' decode='async' alt='" + outputPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + outputPath + "'>")
 		},
 		"icon": func(iconName ...string) ht.HTML {

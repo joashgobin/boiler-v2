@@ -367,7 +367,7 @@ func CombineAndFingerprint(finalPath string, fileListPtr *map[string]string, fil
 }
 
 func FileExists(filePath string) bool {
-	info, err := os.Stat(filePath)
+	info, err := os.Lstat(filePath)
 	if os.IsNotExist(err) {
 		return false
 	}

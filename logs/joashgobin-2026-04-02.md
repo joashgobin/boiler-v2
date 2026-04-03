@@ -3,3 +3,4 @@
 - Added more font stacks
 - Updated to string builder for image opt
 - Tweak
+- Added LRU for image optimizations

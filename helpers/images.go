@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"os/exec"
-	"slices"
 	"strconv"
 
 	"fmt"
@@ -70,6 +69,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 	log.Infof("(%v) converted image (%s) to webp: %s", time.Since(si.startTime), si.srcPath, si.outputPath)
 }
 
+/*
 func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, exts ...string) {
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {
@@ -84,8 +84,9 @@ func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, e
 		}
 	}
 }
+*/
 
-func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir string, dimensions ...int) string {
+func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
 	// now := time.Now()
 	width := 500
 	intermediateWidth := 1000
@@ -104,17 +105,24 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, srcPath string, toDir stri
 				filepath.Ext(srcPath)), width, hashString)
 	*/
 
-	var outputBuilder strings.Builder
-	outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
-		filepath.Ext(srcPath)))
-	outputBuilder.WriteString("_")
-	outputBuilder.WriteString(strconv.Itoa(width))
-	outputBuilder.WriteString("x.")
-	outputBuilder.WriteString(hashString)
-	outputBuilder.WriteString(".webp")
-	outputPath := outputBuilder.String()
-
-	// log.Infof("image output path time: %v", time.Since(now))
+	var outputPath string
+	cachedOutputPath := lru.Get(hashString)
+	if cachedOutputPath == "" {
+		var outputBuilder strings.Builder
+		outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+			filepath.Ext(srcPath)))
+		outputBuilder.WriteString("_")
+		outputBuilder.WriteString(strconv.Itoa(width))
+		outputBuilder.WriteString("x.")
+		outputBuilder.WriteString(hashString)
+		outputBuilder.WriteString(".webp")
+		outputPath = outputBuilder.String()
+		lru.Set(hashString, outputPath)
+		// log.Infof("image output path time: %v", time.Since(now))
+	} else {
+		outputPath = cachedOutputPath
+		// log.Infof("cached image output path time: %v", time.Since(now))
+	}
 
 	if !FileExists(outputPath) {
 		intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
