@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -288,7 +289,11 @@ func GetFileHash(srcPath string) string {
 		log.Errorf("error getting file hash: %v", err)
 		return ""
 	}
-	return GetHash(fmt.Sprintf("%s-%s-%d", srcPath, fileInfo.ModTime().String(), fileInfo.Size()))
+	var uniqueString strings.Builder
+	uniqueString.WriteString(srcPath)
+	uniqueString.WriteString(fileInfo.ModTime().String())
+	uniqueString.WriteString(strconv.FormatInt(fileInfo.Size(), 10))
+	return GetHash(uniqueString.String())
 }
 
 func GenerateFingerprintsForFolder(folderPath string, targetFolder string, ext string, fileListPtr *map[string]string) {

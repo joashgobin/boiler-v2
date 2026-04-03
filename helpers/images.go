@@ -87,7 +87,7 @@ func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, e
 */
 
 func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
-	now := time.Now()
+	// now := time.Now()
 	width := 500
 	intermediateWidth := 1000
 
@@ -97,7 +97,7 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 	fromDir := filepath.Dir(srcPath)
 	// start := time.Now()
 	hashString := GetFileHash(srcPath)
-	log.Infof("*image hash gen time: %v", time.Since(now))
+	// log.Infof("*image hash gen time: %v", time.Since(now))
 
 	/*
 		outputPath := fmt.Sprintf("%s_%dx.%s.webp",
@@ -118,10 +118,10 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 		outputBuilder.WriteString(".webp")
 		outputPath = outputBuilder.String()
 		lru.Set(hashString, outputPath)
-		log.Infof("image output path time: %v", time.Since(now))
+		// log.Infof("uncached image output path time: %v", time.Since(now))
 	} else {
 		outputPath = cachedOutputPath
-		log.Infof("cached image output path time: %v", time.Since(now))
+		// log.Infof("cached image output path time: %v", time.Since(now))
 	}
 
 	if !FileExists(outputPath) {
@@ -143,7 +143,7 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 
 		// si.ProcessImage(time.Now())
 	}
-	log.Infof("image lookup time: %v", time.Since(now))
+	// log.Infof("image lookup time: %v", time.Since(now))
 	return outputPath
 }
 
