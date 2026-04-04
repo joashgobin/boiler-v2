@@ -4,3 +4,4 @@
 - Remove lru from bank
 - Switched to string builder for get file hash function
 - Updated package
+- Tweak
