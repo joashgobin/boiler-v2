@@ -15,7 +15,7 @@ require (
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/spf13/viper v1.21.0
-	github.com/tdewolff/minify/v2 v2.24.11
+	github.com/tdewolff/minify/v2 v2.24.12
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/standard v1.3.0
@@ -46,7 +46,7 @@ require (
 	github.com/tinylib/msgp v1.6.3 // indirect
 	github.com/valkey-io/valkey-go v1.0.73 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.69.0 // indirect
+	github.com/valyala/fasthttp v1.70.0 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/image v0.38.0 // indirect
