@@ -28,6 +28,15 @@ import (
 	"github.com/joashgobin/boiler-v2/helpers"
 )
 
+// Contains user email, merchant number, purchase description and cost, and purchase type
+type MMGCheckout struct {
+	UserEmail           string
+	MerchantNumber      int
+	PurchaseDescription string
+	Cost                float64
+	PurchaseType        PurchaseType
+}
+
 type MMGInterface interface {
 	// RegisterMerchant adds a merchant to the list of merchants
 	RegisterMerchant(merchantNumber int, merchantName string) error
@@ -35,8 +44,8 @@ type MMGInterface interface {
 	SetMerchantPassword(merchantNumber int, password string) error
 	// GetMerchantPassword returns the password for a merchant
 	GetMerchantPassword(merchantNumber int) string
-	// CheckoutOneTime returns the redirect URL to be used for checkout
-	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string
+	// Checkout returns the redirect URL to be used for checkout
+	Checkout(checkoutObject MMGCheckout) string
 	// QueueHistory loads MMG history for merchant in the background. Use LoadHistory for blocking way of loading history
 	QueueHistory(merchantNumber int, offsetDays ...int)
 	// LoadHistory loads MMG history for merchant by blocking the current method. Use QueueHistory for non-blocking loading of history
@@ -308,6 +317,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		mmgTransaction.Category = transaction.DisplayType
 		mmgTransaction.Reference = transaction.TransactionRef
 		mmgTransaction.Timestamp = transaction.ModificationDate
+		mmgTransaction.Merchant = merchantNumber
 		mmgTransaction.ExternalID = transaction.ExternalID
 
 		for _, party := range transaction.DebitParty {
@@ -324,7 +334,11 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		history = append(history, mmgTransaction)
 	}
 
-	// only metadata is not set
+	m.InsertTransactions(history)
+}
+
+func (m *MMGModel) InsertTransactions(transactions []MMGTransaction) {
+
 	stmt, err := m.DB.Prepare(`
 	INSERT INTO transactions (
 		timestamp,
@@ -351,13 +365,13 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		return
 	}
 
-	for _, txn := range history {
+	for _, txn := range transactions {
 		_, err := stmt.Exec(
 			txn.Timestamp,
 			txn.Reference,
 			txn.Source,
 			txn.Destination,
-			merchantNumber,
+			txn.Merchant,
 			txn.Amount,
 			txn.Currency,
 			txn.Category,
@@ -368,7 +382,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 			tx.Rollback()
 			// log.Errorf("❌ mmg transaction insert error: %v", err)
 		} else {
-			log.Infof("✅ inserted %s) %s: %s -> %s (%f %s)\n", txn.Reference, txn.Category, txn.Source, txn.Destination, txn.Amount, txn.Currency)
+			log.Infof("✅ inserted %s) %s: %s -> %s ($%.2f %s)\n", txn.Reference, txn.Category, txn.Source, txn.Destination, txn.Amount, txn.Currency)
 		}
 	}
 	tx.Commit()
@@ -1164,13 +1178,6 @@ func (m *MMGModel) RegisterMerchant(merchantNumber int, merchantName string) err
 	return nil
 }
 
-/*
-func (m *MMGModel) Checkout(userEmail string, merchantNumber int, productCode string, cost float64) string {
-	_, url := initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productCode, cost)
-	return url
-}
-*/
-
 type PurchaseType int
 
 const (
@@ -1189,8 +1196,8 @@ func getPurchaseTypeName(t PurchaseType) string {
 	}
 }
 
-func (m *MMGModel) CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string {
-	url := m.initiateCheckout(userEmail, merchantNumber, m.GetMerchant(merchantNumber).Name, productDescription, cost, purchaseType)
+func (m *MMGModel) Checkout(checkoutObject MMGCheckout) string {
+	url := m.initiateCheckout(checkoutObject.UserEmail, checkoutObject.MerchantNumber, m.GetMerchant(checkoutObject.MerchantNumber).Name, checkoutObject.PurchaseDescription, checkoutObject.Cost, checkoutObject.PurchaseType)
 	return url
 }
 
