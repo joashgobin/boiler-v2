@@ -4,3 +4,4 @@
 - Refactored mmg transaction object
 - Removed old methods for flash
 - Refactored checkout function
+- Added config for golangci
