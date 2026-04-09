@@ -912,7 +912,7 @@ exec bash
 		Flash:        &helpers.FlashModel{Store: sessionStore},
 		Files:        &helpers.FilesModel{},
 		Bank:         bank,
-		MMG:          payments.NewMMG(db, bank, &wg, config.AppName),
+		MMG:          payments.NewMMG(db, bank, shelf, &wg, config.AppName),
 		Anchor:       ":" + config.Port,
 		Engine:       engine,
 		QR:           helpers.NewQR(),

@@ -498,6 +498,7 @@ func getEnvFileString(merchantNumber int) string {
 }
 
 func extractEnvMap(envStr string) *map[string]string {
+	// log.Infof("extracting from %s", envStr)
 	mapRE := `"key":\s+"(.+)",\s+"value":\s+"(.+)",`
 	matches := regexp.MustCompile(mapRE).FindAllStringSubmatch(envStr, -1)
 	envMap := make(map[string]string, len(matches))
@@ -524,7 +525,7 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 
 	payloadBuilder.WriteString("&api_key=" + (*envMap)["x-api-token"]) //+ helpers.Getenv("MMG_API_ALT"))
 	payloadBuilder.WriteString("&username=" + strconv.Itoa(merchantNumber))
-	payloadBuilder.WriteString("&password=" + (*envMap)["PASSWORD"])
+	payloadBuilder.WriteString("&password=" + m.GetMerchantPassword(merchantNumber))
 	payload := strings.NewReader(payloadBuilder.String())
 	// log.Infof("payload: %s", &payloadBuilder)
 
@@ -894,26 +895,35 @@ func decrypt(ciphertext []byte, privateKey *rsa.PrivateKey) (map[string]interfac
 
 type MMGInterface interface {
 	RegisterMerchant(merchantNumber int, merchantName string) error
-	AddProduct(productCode, itemDescription string) error
-	AddProducts(productMap map[string]string)
+	// SetMerchantPassword sets/updates the password for a merchant
+	SetMerchantPassword(merchantNumber int, password string) error
+	// GetMerchantPassword returns the password for a merchant
+	GetMerchantPassword(merchantNumber int) string
+	// CheckoutOneTime returns the redirect URL to be used for checkout
 	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string
-	// QueueHistory loads MMG history for merchant in a non-blocking way
+	// QueueHistory loads MMG history for merchant in the background. Use LoadHistory for blocking way of loading history
 	QueueHistory(merchantNumber int)
-	// LoadHistory loads MMG history for merchant by blocking the current method
+	// LoadHistory loads MMG history for merchant by blocking the current method. Use QueueHistory for non-blocking loading of history
 	LoadHistory(merchantNumber int)
 	// ClearCache forces removal of the transaction history cache indicator for LoadHistory. Automatically run by QueueHistory
 	ClearCache(merchantNumber int)
 	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
 	GetWallet(merchantNumber int) MMGWallet
+	// GetUserPurchases returns all of the purchases associated with a particular user email address
 	GetUserPurchases(userEmail string) []MMGPurchase
 	GetProduct(productCode string) MMGProduct
+	// GetMerchant returns the details of a particular merchant
 	GetMerchant(merchantNumber int) MMGMerchant
+
+	AddProduct(productCode, itemDescription string) error
+	AddProducts(productMap map[string]string)
 }
 
 type MMGModel struct {
 	DB               *sql.DB
 	WaitGroup        *sync.WaitGroup
 	Bank             helpers.BankInterface
+	Shelf            helpers.ShelfInterface
 	DefaultCacheTime time.Duration
 }
 
@@ -1059,6 +1069,22 @@ func (m *MMGModel) AddProduct(productCode, itemDescription string) error {
 	return nil
 }
 
+func (m *MMGModel) SetMerchantPassword(merchantNumber int, password string) error {
+	// log.Infof("setting password for merchant %d", merchantNumber)
+	key := strconv.Itoa(merchantNumber) + "-password"
+	err := m.Shelf.SetEncrypted(key, password)
+	if err != nil {
+		log.Infof("mmg set merchant password error: %v", err)
+		return fmt.Errorf("mmg set merchant password error: %v", err)
+	}
+	return nil
+}
+
+func (m *MMGModel) GetMerchantPassword(merchantNumber int) string {
+	key := strconv.Itoa(merchantNumber) + "-password"
+	return m.Shelf.GetEncrypted(key)
+}
+
 func (m *MMGModel) RegisterMerchant(merchantNumber int, merchantName string) error {
 
 	query := `
@@ -1165,7 +1191,7 @@ func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, mercha
 	return generateURL(token, config.MerchantMsisdn, config.ClientID)
 }
 
-func NewMMG(db *sql.DB, bank helpers.BankInterface, wg *sync.WaitGroup, appName string) *MMGModel {
+func NewMMG(db *sql.DB, bank helpers.BankInterface, shelf helpers.ShelfInterface, wg *sync.WaitGroup, appName string) *MMGModel {
 
 	// create database
 	helpers.RunMigration(strings.ReplaceAll(`
@@ -1218,6 +1244,7 @@ CREATE TABLE IF NOT EXISTS wallets (
 		DB:               db,
 		WaitGroup:        wg,
 		Bank:             bank,
+		Shelf:            shelf,
 		DefaultCacheTime: time.Minute * 5,
 	}
 }

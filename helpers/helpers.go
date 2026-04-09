@@ -55,7 +55,7 @@ func Background(fn func(), wg *sync.WaitGroup) {
 		// recover any panic
 		defer func() {
 			if err := recover(); err != nil {
-				log.Error(fmt.Sprintf("%v", err))
+				log.Errorf("%v", err)
 			}
 		}()
 		fn()
