@@ -130,7 +130,7 @@ func extractResourceTokenFromBody(data []byte) (string, error) {
 	return "", errors.New("can't find resource token in body")
 }
 
-func (m *MMGModel) LoadMMGTransactionDetails(merchantNumber int, transactionReference string, resourceToken string) {
+func (m *MMGModel) loadMMGTransactionDetails(merchantNumber int, transactionReference string, resourceToken string) {
 	helpers.Background(
 		func() {
 
@@ -292,13 +292,13 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 	/*
 		for _, txn := range history {
 			// log.Infof("QUEUE LOOKUP: %v", txn)
-			m.LoadMMGTransactionDetails(merchantNumber, txn.Reference, resourceToken)
+			m.loadMMGTransactionDetails(merchantNumber, txn.Reference, resourceToken)
 		}
 	*/
 }
 
 func getEnvironmentData(merchantNumber int) (map[string]string, error) {
-	data, err := os.ReadFile(getEnvFilePath(merchantNumber, "UAT"))
+	data, err := os.ReadFile(getEnvFilePath(merchantNumber))
 	if err != nil {
 		fmt.Printf("error reading file: %v\n", err)
 		return nil, err
@@ -365,7 +365,11 @@ func requestMMGJSON(merchantNumber int, url string, resourceToken string) (strin
 	return string(body), res
 }
 
-func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) {
+func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool, offsetDays ...int) {
+	offset := 0
+	if len(offsetDays) > 0 {
+		offset = offsetDays[0]
+	}
 	if !blocking {
 		m.ClearCache(merchantNumber)
 	}
@@ -380,8 +384,8 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 	loadFunc := func() {
 		// build transaction history URL from timestamps
 		now := time.Now()
-		toDate := now.AddDate(0, 0, 0).Format("2006-01-02T15:04:05.000Z")
-		fromDate := now.AddDate(0, 0, -30).Format("2006-01-02T15:04:05.000Z")
+		toDate := now.AddDate(0, 0, 0+offset).Format("2006-01-02T15:04:05.000Z")
+		fromDate := now.AddDate(0, 0, -30+offset).Format("2006-01-02T15:04:05.000Z")
 
 		// get env values
 		envStr := getEnvFileString(merchantNumber)
@@ -463,19 +467,23 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool) 
 	}
 }
 
-func getEnvFilePath(merchantNumber int, substr string) string {
-	merchantFolderPath := fmt.Sprintf("merchants/%d/", merchantNumber)
-	configFiles, err := os.ReadDir(merchantFolderPath)
-	if err != nil {
-		log.Errorf("read merchant config error: %v", err)
-		return ""
-	}
+func getEnvFilePath(merchantNumber int) string {
+	checks := []string{"UAT Environment", "PROD Environment"}
 	envFilePath := ""
-	for _, file := range configFiles {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), substr) {
-			// fmt.Println(file.Name())
-			envFilePath = merchantFolderPath + file.Name()
-			break
+
+	for _, substr := range checks {
+		merchantFolderPath := fmt.Sprintf("merchants/%d/", merchantNumber)
+		configFiles, err := os.ReadDir(merchantFolderPath)
+		if err != nil {
+			// log.Errorf("read merchant config error: %v", err)
+			continue
+		}
+
+		for _, file := range configFiles {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), ".json") && strings.Contains(file.Name(), substr) {
+				envFilePath = merchantFolderPath + file.Name()
+				break
+			}
 		}
 	}
 
@@ -483,12 +491,13 @@ func getEnvFilePath(merchantNumber int, substr string) string {
 		log.Errorf("read merchant config error: could not find postman env JSON file")
 		return ""
 	}
+	log.Infof("found postman env path: %s", envFilePath)
 	return envFilePath
 }
 
 func getEnvFileString(merchantNumber int) string {
 	envStr := ""
-	envFilePath := getEnvFilePath(merchantNumber, "UAT")
+	envFilePath := getEnvFilePath(merchantNumber)
 	envFile, err := os.ReadFile(envFilePath)
 	if err != nil {
 		return ""
@@ -555,7 +564,7 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 	token, err := extractResourceTokenFromBody(body)
 
 	if err != nil {
-		log.Error("failed to extract resource token")
+		log.Errorf("failed to extract resource token: %v", err)
 		return ""
 	}
 	log.Infof("new resource token for %d: %s", merchantNumber, token)
@@ -902,9 +911,9 @@ type MMGInterface interface {
 	// CheckoutOneTime returns the redirect URL to be used for checkout
 	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string
 	// QueueHistory loads MMG history for merchant in the background. Use LoadHistory for blocking way of loading history
-	QueueHistory(merchantNumber int)
+	QueueHistory(merchantNumber int, offsetDays ...int)
 	// LoadHistory loads MMG history for merchant by blocking the current method. Use QueueHistory for non-blocking loading of history
-	LoadHistory(merchantNumber int)
+	LoadHistory(merchantNumber int, offsetDays ...int)
 	// ClearCache forces removal of the transaction history and wallet cache indicators for a merchant. Automatically run by QueueHistory
 	ClearCache(merchantNumber int)
 	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
@@ -1031,12 +1040,12 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 	return purchases
 }
 
-func (m *MMGModel) QueueHistory(merchantNumber int) {
-	m.loadMMGTransactionHistory(merchantNumber, false)
+func (m *MMGModel) QueueHistory(merchantNumber int, offsetDays ...int) {
+	m.loadMMGTransactionHistory(merchantNumber, false, offsetDays...)
 }
 
-func (m *MMGModel) LoadHistory(merchantNumber int) {
-	m.loadMMGTransactionHistory(merchantNumber, true)
+func (m *MMGModel) LoadHistory(merchantNumber int, offsetDays ...int) {
+	m.loadMMGTransactionHistory(merchantNumber, true, offsetDays...)
 }
 
 func (m *MMGModel) ClearCache(merchantNumber int) {
@@ -1208,8 +1217,6 @@ CREATE TABLE IF NOT EXISTS transactions (
 	currency 		VARCHAR(5) NOT NULL,
 	category  		VARCHAR(30) NOT NULL,
 	status    		VARCHAR(20) NOT NULL,
-    metadata 		VARCHAR(100),
-    user 			VARCHAR(100),
 	internalid 		VARCHAR(40)
 );
 
