@@ -28,6 +28,45 @@ import (
 	"github.com/joashgobin/boiler-v2/helpers"
 )
 
+type MMGInterface interface {
+	// RegisterMerchant adds a merchant to the list of merchants
+	RegisterMerchant(merchantNumber int, merchantName string) error
+	// SetMerchantPassword sets/updates the password for a merchant
+	SetMerchantPassword(merchantNumber int, password string) error
+	// GetMerchantPassword returns the password for a merchant
+	GetMerchantPassword(merchantNumber int) string
+	// CheckoutOneTime returns the redirect URL to be used for checkout
+	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string
+	// QueueHistory loads MMG history for merchant in the background. Use LoadHistory for blocking way of loading history
+	QueueHistory(merchantNumber int, offsetDays ...int)
+	// LoadHistory loads MMG history for merchant by blocking the current method. Use QueueHistory for non-blocking loading of history
+	LoadHistory(merchantNumber int, offsetDays ...int)
+	// ClearCache forces removal of the transaction history and wallet cache indicators for a merchant. Automatically run by QueueHistory
+	ClearCache(merchantNumber int)
+	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
+	GetWallet(merchantNumber int) MMGWallet
+	// GetUserPurchases returns all of the purchases associated with a particular user email address
+	GetUserPurchases(userEmail string) []MMGPurchase
+	// GetMerchant returns the details of a particular merchant
+	GetMerchant(merchantNumber int) MMGMerchant
+	// GetMerchantTransactions returns the list of transactions associated with a merchant
+	GetMerchantTransactions(merchantNumber int) []MMGTransaction
+
+	AddProduct(productCode, itemDescription string) error
+	AddProducts(productMap map[string]string)
+	GetProduct(productCode string) MMGProduct
+}
+
+type MMGModel struct {
+	DB               *sql.DB
+	WaitGroup        *sync.WaitGroup
+	Bank             helpers.BankInterface
+	Shelf            helpers.ShelfInterface
+	DefaultCacheTime time.Duration
+}
+
+var _ MMGInterface = (*MMGModel)(nil)
+
 // Environment represents a Postman environment file
 type Environment struct {
 	ID                   string                `json:"id"`
@@ -945,44 +984,6 @@ func decrypt(ciphertext []byte, privateKey *rsa.PrivateKey) (map[string]interfac
 	// log.Infof("Decrypted response:", data)
 	return data, nil
 }
-
-type MMGInterface interface {
-	RegisterMerchant(merchantNumber int, merchantName string) error
-	// SetMerchantPassword sets/updates the password for a merchant
-	SetMerchantPassword(merchantNumber int, password string) error
-	// GetMerchantPassword returns the password for a merchant
-	GetMerchantPassword(merchantNumber int) string
-	// CheckoutOneTime returns the redirect URL to be used for checkout
-	CheckoutOneTime(userEmail string, merchantNumber int, productDescription string, cost float64, purchaseType PurchaseType) string
-	// QueueHistory loads MMG history for merchant in the background. Use LoadHistory for blocking way of loading history
-	QueueHistory(merchantNumber int, offsetDays ...int)
-	// LoadHistory loads MMG history for merchant by blocking the current method. Use QueueHistory for non-blocking loading of history
-	LoadHistory(merchantNumber int, offsetDays ...int)
-	// ClearCache forces removal of the transaction history and wallet cache indicators for a merchant. Automatically run by QueueHistory
-	ClearCache(merchantNumber int)
-	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
-	GetWallet(merchantNumber int) MMGWallet
-	// GetUserPurchases returns all of the purchases associated with a particular user email address
-	GetUserPurchases(userEmail string) []MMGPurchase
-	GetProduct(productCode string) MMGProduct
-	// GetMerchant returns the details of a particular merchant
-	GetMerchant(merchantNumber int) MMGMerchant
-	// GetMerchantTransactions returns the list of transactions associated with a merchant
-	GetMerchantTransactions(merchantNumber int) []MMGTransaction
-
-	AddProduct(productCode, itemDescription string) error
-	AddProducts(productMap map[string]string)
-}
-
-type MMGModel struct {
-	DB               *sql.DB
-	WaitGroup        *sync.WaitGroup
-	Bank             helpers.BankInterface
-	Shelf            helpers.ShelfInterface
-	DefaultCacheTime time.Duration
-}
-
-var _ MMGInterface = (*MMGModel)(nil)
 
 type MMGMerchant struct {
 	Name   string

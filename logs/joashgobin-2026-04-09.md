@@ -2,3 +2,4 @@
 
 - Removed unused columns from transactions table and added offset for history functions
 - Refactored mmg transaction object
+- Removed old methods for flash

@@ -11,16 +11,23 @@ import (
 )
 
 type FlashInterface interface {
+	// Push adds a message with optional arguments to the set of flash messages
 	Push(c fiber.Ctx, message string, args ...any) error
-	ClearOld(c fiber.Ctx)
-	Redirect(c fiber.Ctx, route string, message string, args ...any) error
+
 	Require(keys ...string) fiber.Handler
 	RequireRedirect(redirectRoute string, keys ...string) fiber.Handler
+
+	// Get returns the value for a key if exists in the current session otherwise the default value specified
 	Get(c fiber.Ctx, key string, defaultValue ...any) any
+	// GetString returns the string value for a key if exists in the current session otherwise the default value specified
 	GetString(c fiber.Ctx, key string, defaultValue ...string) string
+	// GetInt returns the integer value for a key if exists in the current session otherwise the default value specified
 	GetInt(c fiber.Ctx, key string, defaultValue ...int) int
+	// Set sets/updates the value for a key associated with the current session
 	Set(c fiber.Ctx, key string, value any) error
+	// SetMany sets/updates multiple values for keys associated with the current session
 	SetMany(c fiber.Ctx, pairs map[string]any) error
+
 	Prefetch(c fiber.Ctx, urls ...string)
 	KeepCached(c fiber.Ctx, maxAge int)
 }
@@ -158,14 +165,6 @@ func (flash *FlashModel) SetMany(c fiber.Ctx, pairs map[string]any) error {
 	return nil
 }
 
-func (flash *FlashModel) Redirect(c fiber.Ctx, route string, message string, args ...any) error {
-	if len(args) > 0 {
-		message = fmt.Sprintf(message, args...)
-	}
-	flash.Push(c, message)
-	return c.Redirect().To(route + "?show=retained")
-}
-
 func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
 	sess, err := flash.Store.Get(c)
 	defer sess.Release()
@@ -185,18 +184,6 @@ func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 	return nil
-}
-
-func (flash *FlashModel) ClearOld(c fiber.Ctx) {
-	sess, err := flash.Store.Get(c)
-	defer sess.Release()
-	if err != nil {
-		return
-	}
-	sess.Set("old", nil)
-	if err := sess.Save(); err != nil {
-		return
-	}
 }
 
 func IncludeSessionLocals(store *session.Store) fiber.Handler {
