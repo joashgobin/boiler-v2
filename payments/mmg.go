@@ -78,16 +78,16 @@ type TransactionModel struct {
 }
 
 type MMGTransaction struct {
-	Timestamp  time.Time
-	Reference  string
-	From       string
-	To         string
-	Amount     float64
-	Currency   string
-	Category   string
-	Status     string
-	Metadata   string
-	ExternalID string
+	Timestamp   time.Time
+	Reference   string
+	Source      string
+	Destination string
+	Amount      float64
+	Currency    string
+	Category    string
+	Status      string
+	Merchant    int
+	ExternalID  string
 }
 
 // Config holds application configuration
@@ -206,6 +206,50 @@ func (m *MMGModel) loadMMGTransactionDetails(merchantNumber int, transactionRefe
 		}, m.WaitGroup)
 }
 
+func (m *MMGModel) GetMerchantTransactions(merchantNumber int) []MMGTransaction {
+	var transactions []MMGTransaction
+	query := `SELECT
+		timestamp,
+		reference,
+		source,
+		destination,
+		merchant,
+		amount,
+		currency,
+		category,
+		status,
+		internalid FROM transactions WHERE merchant = ?
+		`
+	rows, err := m.DB.Query(query, merchantNumber)
+	if err != nil {
+		log.Infof("mmg get merchant transactions query error: %v", err)
+		return transactions
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var transaction MMGTransaction
+		err := rows.Scan(
+			&transaction.Timestamp,
+			&transaction.Reference,
+			&transaction.Source,
+			&transaction.Destination,
+			&transaction.Merchant,
+			&transaction.Amount,
+			&transaction.Currency,
+			&transaction.Category,
+			&transaction.Status,
+			&transaction.ExternalID,
+		)
+		if err != nil {
+			log.Errorf("mmg get merchant transactions scan error: %v", err)
+			continue
+		}
+		transactions = append(transactions, transaction)
+	}
+	return transactions
+}
+
 func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceToken string) {
 	var response TransactionsResponse
 	err := json.Unmarshal([]byte(data), &response)
@@ -229,13 +273,13 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 
 		for _, party := range transaction.DebitParty {
 			if party.Key == "accountid" {
-				mmgTransaction.From = party.Value
+				mmgTransaction.Source = party.Value
 			}
 		}
 
 		for _, party := range transaction.CreditParty {
 			if party.Key == "accountid" {
-				mmgTransaction.To = party.Value
+				mmgTransaction.Destination = party.Value
 			}
 		}
 		history = append(history, mmgTransaction)
@@ -272,8 +316,8 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 		_, err := stmt.Exec(
 			txn.Timestamp,
 			txn.Reference,
-			txn.From,
-			txn.To,
+			txn.Source,
+			txn.Destination,
 			merchantNumber,
 			txn.Amount,
 			txn.Currency,
@@ -285,7 +329,7 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 			tx.Rollback()
 			// log.Errorf("❌ mmg transaction insert error: %v", err)
 		} else {
-			log.Infof("✅ inserted %s) %s: %s -> %s (%f %s)\n", txn.Reference, txn.Category, txn.From, txn.To, txn.Amount, txn.Currency)
+			log.Infof("✅ inserted %s) %s: %s -> %s (%f %s)\n", txn.Reference, txn.Category, txn.Source, txn.Destination, txn.Amount, txn.Currency)
 		}
 	}
 	tx.Commit()
@@ -468,7 +512,7 @@ func (m *MMGModel) loadMMGTransactionHistory(merchantNumber int, blocking bool, 
 }
 
 func getEnvFilePath(merchantNumber int) string {
-	checks := []string{"UAT Environment", "PROD Environment"}
+	checks := []string{"PROD Environment", "UAT Environment"}
 	envFilePath := ""
 
 	for _, substr := range checks {
@@ -491,7 +535,7 @@ func getEnvFilePath(merchantNumber int) string {
 		log.Errorf("read merchant config error: could not find postman env JSON file")
 		return ""
 	}
-	log.Infof("found postman env path: %s", envFilePath)
+	// log.Infof("found postman env path: %s", envFilePath)
 	return envFilePath
 }
 
@@ -923,6 +967,8 @@ type MMGInterface interface {
 	GetProduct(productCode string) MMGProduct
 	// GetMerchant returns the details of a particular merchant
 	GetMerchant(merchantNumber int) MMGMerchant
+	// GetMerchantTransactions returns the list of transactions associated with a merchant
+	GetMerchantTransactions(merchantNumber int) []MMGTransaction
 
 	AddProduct(productCode, itemDescription string) error
 	AddProducts(productMap map[string]string)
