@@ -6,3 +6,4 @@
 - Refactored checkout function
 - Added config for golangci
 - Updated list of linters
+- Update linter list
