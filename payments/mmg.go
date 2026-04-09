@@ -558,7 +558,7 @@ func (m *MMGModel) LoadNewResourceToken(merchantNumber int) string {
 		log.Error("failed to extract resource token")
 		return ""
 	}
-	// log.Infof("new resource token: %s", token)
+	log.Infof("new resource token for %d: %s", merchantNumber, token)
 	helpers.SetShelf(m.DB, "resource-token-"+strconv.Itoa(merchantNumber), token)
 	return token
 }
@@ -905,7 +905,7 @@ type MMGInterface interface {
 	QueueHistory(merchantNumber int)
 	// LoadHistory loads MMG history for merchant by blocking the current method. Use QueueHistory for non-blocking loading of history
 	LoadHistory(merchantNumber int)
-	// ClearCache forces removal of the transaction history cache indicator for LoadHistory. Automatically run by QueueHistory
+	// ClearCache forces removal of the transaction history and wallet cache indicators for a merchant. Automatically run by QueueHistory
 	ClearCache(merchantNumber int)
 	// GetWallet returns an MMG wallet containing details about merchant number, current balance and available balance
 	GetWallet(merchantNumber int) MMGWallet
