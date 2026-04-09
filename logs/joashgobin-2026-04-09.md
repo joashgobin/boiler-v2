@@ -5,3 +5,4 @@
 - Removed old methods for flash
 - Refactored checkout function
 - Added config for golangci
+- Updated list of linters

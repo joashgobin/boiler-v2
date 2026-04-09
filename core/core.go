@@ -407,6 +407,8 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 			helpers.FileSubstitute(filepath.Dir(coreDir)+"/air/config.env", "config.env", map[string]string{})
 		}
 
+		helpers.FileSubstitute(filepath.Dir(coreDir)+"/air/.golangci.yaml", ".golangci.yaml", map[string]string{})
+
 		if !helpers.FileExists("static/main.css") {
 			helpers.TouchFile("static/main.css")
 		}

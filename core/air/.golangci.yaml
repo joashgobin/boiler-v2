@@ -3,4 +3,15 @@ version: "2"
 linters:
   enable:
     - exhaustruct
-
+    - sqlclosecheck
+    - unused
+    - ireturn
+    - gosec
+    - godox
+    - godoclint
+    - gocognit
+    - errcheck
+    - govet
+    - nilerr
+    - nilnil
+    - staticcheck
