@@ -2,3 +2,4 @@
 
 - Added function for adding transactions
 - Updated some libraries
+- Added fields to mmg purchase struct

@@ -1025,6 +1025,8 @@ type MMGPurchase struct {
 	Description string
 	Amount      float64
 	Timestamp   time.Time
+	Currency    string
+	Type        string
 }
 
 type MMGWallet struct {
@@ -1077,7 +1079,7 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 	var purchases []MMGPurchase
 
 	query := `
-	SELECT t.internalid, t.timestamp, t.amount, p.user, p.description
+	SELECT t.internalid, t.timestamp, t.amount, t.currency, p.user, p.description, p.type
 	FROM transactions t
 	JOIN purchases p
 	ON p.id = t.internalid
@@ -1096,8 +1098,10 @@ func (m *MMGModel) GetUserPurchases(userEmail string) []MMGPurchase {
 			&purchase.ID,
 			&purchase.Timestamp,
 			&purchase.Amount,
+			&purchase.Currency,
 			&purchase.User,
 			&purchase.Description,
+			&purchase.Type,
 		)
 		if err != nil {
 			log.Errorf("mmg user purchases scan error: %v", err)
