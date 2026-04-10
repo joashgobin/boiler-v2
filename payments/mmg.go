@@ -61,6 +61,11 @@ type MMGInterface interface {
 	// GetMerchantTransactions returns the list of transactions associated with a merchant
 	GetMerchantTransactions(merchantNumber int) []MMGTransaction
 
+	// InsertTransaction adds an mmg transaction to the database
+	InsertTransaction(transaction MMGTransaction)
+	// InsertTransactions adds a list of mmg transaction to the database
+	InsertTransactions(transactions []MMGTransaction)
+
 	AddProduct(productCode, itemDescription string) error
 	AddProducts(productMap map[string]string)
 	GetProduct(productCode string) MMGProduct
@@ -337,8 +342,13 @@ func (m *MMGModel) getTransactionData(data string, merchantNumber int, resourceT
 	m.InsertTransactions(history)
 }
 
-func (m *MMGModel) InsertTransactions(transactions []MMGTransaction) {
+func (m *MMGModel) InsertTransaction(transaction MMGTransaction) {
+	m.InsertTransactions([]MMGTransaction{
+		transaction,
+	})
+}
 
+func (m *MMGModel) InsertTransactions(transactions []MMGTransaction) {
 	stmt, err := m.DB.Prepare(`
 	INSERT INTO transactions (
 		timestamp,
