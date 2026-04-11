@@ -295,65 +295,6 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 	gob.Register(map[string]string{})
 	gob.Register(models.User{})
 
-	// declare database URIs
-	var dbURI string = os.Getenv("FIBER_USER_URI")
-
-	// init database connection
-	db, err := helpers.OpenDB(dbURI + config.AppName + "?parseTime=true&multiStatements=true")
-	if err != nil {
-		log.Fatal(err)
-		return nil, Base{}
-	}
-
-	// run special migrations
-	helpers.InitShelf(db, config.AppName)
-	models.InitUsers(db, config.AppName)
-
-	shelf := &helpers.ShelfModel{DB: db}
-
-	// init storage middleware
-	storage := valkey.New(valkey.Config{
-		InitAddress: []string{"localhost:6379"},
-		Username:    "",
-		Password:    "",
-		SelectDB:    0,
-		Reset:       false,
-		TLSConfig:   nil,
-	})
-
-	// init LRU
-	lru := helpers.NewLRU()
-
-	// init bank model
-	bank := helpers.NewBank(storage, config.AppName)
-
-	fingerprints := make(map[string]string, 50)
-	optimizations := make(map[string]string, 50)
-
-	// generate new minified style file with fingerprint in file name
-	helpers.GenerateFingerprintsForFolder("static", "static/gen", ".css", &fingerprints)
-
-	// optimize css files for used class names
-	err = helpers.SaveCSSClasses(config.Templates, "static/gen/mango-opt.css",
-		"static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
-	if err != nil {
-		log.Errorf("failed to crunch CSS: %v", err)
-	}
-
-	// save components into shelf
-	cmpLog := map[string]string{}
-	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
-
-	// combine stylesheet files into a single file and fingerprint
-	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
-		"static/styles/mango.css", "static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
-	helpers.CombineAndFingerprint("static/gen/mango-simplified.css", &fingerprints,
-		"static/styles/mango.css", "static/gen/mango-opt.css")
-	helpers.CombineAndFingerprint("static/gen/grug.css", &fingerprints,
-		"static/styles/grug.css", "static/styles/grug-utils.css", "static/styles/grug-tokens.css", "static/styles/grug-blocks.css")
-
-	showElapsed("app resource optimization time", start)
-
 	// get core directory
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
@@ -367,7 +308,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 	}
 
 	if !fiber.IsChild() {
-		// create remote directory for adding migration scripts
+		// create remote directory for adding deployment files
 		helpers.CreateDirectory("remote/")
 
 		// create uploads directory for uploads via forms
@@ -473,6 +414,65 @@ exec bash
 	}
 
 	showElapsed("app resource copy time", start)
+
+	// declare database URIs
+	var dbURI string = os.Getenv("FIBER_USER_URI")
+
+	// init database connection
+	db, err := helpers.OpenDB(dbURI + config.AppName + "?parseTime=true&multiStatements=true")
+	if err != nil {
+		log.Fatal(err)
+		return nil, Base{}
+	}
+
+	// run special migrations
+	helpers.InitShelf(db, config.AppName)
+	models.InitUsers(db, config.AppName)
+
+	shelf := &helpers.ShelfModel{DB: db}
+
+	// init storage middleware
+	storage := valkey.New(valkey.Config{
+		InitAddress: []string{"localhost:6379"},
+		Username:    "",
+		Password:    "",
+		SelectDB:    0,
+		Reset:       false,
+		TLSConfig:   nil,
+	})
+
+	// init LRU
+	lru := helpers.NewLRU()
+
+	// init bank model
+	bank := helpers.NewBank(storage, config.AppName)
+
+	fingerprints := make(map[string]string, 50)
+	optimizations := make(map[string]string, 50)
+
+	// generate new minified style file with fingerprint in file name
+	helpers.GenerateFingerprintsForFolder("static", "static/gen", ".css", &fingerprints)
+
+	// optimize css files for used class names
+	err = helpers.SaveCSSClasses(config.Templates, "static/gen/mango-opt.css",
+		"static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
+	if err != nil {
+		log.Errorf("failed to crunch CSS: %v", err)
+	}
+
+	// save components into shelf
+	cmpLog := map[string]string{}
+	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
+
+	// combine stylesheet files into a single file and fingerprint
+	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
+		"static/styles/mango.css", "static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
+	helpers.CombineAndFingerprint("static/gen/mango-simplified.css", &fingerprints,
+		"static/styles/mango.css", "static/gen/mango-opt.css")
+	helpers.CombineAndFingerprint("static/gen/grug.css", &fingerprints,
+		"static/styles/grug.css", "static/styles/grug-utils.css", "static/styles/grug-tokens.css", "static/styles/grug-blocks.css")
+
+	showElapsed("app resource optimization time", start)
 
 	imageChannel := make(chan *helpers.SafeImage, 10)
 
