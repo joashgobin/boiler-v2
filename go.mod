@@ -44,7 +44,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.11 // indirect
 	github.com/tinylib/msgp v1.6.3 // indirect
-	github.com/valkey-io/valkey-go v1.0.73 // indirect
+	github.com/valkey-io/valkey-go v1.0.74 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.70.0 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
