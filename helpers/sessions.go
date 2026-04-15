@@ -166,23 +166,29 @@ func (flash *FlashModel) SetMany(c fiber.Ctx, pairs map[string]any) error {
 }
 
 func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
-	sess, err := flash.Store.Get(c)
-	defer sess.Release()
-	if err != nil {
-		return err
-	}
+	/*
+		sess, err := flash.Store.Get(c)
+		defer sess.Release()
+		if err != nil {
+			return err
+		}
+	*/
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}
 
-	sess.Set("flashMessage", message)
+	c.Locals("flash", message)
 
-	// skip clearing flash message via locals
-	sess.Set("delayFlashClear", true)
+	/*
+		sess.Set("flashMessage", message)
 
-	if err := sess.Save(); err != nil {
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
+		// skip clearing flash message via locals
+		sess.Set("delayFlashClear", true)
+
+		if err := sess.Save(); err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+	*/
 	return nil
 }
 
@@ -203,6 +209,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		c.Locals("user", sess.Get("user"))
 		c.Locals("csrf", csrf.TokenFromContext(c))
 		c.Locals("_messages", c.Redirect().Messages())
+		// log.Infof("messages: %v", c.Redirect().Messages())
 		c.Locals("old", c.Redirect().OldInputs())
 
 		updatedSession := false
@@ -213,13 +220,15 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		}
 
 		// pass flash message to locals if indicated by Push()
-		if sess.Get("delayFlashClear") != nil {
-			sess.Delete("delayFlashClear")
-			c.Locals("flash", sess.Get("flashMessage"))
-			updatedSession = true
-		} else {
-			c.Locals("flash", nil)
-		}
+		/*
+			if sess.Get("delayFlashClear") != nil {
+				sess.Delete("delayFlashClear")
+				c.Locals("flash", sess.Get("flashMessage"))
+				updatedSession = true
+			} else {
+				c.Locals("flash", nil)
+			}
+		*/
 
 		// save session once if any changes were made
 		if updatedSession {
@@ -236,8 +245,8 @@ func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		warning, err := EnsureFiberFormFields(c, keys)
 		if err != nil {
-			flash.Push(c, warning)
-			return c.Redirect().WithInput().Back()
+			// flash.Push(c, warning)
+			return c.Redirect().WithInput().With("warning", warning).Back()
 		}
 		return c.Next()
 	}

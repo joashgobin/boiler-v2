@@ -1,6 +1,6 @@
-<p id="flash" {{with .flash}}class="animate"{{end}}>{{with .flash}}{{.}}{{else}}No messages{{end}}</p>
-<p id="flash" {{with ._messages}}class="animate"{{end}}>{{with ._messages}}
+<p id="flash" {{with .flash}}class="animate" {{end}}>{{with .flash}}{{.}}{{else}}No messages{{end}}</p>
+<p id="flash" {{with ._messages}}class="animate" {{end}}>{{with ._messages}}
     {{range $i,$v:=.}}
-    <p>($i) {{$v}}</p>
-    {{end}}
+<p>{{$v}}</p>
+{{end}}
 {{else}}No messages{{end}}</p>
