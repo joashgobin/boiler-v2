@@ -188,6 +188,7 @@ func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
 
 func IncludeSessionLocals(store *session.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
+		now := time.Now()
 		c.Set("Cache-Control", "private,max-age=0")
 
 		sess, err := store.Get(c)
@@ -210,12 +211,16 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		// add old values to locals
 		c.Locals("old", c.Redirect().OldInputs())
 
+		log.Infof("session locals set main locals time: %v", time.Since(now))
+
 		updatedSession := false
 
 		if sess.Get("user") == nil {
 			sess.SetIdleTimeout(time.Minute * 2)
 			updatedSession = true
 		}
+
+		log.Infof("session locals set idle timeout time: %v", time.Since(now))
 
 		// pass flash message to locals if indicated by Push()
 		if sess.Get("delayFlashClear") != nil {
@@ -226,6 +231,8 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 			c.Locals("flash", nil)
 		}
 
+		log.Infof("session locals delay flash message time: %v", time.Since(now))
+
 		// save session once if any changes were made
 		if updatedSession {
 			if err := sess.Save(); err != nil {
@@ -233,6 +240,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 			}
 		}
 
+		log.Infof("session locals final time: %v", time.Since(now))
 		return c.Next()
 	}
 }
