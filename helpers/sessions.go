@@ -221,7 +221,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		}
 
 		// add session to locals
-		c.Locals("session", sess)
+		// c.Locals("session", sess)
 
 		// add values to locals
 		c.Locals("user", sess.Get("user"))
