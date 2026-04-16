@@ -942,7 +942,12 @@ exec bash
 		Storage: storage,
 	}))
 
-	app.Use(pprof.New(pprof.Config{Prefix: "/profiler"}))
+	app.Use(pprof.New(pprof.Config{
+		Prefix: "/profiler",
+		Next: func(c fiber.Ctx) bool {
+			return c.IP() != "127.0.0.1"
+		},
+	}))
 
 	app.Use(helpers.IncludeSessionLocals(sessionStore))
 

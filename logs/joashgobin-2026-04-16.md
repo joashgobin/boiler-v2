@@ -6,3 +6,4 @@
 - Remove redundant get
 - Updated middleware
 - Switch from sprintf to string builder
+- Skip pprof for non localhost IPs
