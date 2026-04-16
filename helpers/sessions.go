@@ -12,10 +12,10 @@ import (
 
 type FlashInterface interface {
 	// Push adds a message with optional arguments to the set of flash messages
-	Push(c fiber.Ctx, message string, args ...any) error
+	// Push(c fiber.Ctx, message string, args ...any) error
 
 	Require(keys ...string) fiber.Handler
-	RequireRedirect(redirectRoute string, keys ...string) fiber.Handler
+	// RequireRedirect(redirectRoute string, keys ...string) fiber.Handler
 
 	// Get returns the value for a key if exists in the current session otherwise the default value specified
 	Get(c fiber.Ctx, key string, defaultValue ...any) any
@@ -165,21 +165,19 @@ func (flash *FlashModel) SetMany(c fiber.Ctx, pairs map[string]any) error {
 	return nil
 }
 
+/*
 func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
-	/*
 		sess, err := flash.Store.Get(c)
 		defer sess.Release()
 		if err != nil {
 			return err
 		}
-	*/
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}
 
 	c.Locals("flash", message)
 
-	/*
 		sess.Set("flashMessage", message)
 
 		// skip clearing flash message via locals
@@ -188,9 +186,9 @@ func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
 		if err := sess.Save(); err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
-	*/
 	return nil
 }
+*/
 
 func IncludeSessionLocals(store *session.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
@@ -252,13 +250,15 @@ func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 	}
 }
 
+/*
 func (flash *FlashModel) RequireRedirect(redirectRoute string, keys ...string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		warning, err := EnsureFiberFormFields(c, keys)
 		if err != nil {
-			flash.Push(c, warning)
+			// flash.Push(c, warning)
 			return c.Redirect().To(redirectRoute + "?show=retained")
 		}
 		return c.Next()
 	}
 }
+*/
