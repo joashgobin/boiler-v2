@@ -4,3 +4,4 @@
 - Updated csrf error message
 - Set idle timeout once
 - Remove redundant get
+- Updated middleware

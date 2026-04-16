@@ -204,11 +204,13 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 
 		updatedSession := false
 
-		if user == nil && sess.Get("idleUpdated") == nil {
-			// log.Info("updated idle timeout")
-			sess.SetIdleTimeout(time.Minute * 2)
-			sess.Set("idleUpdated", true)
-			updatedSession = true
+		if user == nil {
+			if sess.Get("idleUpdated") == nil {
+				// log.Info("updated idle timeout")
+				sess.SetIdleTimeout(time.Minute * 2)
+				sess.Set("idleUpdated", true)
+				updatedSession = true
+			}
 		}
 
 		// save session once if any changes were made
