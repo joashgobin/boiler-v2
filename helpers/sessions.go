@@ -15,26 +15,26 @@ type RedirectBuilder struct {
 	message string
 }
 
-type RedirectBuilderInterface interface {
-}
-
+// Redirect back to the previous route
 func (rb RedirectBuilder) Back() error {
-	return rb.context.Redirect().With("message", rb.message).Back()
+	return rb.context.Redirect().WithInput().With("message", rb.message).Back()
 }
 
+// Redirect to a particular URL
 func (rb RedirectBuilder) To(route string) error {
-	return rb.context.Redirect().With("message", rb.message).To(route)
+	return rb.context.Redirect().WithInput().With("message", rb.message).To(route)
 }
 
+// Redirect to a named route
 func (rb RedirectBuilder) Route(routeName string) error {
-	return rb.context.Redirect().With("message", rb.message).Route(routeName)
+	return rb.context.Redirect().WithInput().With("message", rb.message).Route(routeName)
 }
 
 type FlashInterface interface {
-	// RedirectBack returns to the previous route and adds flash messages to it
-	RedirectBack(c fiber.Ctx, message string, args ...any) error
+	// Redirect redirects the user to another page with the specified message
 	Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder
 
+	// Require is a middleware that ensures that a route has certain keys in its form values
 	Require(keys ...string) fiber.Handler
 
 	// Get returns the value for a key if exists in the current session otherwise the default value specified
@@ -185,31 +185,6 @@ func (flash *FlashModel) SetMany(c fiber.Ctx, pairs map[string]any) error {
 	return nil
 }
 
-/*
-func (flash *FlashModel) Push(c fiber.Ctx, message string, args ...any) error {
-		sess, err := flash.Store.Get(c)
-		defer sess.Release()
-		if err != nil {
-			return err
-		}
-	if len(args) > 0 {
-		message = fmt.Sprintf(message, args...)
-	}
-
-	c.Locals("flash", message)
-
-		sess.Set("flashMessage", message)
-
-		// skip clearing flash message via locals
-		sess.Set("delayFlashClear", true)
-
-		if err := sess.Save(); err != nil {
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-	return nil
-}
-*/
-
 func IncludeSessionLocals(store *session.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		c.Set("Cache-Control", "private,max-age=0")
@@ -219,9 +194,6 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		if err != nil {
 			return err
 		}
-
-		// add session to locals
-		// c.Locals("session", sess)
 
 		// add values to locals
 		c.Locals("user", sess.Get("user"))
@@ -235,17 +207,6 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 			sess.SetIdleTimeout(time.Minute * 2)
 			updatedSession = true
 		}
-
-		// pass flash message to locals if indicated by Push()
-		/*
-			if sess.Get("delayFlashClear") != nil {
-				sess.Delete("delayFlashClear")
-				c.Locals("flash", sess.Get("flashMessage"))
-				updatedSession = true
-			} else {
-				c.Locals("flash", nil)
-			}
-		*/
 
 		// save session once if any changes were made
 		if updatedSession {
@@ -267,26 +228,6 @@ func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 		}
 		return c.Next()
 	}
-}
-
-/*
-func (flash *FlashModel) RequireRedirect(redirectRoute string, keys ...string) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		warning, err := EnsureFiberFormFields(c, keys)
-		if err != nil {
-			// flash.Push(c, warning)
-			return c.Redirect().To(redirectRoute + "?show=retained")
-		}
-		return c.Next()
-	}
-}
-*/
-
-func (flash *FlashModel) RedirectBack(c fiber.Ctx, message string, args ...any) error {
-	if len(args) > 0 {
-		message = fmt.Sprintf(message, args...)
-	}
-	return c.Redirect().WithInput().With("message", message).Back()
 }
 
 func (flash *FlashModel) Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder {
