@@ -196,14 +196,15 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		}
 
 		// add values to locals
-		c.Locals("user", sess.Get("user"))
+		user := sess.Get("user")
+		c.Locals("user", user)
 		c.Locals("csrf", csrf.TokenFromContext(c))
 		c.Locals("_messages", c.Redirect().Messages())
 		c.Locals("old", c.Redirect().OldInputs())
 
 		updatedSession := false
 
-		if sess.Get("user") == nil && sess.Get("idleUpdated") == nil {
+		if user == nil && sess.Get("idleUpdated") == nil {
 			// log.Info("updated idle timeout")
 			sess.SetIdleTimeout(time.Minute * 2)
 			sess.Set("idleUpdated", true)

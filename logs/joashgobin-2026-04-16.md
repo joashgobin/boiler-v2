@@ -3,3 +3,4 @@
 - Removed old flash functions
 - Updated csrf error message
 - Set idle timeout once
+- Remove redundant get
