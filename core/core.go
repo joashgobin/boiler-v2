@@ -532,6 +532,9 @@ exec bash
 		"humanYear": func(t time.Time) string {
 			return t.UTC().Format("2006")
 		},
+		"safeAttr": func(htmlData string) ht.HTMLAttr {
+			return ht.HTMLAttr(htmlData)
+		},
 		"rev": func(classes ...string) ht.HTMLAttr {
 			if len(classes) > 0 {
 				return ht.HTMLAttr("class='rev " + classes[0] + "' hx-trigger='revealed'")

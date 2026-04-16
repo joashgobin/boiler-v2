@@ -10,12 +10,32 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 )
 
+type RedirectBuilder struct {
+	context fiber.Ctx
+	message string
+}
+
+type RedirectBuilderInterface interface {
+}
+
+func (rb RedirectBuilder) Back() error {
+	return rb.context.Redirect().With("message", rb.message).Back()
+}
+
+func (rb RedirectBuilder) To(route string) error {
+	return rb.context.Redirect().With("message", rb.message).To(route)
+}
+
+func (rb RedirectBuilder) Route(routeName string) error {
+	return rb.context.Redirect().With("message", rb.message).Route(routeName)
+}
+
 type FlashInterface interface {
-	// Push adds a message with optional arguments to the set of flash messages
-	// Push(c fiber.Ctx, message string, args ...any) error
+	// RedirectBack returns to the previous route and adds flash messages to it
+	RedirectBack(c fiber.Ctx, message string, args ...any) error
+	Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder
 
 	Require(keys ...string) fiber.Handler
-	// RequireRedirect(redirectRoute string, keys ...string) fiber.Handler
 
 	// Get returns the value for a key if exists in the current session otherwise the default value specified
 	Get(c fiber.Ctx, key string, defaultValue ...any) any
@@ -207,7 +227,6 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		c.Locals("user", sess.Get("user"))
 		c.Locals("csrf", csrf.TokenFromContext(c))
 		c.Locals("_messages", c.Redirect().Messages())
-		// log.Infof("messages: %v", c.Redirect().Messages())
 		c.Locals("old", c.Redirect().OldInputs())
 
 		updatedSession := false
@@ -262,3 +281,17 @@ func (flash *FlashModel) RequireRedirect(redirectRoute string, keys ...string) f
 	}
 }
 */
+
+func (flash *FlashModel) RedirectBack(c fiber.Ctx, message string, args ...any) error {
+	if len(args) > 0 {
+		message = fmt.Sprintf(message, args...)
+	}
+	return c.Redirect().WithInput().With("message", message).Back()
+}
+
+func (flash *FlashModel) Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder {
+	if len(args) > 0 {
+		message = fmt.Sprintf(message, args...)
+	}
+	return RedirectBuilder{context: c, message: message}
+}
