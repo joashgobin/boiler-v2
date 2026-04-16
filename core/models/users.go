@@ -358,7 +358,10 @@ func RequireRole(store *session.Store, flash helpers.FlashInterface, role string
 
 		// redirect if user session does not specify the required role
 		if !strings.Contains(roles, "|"+role+"|") {
-			return c.Redirect().With("warning", fmt.Sprintf("You need to be logged in as %s", role)).To("/")
+			var roleWarning strings.Builder
+			roleWarning.WriteString("You need to be logged in as ")
+			roleWarning.WriteString(role)
+			return c.Redirect().With("warning", roleWarning.String()).To("/")
 		}
 		return c.Next()
 	}

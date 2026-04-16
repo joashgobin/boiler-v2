@@ -5,3 +5,4 @@
 - Set idle timeout once
 - Remove redundant get
 - Updated middleware
+- Switch from sprintf to string builder
