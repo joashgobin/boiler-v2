@@ -850,7 +850,7 @@ exec bash
 				"error": "403 Forbidden",
 			})
 		default:
-			return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v", err)).Back()
+			return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v. Please try again.", err)).Back()
 		}
 	}
 
