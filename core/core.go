@@ -433,17 +433,14 @@ exec bash
 
 	// init storage middleware
 	storage := valkey.New(valkey.Config{
-		InitAddress:         []string{"localhost:6379"},
-		AlwaysPipelining:    true,
-		PipelineMultiplex:   4,
-		CacheSizeEachConn:   128 * (1 << 20),
-		ReadBufferEachConn:  (1 << 20),
-		WriteBufferEachConn: (1 << 20),
-		Username:            "",
-		Password:            "",
-		SelectDB:            0,
-		Reset:               false,
-		TLSConfig:           nil,
+		InitAddress:       []string{"localhost:6379"},
+		AlwaysPipelining:  true,
+		PipelineMultiplex: 4,
+		Username:          "",
+		Password:          "",
+		SelectDB:          0,
+		Reset:             false,
+		TLSConfig:         nil,
 	})
 
 	// init LRU
