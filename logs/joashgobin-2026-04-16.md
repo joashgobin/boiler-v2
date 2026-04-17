@@ -7,3 +7,4 @@
 - Updated middleware
 - Switch from sprintf to string builder
 - Skip pprof for non localhost IPs
+- Swapped sprintf with string builder in template engine func map

@@ -510,18 +510,34 @@ exec bash
 			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
 			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
 			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "+", "")
+			var builder strings.Builder
 			if len(message) > 0 {
-				link := fmt.Sprintf("<a href='https://wa.me/%s?text=%s'>%s</a>", phoneNumberStripped, phoneNumber, url.QueryEscape(message[0]))
-				return ht.HTML(link)
+				builder.WriteString("<a href='https://wa.me/")
+				builder.WriteString(phoneNumberStripped)
+				builder.WriteString("?text=")
+				builder.WriteString(url.QueryEscape(message[0]))
+				builder.WriteString("'>")
+				builder.WriteString(phoneNumber)
+				builder.WriteString("</a>")
+				return ht.HTML(builder.String())
 			}
-			link := fmt.Sprintf("<a href='https://wa.me/%s'>%s</a>", phoneNumberStripped, phoneNumber)
-			return ht.HTML(link)
+			builder.WriteString("<a href='https://wa.me/")
+			builder.WriteString(phoneNumberStripped)
+			builder.WriteString("'>")
+			builder.WriteString(phoneNumber)
+			builder.WriteString("</a>")
+			return ht.HTML(builder.String())
 		},
 		"tel": func(phoneNumber string, message ...string) ht.HTML {
 			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
 			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
-			link := fmt.Sprintf("<a href='tel:%s'>%s</a>", phoneNumberStripped, phoneNumber)
-			return ht.HTML(link)
+			var builder strings.Builder
+			builder.WriteString("<a href='tel:")
+			builder.WriteString(phoneNumberStripped)
+			builder.WriteString("'>")
+			builder.WriteString(phoneNumber)
+			builder.WriteString("</a>")
+			return ht.HTML(builder.String())
 		},
 		"humanDate": func(t time.Time) string {
 			return t.UTC().Format("Jan 02, 2006")
