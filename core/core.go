@@ -880,6 +880,7 @@ exec bash
 		CookieSameSite:    "Lax",
 		CookieSessionOnly: false,
 		Extractor: extractors.Chain(
+			extractors.FromHeader("X-CSRF-Token"),
 			extractors.FromForm("csrf"),
 		),
 		Session:        sessionStore,
