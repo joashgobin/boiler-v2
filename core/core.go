@@ -831,6 +831,14 @@ exec bash
 		ReduceMemoryUsage: config.ReduceMemoryUsage,
 	})
 
+	// init fiber logger format
+	app.Use(logger.New(logger.Config{
+		Format: "[${ip}]:${port} ${latency} -> ${status} - ${method} ${path}\n",
+	}))
+	f, err := os.OpenFile(config.AppName+".log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	iw := io.MultiWriter(os.Stdout, f)
+	log.SetOutput(iw)
+
 	// init fiber session middleware
 	// sessEx = extractors.FromCookie("__Host-session_id_")
 	sessEx := extractors.FromCookie("__Host-session_id_local_" + config.AppName + "_")
@@ -899,14 +907,6 @@ exec bash
 	})
 
 	app.Use(csrfMiddleware)
-
-	// init fiber logger format
-	app.Use(logger.New(logger.Config{
-		Format: "[${ip}]:${port} ${latency} -> ${status} - ${method} ${path}\n",
-	}))
-	f, err := os.OpenFile(config.AppName+".log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	iw := io.MultiWriter(os.Stdout, f)
-	log.SetOutput(iw)
 
 	// init static file serving
 	app.Get("/static/*", static.New("./static", static.Config{
