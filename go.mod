@@ -8,14 +8,14 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.9.3
-	github.com/gofiber/fiber/v3 v3.1.0
+	github.com/gofiber/fiber/v3 v3.2.0
 	github.com/gofiber/storage/valkey v0.2.5
 	github.com/gofiber/template/html/v3 v3.0.3
 	github.com/google/uuid v1.6.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/spf13/viper v1.21.0
-	github.com/tdewolff/minify/v2 v2.24.12
+	github.com/tdewolff/minify/v2 v2.24.13
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/standard v1.3.0
@@ -34,7 +34,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.21 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
