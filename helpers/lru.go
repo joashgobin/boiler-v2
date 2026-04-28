@@ -1,7 +1,6 @@
 package helpers
 
 import (
-
 	"github.com/elastic/go-freelru"
 	"github.com/zeebo/xxh3"
 )
