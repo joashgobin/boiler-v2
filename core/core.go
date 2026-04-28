@@ -882,6 +882,9 @@ exec bash
 
 	// init fiber csrf middleware
 	csrfMiddleware := csrf.New(csrf.Config{
+		Next: func(c fiber.Ctx) bool {
+			return c.Method() == "GET" || c.Method() == "HEAD"
+		},
 		CookieName:        "__Host-csrf_",
 		CookieSecure:      true,
 		CookieHTTPOnly:    false,
