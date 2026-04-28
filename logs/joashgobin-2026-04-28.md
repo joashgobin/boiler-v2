@@ -5,3 +5,4 @@
 - Changed hashing algo for lru
 - Tweak
 - Updated packages
+- Only peek to get value from lru

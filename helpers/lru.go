@@ -1,7 +1,10 @@
 package helpers
 
 import (
+	// "time"
+
 	"github.com/elastic/go-freelru"
+	// "github.com/gofiber/fiber/v3/log"
 	"github.com/zeebo/xxh3"
 )
 
@@ -37,7 +40,7 @@ func (lru *LRU) Set(key, value string) {
 
 func (lru *LRU) Get(key string) string {
 	// now := time.Now()
-	if v, ok := lru.cache.Get(key); ok {
+	if v, ok := lru.cache.Peek(key); ok {
 		// log.Infof("get time: %v", time.Since(now))
 		return v
 	}
