@@ -1,8 +1,9 @@
 package helpers
 
 import (
-	"github.com/cespare/xxhash/v2"
+
 	"github.com/elastic/go-freelru"
+	"github.com/zeebo/xxh3"
 )
 
 type LRU struct {
@@ -17,7 +18,7 @@ type LRUInterface interface {
 var _ LRUInterface = (*LRU)(nil)
 
 func hashString(s string) uint32 {
-	return uint32(xxhash.Sum64String(s))
+	return uint32(xxh3.HashString(s))
 }
 
 func NewLRU() *LRU {

@@ -2,3 +2,4 @@
 
 - Updated csrf middleware
 - Tweak
+- Changed hashing algo for lru

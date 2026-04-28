@@ -4,7 +4,6 @@ go 1.26.2
 
 require (
 	github.com/a-h/templ v0.3.1001
-	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.9.3
@@ -19,6 +18,7 @@ require (
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/standard v1.3.0
+	github.com/zeebo/xxh3 v1.1.0
 	golang.org/x/crypto v0.50.0
 )
 
@@ -33,6 +33,7 @@ require (
 	github.com/gofiber/utils/v2 v2.0.4 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
