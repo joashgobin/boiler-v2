@@ -30,11 +30,15 @@ func NewLRU() *LRU {
 }
 
 func (lru *LRU) Set(key, value string) {
+	// now := time.Now()
 	lru.cache.Add(key, value)
+	// log.Infof("set time: %v", time.Since(now))
 }
 
 func (lru *LRU) Get(key string) string {
+	// now := time.Now()
 	if v, ok := lru.cache.Get(key); ok {
+		// log.Infof("get time: %v", time.Since(now))
 		return v
 	}
 	return ""
