@@ -11,6 +11,7 @@ require (
 	github.com/gofiber/storage/valkey v0.2.5
 	github.com/gofiber/template/html/v3 v3.0.3
 	github.com/google/uuid v1.6.0
+	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/spf13/viper v1.21.0
@@ -18,7 +19,6 @@ require (
 	github.com/wneessen/go-mail v0.7.2
 	github.com/yeqown/go-qrcode/v2 v2.2.5
 	github.com/yeqown/go-qrcode/writer/standard v1.3.0
-	github.com/zeebo/xxh3 v1.1.0
 	golang.org/x/crypto v0.50.0
 )
 
@@ -33,7 +33,6 @@ require (
 	github.com/gofiber/utils/v2 v2.0.4 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
-	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect

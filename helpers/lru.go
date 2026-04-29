@@ -1,11 +1,8 @@
 package helpers
 
 import (
-	// "time"
-
 	"github.com/elastic/go-freelru"
-	// "github.com/gofiber/fiber/v3/log"
-	"github.com/zeebo/xxh3"
+	"github.com/orisano/wyhash"
 )
 
 type LRU struct {
@@ -20,7 +17,7 @@ type LRUInterface interface {
 var _ LRUInterface = (*LRU)(nil)
 
 func hashString(s string) uint32 {
-	return uint32(xxh3.HashString(s))
+	return uint32(wyhash.Sum64(42, []byte(s)))
 }
 
 func NewLRU() *LRU {

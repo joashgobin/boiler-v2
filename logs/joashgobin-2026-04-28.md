@@ -7,3 +7,4 @@
 - Updated packages
 - Only peek to get value from lru
 - Tweak
+- Tweaks to hashing
