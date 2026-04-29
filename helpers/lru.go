@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"unsafe"
+
 	"github.com/elastic/go-freelru"
 	"github.com/orisano/wyhash"
 )
@@ -17,7 +19,7 @@ type LRUInterface interface {
 var _ LRUInterface = (*LRU)(nil)
 
 func hashString(s string) uint32 {
-	return uint32(wyhash.Sum64(42, []byte(s)))
+	return uint32(wyhash.Sum64(0, unsafe.Slice(unsafe.StringData(s), len(s))))
 }
 
 func NewLRU() *LRU {
