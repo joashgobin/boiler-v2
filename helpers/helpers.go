@@ -293,10 +293,7 @@ func GetFileHash(srcPath string) string {
 	uniqueString.WriteString(srcPath)
 	uniqueString.WriteString(fileInfo.ModTime().String())
 	uniqueString.WriteString(strconv.FormatInt(fileInfo.Size(), 10))
-	now := time.Now()
-	hash := GetXXH3(uniqueString.String())
-	log.Infof("hash time: %v", time.Since(now))
-	return hash
+	return GetXXH3(uniqueString.String())
 }
 
 func GenerateFingerprintsForFolder(folderPath string, targetFolder string, ext string, fileListPtr *map[string]string) {
