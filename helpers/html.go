@@ -36,7 +36,7 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 	for _, v := range results {
 		if len(v) > 2 {
 			// fmt.Println(v[1], v[2])
-			hash := GetHash(v[2])
+			hash := GetXXH3(v[2])
 			key := "cmp-" + hash
 			// cmpMap[key] = v[2]
 			(*cmpLog)[v[1]] = hash
