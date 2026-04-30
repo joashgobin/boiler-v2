@@ -2,3 +2,4 @@
 
 - Faster hashing for conversions
 - Tweak
+- Modified fingerprinting to faster hash

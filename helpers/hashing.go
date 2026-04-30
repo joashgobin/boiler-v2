@@ -9,8 +9,7 @@ import (
 )
 
 func FingerprintFromBuffer(content []byte) string {
-	hash := sha256.Sum256(content)
-	return hex.EncodeToString(hash[:])
+	return strconv.FormatUint(xxh3.HashString(string(content)), 16)
 }
 
 func GetHash(content string) string {
