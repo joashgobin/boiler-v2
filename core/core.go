@@ -66,9 +66,10 @@ type Base struct {
 	SiteMap helpers.SitemapInterface
 
 	// private variables
-	isProd bool
-	domain string
-	port   string
+	isProd    bool
+	isPrefork bool
+	domain    string
+	port      string
 }
 
 type AppConfig struct {
@@ -79,6 +80,7 @@ type AppConfig struct {
 	FuncMap                map[string]interface{}
 	IsProduction           bool
 	ReduceMemoryUsage      bool
+	EnablePrefork          bool
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
 	Templates              *embed.FS
@@ -220,7 +222,7 @@ func (base Base) Serve(app *fiber.App) {
 	})
 
 	go func() {
-		if err := app.Listen(base.Anchor, fiber.ListenConfig{EnablePrefork: true}); err != nil {
+		if err := app.Listen(base.Anchor, fiber.ListenConfig{EnablePrefork: base.isPrefork}); err != nil {
 			log.Panic(err)
 		}
 	}()
@@ -945,9 +947,10 @@ exec bash
 		SiteMap:      helpers.NewSitemap(config.IP),
 		ImageChannel: &imageChannel,
 
-		isProd: config.IsProduction,
-		domain: config.IP,
-		port:   config.Port,
+		isProd:    config.IsProduction,
+		isPrefork: config.EnablePrefork,
+		domain:    config.IP,
+		port:      config.Port,
 	}
 
 	app.Use(etag.New(etag.Config{
