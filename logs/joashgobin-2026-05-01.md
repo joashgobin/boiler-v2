@@ -2,3 +2,4 @@
 
 - Disable prefork by default
 - Added noswup local
+- Updated package
