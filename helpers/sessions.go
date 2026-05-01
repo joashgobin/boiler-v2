@@ -201,6 +201,9 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		c.Locals("csrf", csrf.TokenFromContext(c))
 		c.Locals("_messages", c.Redirect().Messages())
 		c.Locals("old", c.Redirect().OldInputs())
+		if c.Get("X-Requested-With") != "swup" {
+			c.Locals("noswup", true)
+		}
 
 		updatedSession := false
 
