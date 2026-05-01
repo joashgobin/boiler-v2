@@ -828,8 +828,8 @@ exec bash
 		PassLocalsToViews: true,
 		CaseSensitive:     true,
 		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       30 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       20 * time.Second,
 		ReduceMemoryUsage: config.ReduceMemoryUsage,
 	})
 
