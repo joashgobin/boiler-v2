@@ -532,6 +532,22 @@ exec bash
 			builder.WriteString("</a>")
 			return ht.HTML(builder.String())
 		},
+		"waurl": func(phoneNumber string, message ...string) ht.HTMLAttr {
+			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
+			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
+			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "+", "")
+			var builder strings.Builder
+			if len(message) > 0 {
+				builder.WriteString("https://wa.me/")
+				builder.WriteString(phoneNumberStripped)
+				builder.WriteString("?text=")
+				builder.WriteString(url.QueryEscape(message[0]))
+				return ht.HTMLAttr(builder.String())
+			}
+			builder.WriteString("https://wa.me/")
+			builder.WriteString(phoneNumberStripped)
+			return ht.HTMLAttr(builder.String())
+		},
 		"tel": func(phoneNumber string, message ...string) ht.HTML {
 			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
 			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
