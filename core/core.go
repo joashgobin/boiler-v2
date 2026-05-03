@@ -852,6 +852,9 @@ exec bash
 	// init fiber logger format
 	app.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${latency} -> ${status} - ${method} ${path}\n",
+		Skip: func(c fiber.Ctx) bool {
+			return config.IsProduction
+		},
 	}))
 	f, err := os.OpenFile(config.AppName+".log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	iw := io.MultiWriter(os.Stdout, f)
