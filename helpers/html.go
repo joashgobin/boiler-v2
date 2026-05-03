@@ -7,6 +7,9 @@ import (
 	"html/template"
 	"regexp"
 	"strings"
+
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/html"
 )
 
 func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]string) error {
@@ -70,6 +73,9 @@ func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template
 		return fmt.Errorf("failed to read file: %v", err)
 	}
 
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+
 	re := regexp.MustCompile(fmt.Sprintf(`{{\s*inline\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
 	results := re.FindAllStringSubmatch(string(data), -1)
 	// cmpMap := make(map[string]string, len(results))
@@ -87,7 +93,13 @@ func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template
 			if err != nil {
 				continue
 			}
-			(*inlineLog)[v[1]] = template.HTML(buf.String())
+
+			minifiedHTML, err := m.String("text/html", buf.String())
+			// fmt.Println(buf.String(), minifiedHTML)
+			if err != nil {
+				continue
+			}
+			(*inlineLog)[v[1]] = template.HTML(minifiedHTML)
 		}
 	}
 	return nil
