@@ -467,6 +467,7 @@ exec bash
 	// save components into shelf
 	cmpLog := map[string]string{}
 	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
+	inlineLog := map[string]ht.HTML{}
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -508,8 +509,7 @@ exec bash
 	formPresets := helpers.FormPresets()
 	externalPresets := helpers.ExternalPresets()
 
-	// add functions to template engine
-	engine.AddFuncMap(map[string]interface{}{
+	startingFunctions := map[string]interface{}{
 		"whatsapp": func(phoneNumber string, message ...string) ht.HTML {
 			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
 			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
@@ -820,7 +820,13 @@ exec bash
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
 			return ht.HTML(`<div hx-get="/cmp/` + cmpLog[name] + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
 		},
-	})
+		"inline": func(content string) ht.HTML {
+			return inlineLog[content]
+		},
+	}
+	// add functions to template engine
+	engine.AddFuncMap(startingFunctions)
+	err = helpers.SaveInline(config.Templates, &inlineLog, startingFunctions)
 
 	// add other func map
 	if config.FuncMap != nil {
