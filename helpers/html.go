@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/html"
+	"github.com/tdewolff/minify/v2/js"
 )
 
 func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]string) error {
@@ -35,6 +37,11 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 		return fmt.Errorf("failed to read file: %v", err)
 	}
 
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/javascript", js.Minify)
+
 	re := regexp.MustCompile(fmt.Sprintf(`{{\s*cmp\s+"(.*?)"\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
 	results := re.FindAllStringSubmatch(string(data), -1)
 	// cmpMap := make(map[string]string, len(results))
@@ -46,7 +53,11 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 			// cmpMap[key] = v[2]
 			(*cmpLog)[v[1]] = hash
 			bank.Delete(key)
-			shelf.Set(key, strings.TrimSpace(v[2]))
+			minifiedHTML, err := m.String("text/html", strings.TrimSpace(v[2]))
+			if err != nil {
+				continue
+			}
+			shelf.Set(key, minifiedHTML)
 		}
 	}
 	return nil
@@ -75,6 +86,8 @@ func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template
 
 	m := minify.New()
 	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/javascript", js.Minify)
 
 	re := regexp.MustCompile(fmt.Sprintf(`{{\s*inline\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
 	results := re.FindAllStringSubmatch(string(data), -1)
