@@ -3,3 +3,4 @@
 - Added feature to inline html rendering
 - Minify inline html
 - Added more minification
+- Inlined more styles
