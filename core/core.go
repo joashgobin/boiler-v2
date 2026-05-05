@@ -465,7 +465,7 @@ exec bash
 	}
 
 	// save components into shelf
-	cmpLog := map[string]string{}
+	cmpLog := map[string]ht.HTML{}
 	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
 	inlineLog := map[string]ht.HTML{}
 
@@ -818,7 +818,7 @@ exec bash
 			return ht.HTML(strings.ReplaceAll(links, "(())", optimizations["img/favicon.png"]))
 		},
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
-			return ht.HTML(`<div hx-get="/cmp/` + cmpLog[name] + `" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
+			return cmpLog[name]
 		},
 		"inline": func(content string) ht.HTML {
 			return inlineLog[content]

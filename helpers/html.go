@@ -14,7 +14,7 @@ import (
 	"github.com/tdewolff/minify/v2/js"
 )
 
-func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]string) error {
+func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]template.HTML) error {
 	if fs == nil {
 		return fmt.Errorf("files not embedded")
 	}
@@ -31,7 +31,7 @@ func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpL
 	return nil
 }
 
-func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]string) error {
+func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]template.HTML) error {
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
@@ -51,7 +51,12 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 			hash := GetXXH3(v[2])
 			key := "cmp-" + hash
 			// cmpMap[key] = v[2]
-			(*cmpLog)[v[1]] = hash
+
+			var snippet strings.Builder
+			snippet.WriteString(`<div hx-get="/cmp/`)
+			snippet.WriteString(hash)
+			snippet.WriteString(`" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
+			(*cmpLog)[v[1]] = template.HTML(snippet.String())
 			bank.Delete(key)
 			minifiedHTML, err := m.String("text/html", strings.TrimSpace(v[2]))
 			if err != nil {
