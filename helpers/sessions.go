@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -65,7 +66,13 @@ func GetUser[T any](c fiber.Ctx, flash FlashInterface) T {
 }
 
 func (flash *FlashModel) Prefetch(c fiber.Ctx, urls ...string) {
-	c.Locals("prefetch", urls)
+	var urlChunk strings.Builder
+	for i := range urls {
+		urlChunk.WriteString(`<link rel="prefetch" href="`)
+		urlChunk.WriteString(urls[i])
+		urlChunk.WriteString(`" as="document">`)
+	}
+	c.Locals("prefetch", urlChunk.String())
 }
 
 func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
@@ -199,11 +206,26 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		user := sess.Get("user")
 		c.Locals("user", user)
 		c.Locals("csrf", csrf.TokenFromContext(c))
-		c.Locals("_messages", c.Redirect().Messages())
-		c.Locals("old", c.Redirect().OldInputs())
-		if c.Get("X-Requested-With") != "swup" {
-			c.Locals("noswup", true)
+
+		/*
+		   {{range $i,$v:=.}}
+		   <p>{{$v.Value}}</p>
+		   {{end}}
+		*/
+		flashMessages := c.Redirect().Messages()
+		var flashChunk strings.Builder
+		for i := range flashMessages {
+			flashChunk.WriteString("<p>")
+			flashChunk.WriteString(flashMessages[i].Value)
+			flashChunk.WriteString("</p>")
 		}
+		c.Locals("_messages", flashMessages)
+		c.Locals("old", c.Redirect().OldInputs())
+		/*
+			if c.Get("X-Requested-With") != "swup" {
+				c.Locals("noswup", true)
+			}
+		*/
 
 		updatedSession := false
 

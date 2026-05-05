@@ -3,3 +3,4 @@
 - Updated fasthttp
 - Updated cmp strategy
 - Updated valkey package
+- Updated flash and prefetch partials

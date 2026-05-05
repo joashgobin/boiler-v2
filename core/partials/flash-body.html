@@ -1,7 +1,5 @@
 <div id="flash" {{with ._messages}}{{safeAttr "class='animate'" }}{{end}}>
     {{with ._messages}}
-    {{range $i,$v:=.}}
-    <p>{{$v.Value}}</p>
-    {{end}}
+    {{safeHTML .}}
     {{else}}<p>No messages</p>{{end}}
 </div>
