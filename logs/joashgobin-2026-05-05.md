@@ -2,3 +2,4 @@
 
 - Updated fasthttp
 - Updated cmp strategy
+- Updated valkey package
