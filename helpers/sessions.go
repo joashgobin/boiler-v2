@@ -219,7 +219,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 			flashChunk.WriteString(flashMessages[i].Value)
 			flashChunk.WriteString("</p>")
 		}
-		c.Locals("_messages", flashMessages)
+		c.Locals("_messages", flashChunk.String())
 		c.Locals("old", c.Redirect().OldInputs())
 		/*
 			if c.Get("X-Requested-With") != "swup" {

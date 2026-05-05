@@ -4,3 +4,4 @@
 - Updated cmp strategy
 - Updated valkey package
 - Updated flash and prefetch partials
+- Fixed flash html output
