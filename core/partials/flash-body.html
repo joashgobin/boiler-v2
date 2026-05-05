@@ -1,5 +1,5 @@
-<div id="flash" {{with ._messages}}{{safeAttr "class='animate'" }}{{end}}>
-    {{with ._messages}}
+{{with ._messages}}
+<div id="flash" {{safeAttr "class='animate'" }}>
     {{safeHTML .}}
-    {{else}}<p>No messages</p>{{end}}
 </div>
+{{end}}
