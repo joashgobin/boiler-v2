@@ -213,13 +213,15 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		   {{end}}
 		*/
 		flashMessages := c.Redirect().Messages()
-		var flashChunk strings.Builder
-		for i := range flashMessages {
-			flashChunk.WriteString("<p>")
-			flashChunk.WriteString(flashMessages[i].Value)
-			flashChunk.WriteString("</p>")
+		if len(flashMessages) > 0 {
+			var flashChunk strings.Builder
+			for i := range flashMessages {
+				flashChunk.WriteString("<p>")
+				flashChunk.WriteString(flashMessages[i].Value)
+				flashChunk.WriteString("</p>")
+			}
+			c.Locals("_messages", flashChunk.String())
 		}
-		c.Locals("_messages", flashChunk.String())
 		c.Locals("old", c.Redirect().OldInputs())
 		/*
 			if c.Get("X-Requested-With") != "swup" {
