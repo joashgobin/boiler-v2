@@ -7,3 +7,4 @@
 - Fixed flash html output
 - Only include flash messages if the number exceeds zero
 - Only include flash div if necessary
+- Revert flash
