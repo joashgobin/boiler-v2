@@ -3,10 +3,10 @@ package helpers
 import (
 	"fmt"
 	"strings"
-	"time"
+	// "time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/log"
+	// "github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 )
@@ -215,23 +215,25 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 			}
 		*/
 
-		updatedSession := false
+		/*
+			updatedSession := false
 
-		if user == nil {
-			if sess.Get("idleUpdated") == nil {
-				// log.Info("updated idle timeout")
-				sess.SetIdleTimeout(time.Second * 90)
-				sess.Set("idleUpdated", true)
-				updatedSession = true
+			if user == nil {
+				if sess.Get("idleUpdated") == nil {
+					// log.Info("updated idle timeout")
+					sess.SetIdleTimeout(time.Second * 90)
+					sess.Set("idleUpdated", true)
+					updatedSession = true
+				}
 			}
-		}
 
-		// save session once if any changes were made
-		if updatedSession {
-			if err := sess.Save(); err != nil {
-				log.Infof("error updating session info: %v", err)
+			// save session once if any changes were made
+			if updatedSession {
+				if err := sess.Save(); err != nil {
+					log.Infof("error updating session info: %v", err)
+				}
 			}
-		}
+		*/
 
 		return c.Next()
 	}
