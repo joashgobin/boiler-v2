@@ -873,10 +873,13 @@ exec bash
 		sessEx = extractors.FromCookie("__Host-session_id_" + config.AppName + "_")
 	}
 
-	sessionIdleTimeout := time.Second * 75
+	sessionIdleTimeout := time.Minute * 15
 	sessionAbsoluteTimeout := time.Hour * 3
 	if config.SessionAbsoluteTimeout != 0 {
 		sessionAbsoluteTimeout = config.SessionAbsoluteTimeout
+	}
+	if config.SessionIdleTimeout != 0 && config.SessionIdleTimeout < sessionAbsoluteTimeout {
+		sessionIdleTimeout = config.SessionIdleTimeout
 	}
 	sessConfig := session.Config{
 		IdleTimeout:     sessionIdleTimeout,
@@ -953,7 +956,7 @@ exec bash
 
 	// init base
 	base := Base{
-		Users:        models.NewUserModel(db, sessionStore, config.SessionIdleTimeout),
+		Users:        models.NewUserModel(db, sessionStore),
 		DB:           db,
 		Store:        sessionStore,
 		Shelf:        shelf,
