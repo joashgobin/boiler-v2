@@ -181,6 +181,13 @@ Add the following to your *views/layouts/main.html* file:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My App</title>
+    {{template "views/partials/meta" .}}
+    {{template "views/partials/flash-style" .}}
+    {{template "views/partials/svg-pop" .}}
+    {{template "views/partials/prefetch" .}}
+    {{template "views/partials/website-preset" .}}
+
+{{inline `
     <script>
         function showBody(){
             document.body.classList.add('loaded');
@@ -208,13 +215,9 @@ Add the following to your *views/layouts/main.html* file:
 
     </style>
 
-    {{template "views/partials/meta" .}}
-    {{template "views/partials/flash-style" .}}
-    {{template "views/partials/svg-pop" .}}
-    {{template "views/partials/prefetch" .}}
-    {{template "views/partials/website-preset" .}}
     {{favicon}}
     {{preset "htmx"}}
+`}}
 
 </head>
 
