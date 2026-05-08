@@ -64,7 +64,16 @@ func main() {
 		Port:      "9911",
 		AppName:   "appname",
 		Templates: &templates,
-		SiteInfo:  &map[string]string{},
+        SiteInfo: &map[string]string{
+			"title":       "My App",
+			"description": "This is my app",
+			"image":       "https://example.com/static/img/logo.jpg",
+			"robots":      "index, follow",
+			"keywords":    "keyword-1,keyword-2",
+			"author":      "Super Cool Author",
+			"theme-color": "#0d3327",
+		},
+
 		IsProduction: *isProd,
 	}
     app, base := core.NewApp(config)

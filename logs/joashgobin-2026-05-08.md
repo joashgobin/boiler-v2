@@ -2,3 +2,4 @@
 
 - Updated package
 - Updated main module
+- Updated README
