@@ -3,3 +3,4 @@
 - Updated package
 - Updated main module
 - Updated README
+- Updated golang.org packages
