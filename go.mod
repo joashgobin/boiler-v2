@@ -3,7 +3,7 @@ module github.com/joashgobin/boiler-v2
 go 1.26.3
 
 require (
-	github.com/a-h/templ v0.3.1001
+	github.com/a-h/templ v0.3.1020
 	github.com/disintegration/imaging v1.6.2
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.10.0
