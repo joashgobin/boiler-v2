@@ -79,7 +79,7 @@ func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
 	c.Set("Cache-Control", fmt.Sprintf("private,max-age=%d", maxAge))
 }
 
-func (flash *FlashModel) GetUser(c fiber.Ctx) interface{} {
+func (flash *FlashModel) GetUser(c fiber.Ctx) any {
 	sess, err := flash.Store.Get(c)
 	defer sess.Release()
 	if err != nil {

@@ -79,7 +79,7 @@ func BytesToSlice[T any](bytes []byte) []T {
 	return decoded
 }
 
-func ToBytes(p interface{}) []byte {
+func ToBytes(p any) []byte {
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(p)

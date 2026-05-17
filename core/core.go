@@ -77,7 +77,7 @@ type AppConfig struct {
 	IP                     string
 	Port                   string
 	AppName                string
-	FuncMap                map[string]interface{}
+	FuncMap                map[string]any
 	IsProduction           bool
 	ReduceMemoryUsage      bool
 	EnablePrefork          bool
@@ -509,7 +509,7 @@ exec bash
 	formPresets := helpers.FormPresets()
 	externalPresets := helpers.ExternalPresets()
 
-	startingFunctions := map[string]interface{}{
+	startingFunctions := map[string]any{
 		"whatsapp": func(phoneNumber string, message ...string) ht.HTML {
 			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
 			phoneNumberStripped = strings.ReplaceAll(phoneNumberStripped, "-", "")
@@ -604,7 +604,8 @@ exec bash
 			if len(args)%2 != 0 {
 				return ht.HTML("<!-- (gfonts) Please specify font-selectors pairs -->")
 			}
-			selectorsQueue := `<style>`
+			var selectorsQueue strings.Builder
+			selectorsQueue.WriteString(`<style>`)
 			start := `
 			<link rel="preconnect" href="https://fonts.googleapis.com">
 			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -618,24 +619,24 @@ exec bash
 				} else {
 					start += "&family="
 				}
-				selectorsQueue += selectors + `{ font-family: "` + fontName + `",sans-serif; } `
+				selectorsQueue.WriteString(selectors + `{ font-family: "` + fontName + `",sans-serif; } `)
 				start += strings.ReplaceAll(fontName, " ", "+")
 			}
 
 			end := `&display=swap&text=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890" rel="stylesheet" media="print" onload="this.media='all'">
 				`
-			selectorsQueue += `</style>`
+			selectorsQueue.WriteString(`</style>`)
 			start += end
-			start += selectorsQueue
+			start += selectorsQueue.String()
 			return ht.HTML(start)
 		},
-		"role": func(roles interface{}, role string) bool {
+		"role": func(roles any, role string) bool {
 			if roles == nil {
 				return false
 			}
 			return strings.Contains(roles.(string), "|"+role+"|")
 		},
-		"default": func(def string, value interface{}) interface{} {
+		"default": func(def string, value any) any {
 			if value == nil {
 				return def
 			}

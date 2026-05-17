@@ -68,7 +68,7 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 	return nil
 }
 
-func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMap map[string]interface{}) error {
+func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMap map[string]any) error {
 	if fs == nil {
 		return fmt.Errorf("files not embedded")
 	}
@@ -83,7 +83,7 @@ func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMap map[s
 	return nil
 }
 
-func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template.HTML, funcMap map[string]interface{}) error {
+func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template.HTML, funcMap map[string]any) error {
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)

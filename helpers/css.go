@@ -60,7 +60,7 @@ func ExtractClassNames(fs *embed.FS, filePath string, classes *[]string) error {
 		}
 
 		// Split by spaces and add individual classes
-		for _, className := range strings.Split(classList, " ") {
+		for className := range strings.SplitSeq(classList, " ") {
 			if className != "" { // Skip empty entries
 				if !slices.Contains(*classes, className) {
 					*classes = append(*classes, className)
@@ -91,7 +91,7 @@ func SaveCSSClasses(fs *embed.FS, targetFile string, cssFiles ...string) error {
 		}
 	}
 	// fmt.Println(classes)
-	accruedString := ""
+	var accruedString strings.Builder
 	for _, file := range cssFiles {
 		// fmt.Println("optimizing:", file)
 		data, err := os.ReadFile(file)
@@ -114,7 +114,7 @@ func SaveCSSClasses(fs *embed.FS, targetFile string, cssFiles ...string) error {
 				// add query content to accrued CSS string
 				// if query name contains class
 				if strings.Contains(match[1], "."+class) {
-					accruedString += match[0]
+					accruedString.WriteString(match[0])
 				}
 			}
 
@@ -135,7 +135,7 @@ func SaveCSSClasses(fs *embed.FS, targetFile string, cssFiles ...string) error {
 				// add selector content to accrued CSS string
 				// if selector name contains class
 				if strings.Contains(selectorName, "."+class) {
-					accruedString += selectorContent
+					accruedString.WriteString(selectorContent)
 					// fmt.Println(selectorName, "contains", "."+class)
 				} else {
 					// fmt.Println(selectorName, "does not contain", "."+class)
@@ -154,7 +154,7 @@ func SaveCSSClasses(fs *embed.FS, targetFile string, cssFiles ...string) error {
 		}
 	}()
 
-	_, err = accruedFile.WriteString(accruedString)
+	_, err = accruedFile.WriteString(accruedString.String())
 	if err != nil {
 		log.Errorf("error saving accrued CSS file: %v", err)
 	}

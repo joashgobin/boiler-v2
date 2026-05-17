@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -916,7 +915,7 @@ func loadConfig(filename string) (*Config, error) {
 }
 
 func loadPrivateKey(filename string) (*rsa.PrivateKey, error) {
-	privateKeyData, err := ioutil.ReadFile(filename)
+	privateKeyData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read private key: %w", err)
 	}
@@ -941,7 +940,7 @@ func loadPrivateKey(filename string) (*rsa.PrivateKey, error) {
 }
 
 func loadPublicKey(filename string) (*rsa.PublicKey, error) {
-	publicKeyData, err := ioutil.ReadFile(filename)
+	publicKeyData, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key: %w", err)
 	}
@@ -976,7 +975,7 @@ func generateURL(token []byte, msisdn, clientID string) string {
 	return link
 }
 
-func encrypt(data interface{}, publicKey *rsa.PublicKey) ([]byte, error) {
+func encrypt(data any, publicKey *rsa.PublicKey) ([]byte, error) {
 	jsonData, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
@@ -992,14 +991,14 @@ func encrypt(data interface{}, publicKey *rsa.PublicKey) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func decrypt(ciphertext []byte, privateKey *rsa.PrivateKey) (map[string]interface{}, error) {
+func decrypt(ciphertext []byte, privateKey *rsa.PrivateKey) (map[string]any, error) {
 	hash := sha256.New()
 	plaintext, err := rsa.DecryptOAEP(hash, rand.Reader, privateKey, ciphertext, nil)
 	if err != nil {
 		return nil, fmt.Errorf("decryption failed: %w", err)
 	}
 
-	var data map[string]interface{}
+	var data map[string]any
 	err = json.Unmarshal(plaintext, &data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal decrypted data: %w", err)

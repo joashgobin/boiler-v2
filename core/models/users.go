@@ -92,7 +92,7 @@ func (m *UserModel) ParseFromCSV(path string) error {
 	for _, record := range records {
 		if len(record) >= 3 {
 			m.Create(record[0], record[1], "")
-			for _, role := range strings.Split(record[2], ";") {
+			for role := range strings.SplitSeq(record[2], ";") {
 				m.AssignRole(record[1], role)
 			}
 		}

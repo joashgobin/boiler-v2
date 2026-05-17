@@ -73,7 +73,7 @@ func Background(fn func(), wg *sync.WaitGroup) {
 	*/
 }
 
-func PrintType(v interface{}) {
+func PrintType(v any) {
 	switch v := v.(type) {
 	case int:
 		fmt.Printf("Value %d is of type int\n", v)
@@ -569,14 +569,14 @@ func MigrateUp(db *sql.DB, migrationQuery string, args map[string]string) {
 	// log.Infof("migration executed, rows affected: %d", rowsAffected)
 }
 
-func StructsToMaps(structs interface{}) []map[string]interface{} {
+func StructsToMaps(structs any) []map[string]any {
 	// Convert input to slice
 	rv := reflect.ValueOf(structs)
 	if rv.Kind() != reflect.Slice {
-		return []map[string]interface{}{}
+		return []map[string]any{}
 	}
 
-	result := make([]map[string]interface{}, rv.Len())
+	result := make([]map[string]any, rv.Len())
 
 	// Process each struct in the slice
 	for i := 0; i < rv.Len(); i++ {
@@ -586,7 +586,7 @@ func StructsToMaps(structs interface{}) []map[string]interface{} {
 		}
 
 		// Create map for this struct
-		m := make(map[string]interface{})
+		m := make(map[string]any)
 
 		// Add all exported fields to map
 		for j := 0; j < elem.NumField(); j++ {
@@ -688,7 +688,7 @@ func ShuffleSlice[T any](items *[]T) {
 	})
 }
 
-func ValidateConfig(config interface{}) error {
+func ValidateConfig(config any) error {
 	// First verify it's a struct
 	configType := reflect.TypeOf(config)
 	if configType.Kind() != reflect.Struct {

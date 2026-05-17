@@ -58,12 +58,12 @@ func GetFieldsFromTemplateFile(templatePath string) ([]string, error) {
 	return matches, nil
 }
 
-func ParseToml(filePath string) (map[string]interface{}, error) {
+func ParseToml(filePath string) (map[string]any, error) {
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %v", err)
 	}
-	var tomlContent map[string]interface{}
+	var tomlContent map[string]any
 	err = toml.Unmarshal(fileContent, &tomlContent)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func ParseTomlWithFields(filePath string, fields []string) (map[string]string, e
 				filteredContent[field] = fmt.Sprintf("%v", v)
 			}
 		}
-		if value, exists := tomlContent["params"].(map[string]interface{})[field]; exists {
+		if value, exists := tomlContent["params"].(map[string]any)[field]; exists {
 			switch v := value.(type) {
 			case string:
 				if strings.Contains(v, "<") || strings.Contains(v, "<") {

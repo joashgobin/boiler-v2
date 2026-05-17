@@ -146,7 +146,7 @@ func (s *ShelfModel) SetMany(pairs map[string]string) error {
 		return fmt.Errorf("shelf set many error: no values passed")
 	}
 	placeholders := make([]string, len(pairs))
-	values := make([]interface{}, 0)
+	values := make([]any, 0)
 	count := 0
 	for i, pair := range pairs {
 		placeholders[count] = "(?, ?)"
