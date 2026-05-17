@@ -132,3 +132,16 @@ prof/png:
 	@-figlet "Prof/png"
 	@-go tool pprof -inuse_space -png http://localhost:<port>/profiler/debug/pprof/heap > static/gen/prof.png
 
+## prof/cpu: profile cpu
+.PHONY: prof/cpu
+prof/cpu:
+	@-figlet "Prof/cpu"
+	@-curl http://localhost:<port>/profiler/debug/pprof/profile?seconds=30 > cpu.pprof
+	@-go tool pprof cpu.pprof
+
+## prof/heap: profile heap
+.PHONY: prof/heap
+prof/heap:
+	@-figlet "Prof/heap"
+	@-curl http://localhost:<port>/profiler/debug/pprof/heap > heap.pprof
+	@-go tool pprof heap.pprof
