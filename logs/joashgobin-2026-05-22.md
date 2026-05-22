@@ -3,3 +3,4 @@
 - Updated major packages
 - Updated function name
 - Added trigger function
+- Updated README

@@ -249,6 +249,7 @@ Add the following to your *views/layouts/main.html* file:
         </nav>
     </header>
     <main id="swup" class="transition-main">
+        <div class="pad-2"></div>
         {{template "views/partials/flash-body" .}}
         {{embed}}
     </main>
