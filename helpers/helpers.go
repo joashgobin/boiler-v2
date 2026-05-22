@@ -602,7 +602,7 @@ func StructsToMaps(structs any) []map[string]any {
 	return result
 }
 
-func Getenv(key string) string {
+func GetEnv(key string) string {
 	viper.SetConfigName("config")
 	viper.SetConfigType("env")
 	viper.AddConfigPath(".")

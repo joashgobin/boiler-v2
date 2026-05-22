@@ -209,7 +209,7 @@ func (m *MailModel) NotifyAdmin(subject string, swaps ...any) {
 	} else {
 		body = swaps[0].(string)
 	}
-	SendEmail(helpers.Getenv("ADMIN_EMAIL"), subject, body, "", m.WaitGroup)
+	SendEmail(helpers.GetEnv("ADMIN_EMAIL"), subject, body, "", m.WaitGroup)
 }
 
 func (m *MailModel) Send(to, bcc, subject string, swaps ...any) {
@@ -244,11 +244,11 @@ func SendEmail(to string, subject string, body string, bcc string, wg *sync.Wait
 	helpers.Background(
 		func() {
 			data := emailData{Subject: subject, Body: body}
-			var senderAddr string = helpers.Getenv("MAIL_USER_EMAIL")
-			var senderName string = helpers.Getenv("MAIL_USERNAME")
+			var senderAddr string = helpers.GetEnv("MAIL_USER_EMAIL")
+			var senderName string = helpers.GetEnv("MAIL_USERNAME")
 			username := senderAddr
-			password := helpers.Getenv("MAIL_PW")
-			mailHost := helpers.Getenv("MAIL_HOST")
+			password := helpers.GetEnv("MAIL_PW")
+			mailHost := helpers.GetEnv("MAIL_HOST")
 
 			message := mail.NewMsg()
 			if err := message.FromFormat(senderName, senderAddr); err != nil {
