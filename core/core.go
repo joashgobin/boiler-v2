@@ -831,6 +831,16 @@ exec bash
 			trigger.WriteString(`'></span>`)
 			return ht.HTML(trigger.String())
 		},
+		"triggerStyle": func(id, styles string) ht.HTML {
+			var trigger strings.Builder
+			trigger.WriteString(`<span hx-trigger="intersect" hx-on:intersect='`)
+			trigger.WriteString(`document.getElementById("`)
+			trigger.WriteString(id)
+			trigger.WriteString(`").style.cssText = "`)
+			trigger.WriteString(styles)
+			trigger.WriteString(`"'></span>`)
+			return ht.HTML(trigger.String())
+		},
 	}
 	// add functions to template engine
 	engine.AddFuncMap(startingFunctions)

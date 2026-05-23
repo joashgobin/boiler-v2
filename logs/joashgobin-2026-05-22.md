@@ -4,3 +4,4 @@
 - Updated function name
 - Added trigger function
 - Updated README
+- Added function for triggering styles
