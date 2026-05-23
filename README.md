@@ -234,7 +234,7 @@ Add the following to your *views/layouts/main.html* file:
     <header class="flex cp fixed pad">
         <a href="/" class="grow"><strong>My App</strong></a>
         <nav>
-            <ul class="flex right sm">
+            <ul class="flex right gap_1">
                 {{if .user}}
                 <li><a href="/admin/">Dashboard</a></li>
                 <form method="post" action="/logout" data-swup-form>
