@@ -196,7 +196,7 @@ Add the following to your *views/layouts/main.html* file:
     {{template "views/partials/prefetch" .}}
     {{template "views/partials/website-preset" .}}
 
-{{inline `
+{{inline "webpage-head" `
     <script>
         function showBody(){
             document.body.classList.add('loaded');

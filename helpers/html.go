@@ -94,13 +94,13 @@ func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/javascript", js.Minify)
 
-	re := regexp.MustCompile(fmt.Sprintf(`{{\s*inline\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
+	re := regexp.MustCompile(fmt.Sprintf(`{{\s*inline\s+"(.*?)"\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
 	results := re.FindAllStringSubmatch(string(data), -1)
 	// cmpMap := make(map[string]string, len(results))
 	for _, v := range results {
-		if len(v) > 1 {
+		if len(v) > 2 {
 			// fmt.Println("inline:", v[1])
-			tmpl, err := template.New("webpage").Funcs(funcMap).Parse(v[1])
+			tmpl, err := template.New("webpage").Funcs(funcMap).Parse(v[2])
 			// log.Infof("get template string time: %v", time.Since(now).Microseconds())
 			if err != nil {
 				continue

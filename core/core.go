@@ -821,8 +821,8 @@ exec bash
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
 			return cmpLog[name]
 		},
-		"inline": func(content string) ht.HTML {
-			return inlineLog[content]
+		"inline": func(name string, content ht.HTML) ht.HTML {
+			return inlineLog[name]
 		},
 		"trigger": func(code string) ht.HTML {
 			var trigger strings.Builder
