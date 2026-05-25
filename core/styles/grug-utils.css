@@ -22,11 +22,11 @@
 }
 
 .flex.top {
-    align-items: start;
+    align-items: flex-start;
 }
 
 .flex.bottom {
-    align-items: end;
+    align-items: flex-end;
 }
 
 .grow {
