@@ -97,6 +97,9 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 	fromDir := filepath.Dir(srcPath)
 	// start := time.Now()
 	hashString := GetFileHash(srcPath)
+	var lruKeyBuilder strings.Builder
+	lruKeyBuilder.WriteString(hashString)
+	lruKeyBuilder.WriteString(strconv.Itoa(width))
 	// log.Infof("*image hash gen time: %v", time.Since(now))
 
 	/*
@@ -106,7 +109,7 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 	*/
 
 	var outputPath string
-	cachedOutputPath := lru.Get(hashString)
+	cachedOutputPath := lru.Get(lruKeyBuilder.String())
 	if cachedOutputPath == "" {
 		var outputBuilder strings.Builder
 		outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
@@ -117,7 +120,7 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 		outputBuilder.WriteString(hashString)
 		outputBuilder.WriteString(".webp")
 		outputPath = outputBuilder.String()
-		lru.Set(hashString, outputPath)
+		lru.Set(lruKeyBuilder.String(), outputPath)
 		// log.Infof("uncached image output path time: %v", time.Since(now))
 	} else {
 		outputPath = cachedOutputPath
