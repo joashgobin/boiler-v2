@@ -216,7 +216,8 @@ Add the following to your *views/layouts/main.html* file:
     }
 
     :root{
-        --prim: white;
+        --prim: #e6e6e6;
+        --black: #111111;
         --sec: #001a21;
         --accent: #00adbf;
     }
