@@ -6,3 +6,4 @@
 - Attempt to fix svg pop jank
 - Tweaks
 - Updated animation
+- Turn off animation for rev svg
