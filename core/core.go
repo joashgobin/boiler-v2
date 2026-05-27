@@ -295,7 +295,10 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 	start := time.Now()
 	gob.Register(map[string]string{})
+	gob.Register(map[string]any{})
 	gob.Register(models.User{})
+	gob.Register(time.Time{})
+	gob.Register(csrf.Token{})
 
 	// get core directory
 	_, filename, _, ok := runtime.Caller(0)
