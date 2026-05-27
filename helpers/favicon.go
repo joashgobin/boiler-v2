@@ -6,11 +6,9 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	"image"
 	"os"
 	"path/filepath"
 
-	"github.com/disintegration/imaging"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 )
@@ -96,51 +94,44 @@ func generateBrowserConfigXML(dstPath, tileColor string) {
 	}
 }
 
-func generateImage(img *image.Image, hash, dstPath string, width, height int) {
+func generateImage(inputPath, hash, dstPath string, width, height int) {
 	favLockPath := fmt.Sprintf("%s.%s.fav.lock", dstPath, hash)
 	if FileExists(favLockPath) {
 		return
 	}
-	newImg := imaging.Clone(*img)
-	resizeImg := imaging.Resize(newImg, width, height, imaging.Lanczos)
-
-	err := imaging.Save(resizeImg, dstPath)
+	err := vipsThumbnail(inputPath, dstPath, width, height)
 	if err != nil {
-		fmt.Printf("[ERROR] Failed to save image(%s):\n%v", filepath.Base(dstPath), err)
-		os.Exit(1)
+		log.Errorf("error generating %s thumbnail: %v", dstPath, err)
+		return
 	}
 	TouchFile(favLockPath)
 }
 
-func generateFaviconImages(targetImg, outputDir string) {
-	hash := GetFileHash(targetImg)
-	src, err := imaging.Open(targetImg)
-	if err != nil {
-		fmt.Printf("[ERROR] Failed to open image:\n%v", err)
-		os.Exit(1)
-	}
-
-	generateImage(&src, hash, filepath.Join(outputDir, "android-chrome-192x192.png"), 192, 192)
-	generateImage(&src, hash, filepath.Join(outputDir, "android-chrome-512x512.png"), 512, 512)
-	generateImage(&src, hash, filepath.Join(outputDir, "apple-touch-icon.png"), 180, 180)
-	generateImage(&src, hash, filepath.Join(outputDir, "favicon-16x16.png"), 16, 16)
-	generateImage(&src, hash, filepath.Join(outputDir, "favicon-32x32.png"), 32, 32)
-	generateImage(&src, hash, filepath.Join(outputDir, "favicon.png"), 48, 48)
-	generateImage(&src, hash, filepath.Join(outputDir, "mstile-70x70.png"), 70, 70)
-	generateImage(&src, hash, filepath.Join(outputDir, "mstile-150x150.png"), 150, 150)
-	generateImage(&src, hash, filepath.Join(outputDir, "mstile-310x150.png"), 310, 150)
-	generateImage(&src, hash, filepath.Join(outputDir, "mstile-310x310.png"), 310, 310)
+func generateFaviconImages(targetImgPath, outputDir string) {
+	hash := GetFileHash(targetImgPath)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "android-chrome-192x192.png"), 192, 192)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "android-chrome-512x512.png"), 512, 512)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "apple-touch-icon.png"), 180, 180)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "mstile-70x70.png"), 70, 70)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "mstile-150x150.png"), 150, 150)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "mstile-310x150.png"), 310, 150)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "mstile-310x310.png"), 310, 310)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "favicon-16x16.png"), 16, 16)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "favicon-32x32.png"), 32, 32)
+	generateImage(targetImgPath, hash, filepath.Join(outputDir, "favicon.png"), 48, 48)
 }
 
-func GenerateFavicon(targetImg, outputDir string) {
-	if FileExists(targetImg) {
-		tileColor := "red"
-		generateFaviconImages(targetImg, outputDir)
-		generateBrowserConfigXML(filepath.Join(outputDir, "browserconfig.xml"), tileColor)
-		generateWebManifest(filepath.Join(outputDir, "site.webmanifest"), "", "", "")
+func GenerateFavicon(targetImgPath, outputDir string) {
+	if FileExists(targetImgPath) {
+		if !fiber.IsChild() {
+			tileColor := "red"
+			generateFaviconImages(targetImgPath, outputDir)
+			generateBrowserConfigXML(filepath.Join(outputDir, "browserconfig.xml"), tileColor)
+			generateWebManifest(filepath.Join(outputDir, "site.webmanifest"), "", "", "")
+		}
 	} else {
 		if !fiber.IsChild() {
-			log.Warnf("image %s could not be processed into favicon for %s", targetImg, outputDir)
+			log.Warnf("image %s could not be processed into favicon for %s", targetImgPath, outputDir)
 		}
 	}
 }

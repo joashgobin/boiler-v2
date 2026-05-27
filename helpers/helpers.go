@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -657,28 +658,47 @@ func ConvertJPGToPNG(inputPath, outputPath string) {
 		return
 	}
 
-	jpgBytes, err := os.ReadFile(inputPath)
+	reader, err := os.Open(inputPath)
 	if err != nil {
-		log.Errorf("error reading JPG file: %v", err)
 		return
 	}
+	defer reader.Close()
 
-	img, err := jpeg.Decode(bytes.NewReader(jpgBytes))
+	config, _, err := image.DecodeConfig(reader)
 	if err != nil {
-		log.Errorf("error decoding JPG: %v", err)
 		return
 	}
 
-	buf := new(bytes.Buffer)
-	if err := png.Encode(buf, img); err != nil {
-		log.Errorf("error encoding PNG: %v", err)
+	err = vipsThumbnail(inputPath, outputPath, config.Width, config.Height)
+	if err != nil {
+		log.Errorf("error converting jpeg to png: %v", err)
 		return
 	}
 
-	if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
-		log.Errorf("failed to write PNG file: %v", err)
-		return
-	}
+	/*
+		jpgBytes, err := os.ReadFile(inputPath)
+		if err != nil {
+			log.Errorf("error reading JPG file: %v", err)
+			return
+		}
+
+		img, err := jpeg.Decode(bytes.NewReader(jpgBytes))
+		if err != nil {
+			log.Errorf("error decoding JPG: %v", err)
+			return
+		}
+
+		buf := new(bytes.Buffer)
+		if err := png.Encode(buf, img); err != nil {
+			log.Errorf("error encoding PNG: %v", err)
+			return
+		}
+
+		if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
+			log.Errorf("failed to write PNG file: %v", err)
+			return
+		}
+	*/
 }
 
 func ShuffleSlice[T any](items *[]T) {

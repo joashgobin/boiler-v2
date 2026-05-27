@@ -491,8 +491,8 @@ exec bash
 
 	if !fiber.IsChild() {
 		// generate favicon
-		helpers.ConvertJPGToPNG("static/img/favicon.jpg", "static/img/favicon.png")
-		helpers.GenerateFavicon("static/img/favicon.png", "static/gen/img/")
+		helpers.ConvertJPGToPNG("static/img/fav.jpg", "static/img/fav.png")
+		helpers.GenerateFavicon("static/img/fav.png", "static/gen/img/")
 
 		// convert images to Webp
 		// helpers.ConvertInlineWebpFolder(&imageChannel, lru,"static/img/", ".jpg", ".png","jpeg")

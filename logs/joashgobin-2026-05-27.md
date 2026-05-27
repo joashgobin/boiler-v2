@@ -2,3 +2,4 @@
 
 - Updated parse package
 - Vendor updates
+- Updated favicon generation

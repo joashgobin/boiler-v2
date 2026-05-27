@@ -262,3 +262,6 @@ Add the following to your *views/layouts/main.html* file:
 
 
 ```
+
+## Favicon Generation
+The favicon will be generated from either a *fav.jpg* or *fav.png* file placed within the **static/img/** folder.
