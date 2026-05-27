@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"fmt"
+	"image"
 	"os"
 	"path/filepath"
 	"strings"
@@ -174,4 +175,50 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 		return fmt.Errorf("vips move image error: %v", err)
 	}
 	return nil
+}
+
+func ConvertPNGToJPG(inputPath, outputPath string) {
+	if FileExists(outputPath) {
+		return
+	}
+
+	reader, err := os.Open(inputPath)
+	if err != nil {
+		return
+	}
+	defer reader.Close()
+
+	config, _, err := image.DecodeConfig(reader)
+	if err != nil {
+		return
+	}
+
+	err = vipsThumbnail(inputPath, outputPath, config.Width, config.Height)
+	if err != nil {
+		log.Errorf("error converting png to jpeg: %v", err)
+		return
+	}
+}
+
+func ConvertJPGToPNG(inputPath, outputPath string) {
+	if FileExists(outputPath) {
+		return
+	}
+
+	reader, err := os.Open(inputPath)
+	if err != nil {
+		return
+	}
+	defer reader.Close()
+
+	config, _, err := image.DecodeConfig(reader)
+	if err != nil {
+		return
+	}
+
+	err = vipsThumbnail(inputPath, outputPath, config.Width, config.Height)
+	if err != nil {
+		log.Errorf("error converting jpeg to png: %v", err)
+		return
+	}
 }

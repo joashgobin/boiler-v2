@@ -1,14 +1,10 @@
 package helpers
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"image"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"math/rand"
 	"net/url"
@@ -620,85 +616,6 @@ func GetEnv(key string) string {
 		log.Warnf("env var not set: %s", key)
 	}
 	return val
-}
-
-func ConvertPNGToJPG(inputPath, outputPath string) {
-	if FileExists(outputPath) {
-		return
-	}
-	pngBytes, err := os.ReadFile(inputPath)
-	if err != nil {
-		log.Errorf("error reading PNG file: %v", err)
-		return
-	}
-	// Decode the PNG image
-	img, err := png.Decode(bytes.NewReader(pngBytes))
-	if err != nil {
-		log.Errorf("error encoding PNG: %v", err)
-		return
-	}
-
-	// Create a buffer for the JPG output
-	buf := new(bytes.Buffer)
-
-	// Encode as JPG with default quality
-	if err := jpeg.Encode(buf, img, &jpeg.Options{Quality: 95}); err != nil {
-		log.Errorf("error encoding JPG: %v", err)
-		return
-	}
-
-	if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
-		log.Fatalf("error writing JPG file: %v", err)
-		return
-	}
-}
-
-func ConvertJPGToPNG(inputPath, outputPath string) {
-	if FileExists(outputPath) {
-		return
-	}
-
-	reader, err := os.Open(inputPath)
-	if err != nil {
-		return
-	}
-	defer reader.Close()
-
-	config, _, err := image.DecodeConfig(reader)
-	if err != nil {
-		return
-	}
-
-	err = vipsThumbnail(inputPath, outputPath, config.Width, config.Height)
-	if err != nil {
-		log.Errorf("error converting jpeg to png: %v", err)
-		return
-	}
-
-	/*
-		jpgBytes, err := os.ReadFile(inputPath)
-		if err != nil {
-			log.Errorf("error reading JPG file: %v", err)
-			return
-		}
-
-		img, err := jpeg.Decode(bytes.NewReader(jpgBytes))
-		if err != nil {
-			log.Errorf("error decoding JPG: %v", err)
-			return
-		}
-
-		buf := new(bytes.Buffer)
-		if err := png.Encode(buf, img); err != nil {
-			log.Errorf("error encoding PNG: %v", err)
-			return
-		}
-
-		if err := os.WriteFile(outputPath, buf.Bytes(), 0644); err != nil {
-			log.Errorf("failed to write PNG file: %v", err)
-			return
-		}
-	*/
 }
 
 func ShuffleSlice[T any](items *[]T) {

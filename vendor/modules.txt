@@ -11,9 +11,6 @@ github.com/a-h/templ/safehtml
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/flate
 github.com/andybalholm/brotli/matchfinder
-# github.com/disintegration/imaging v1.6.2
-## explicit
-github.com/disintegration/imaging
 # github.com/elastic/go-freelru v0.16.0
 ## explicit; go 1.18
 github.com/elastic/go-freelru
@@ -208,15 +205,11 @@ golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 # golang.org/x/image v0.41.0
 ## explicit; go 1.25.0
-golang.org/x/image/bmp
-golang.org/x/image/ccitt
 golang.org/x/image/draw
 golang.org/x/image/font
 golang.org/x/image/font/basicfont
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
-golang.org/x/image/tiff
-golang.org/x/image/tiff/lzw
 # golang.org/x/net v0.55.0
 ## explicit; go 1.25.0
 golang.org/x/net/idna

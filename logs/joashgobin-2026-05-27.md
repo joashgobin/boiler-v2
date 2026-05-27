@@ -4,3 +4,4 @@
 - Vendor updates
 - Updated favicon generation
 - Removed use of image package
+- Remove image package use for conversions
