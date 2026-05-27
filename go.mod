@@ -4,7 +4,6 @@ go 1.26.3
 
 require (
 	github.com/a-h/templ v0.3.1020
-	github.com/disintegration/imaging v1.6.2
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gofiber/fiber/v3 v3.3.0
