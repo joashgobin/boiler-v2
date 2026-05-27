@@ -5,3 +5,4 @@
 - Fixed image optimization lru key not including width of image
 - Attempt to fix svg pop jank
 - Tweaks
+- Updated animation
