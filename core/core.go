@@ -80,6 +80,7 @@ type AppConfig struct {
 	FuncMap                map[string]any
 	IsProduction           bool
 	ReduceMemoryUsage      bool
+	ReadBufferSize         int
 	EnablePrefork          bool
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
@@ -862,6 +863,10 @@ exec bash
 	showElapsed("template engine load time", start)
 
 	// fiber specific configuration
+	finalReadBufferSize := 4096
+	if config.ReadBufferSize > 4096 {
+		finalReadBufferSize = config.ReadBufferSize
+	}
 
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
@@ -874,7 +879,7 @@ exec bash
 		WriteTimeout:      5 * time.Second,
 		IdleTimeout:       20 * time.Second,
 		ReduceMemoryUsage: config.ReduceMemoryUsage,
-		ReadBufferSize:    4096 * 8,
+		ReadBufferSize:    finalReadBufferSize,
 	})
 
 	// init fiber logger format
