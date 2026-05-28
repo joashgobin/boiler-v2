@@ -874,6 +874,7 @@ exec bash
 		WriteTimeout:      5 * time.Second,
 		IdleTimeout:       20 * time.Second,
 		ReduceMemoryUsage: config.ReduceMemoryUsage,
+		ReadBufferSize:    4096 * 8,
 	})
 
 	// init fiber logger format
