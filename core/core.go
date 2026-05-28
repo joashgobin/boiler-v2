@@ -318,7 +318,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 		helpers.CreateDirectory("remote/")
 
 		// create uploads directory for uploads via forms
-		helpers.CreateDirectory("uploads/")
+		helpers.CreateDirectory("uploads/gen/")
 	}
 
 	if !fiber.IsChild() {
@@ -668,6 +668,10 @@ exec bash
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(outputPath)
 		},
+		"genu": func(imgPath string, dimensions ...int) ht.HTML {
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "uploads/"+imgPath, "uploads/gen", dimensions...)
+			return ht.HTML(outputPath)
+		},
 		"preload": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<link rel='preload' href='" + outputPath + "' as='image' fetchpriority='high'>")
@@ -964,15 +968,26 @@ exec bash
 
 	app.Use(csrfMiddleware)
 
-	// init static file serving
-	app.Get("/static/*", static.New("./static", static.Config{
-		Compress:      false,
-		ByteRange:     true,
-		Browse:        true,
-		IndexNames:    []string{"index.html"},
-		CacheDuration: 31536000 * time.Second,
-		MaxAge:        31536000,
-	}))
+	if !config.IsProduction {
+		// init static file serving
+		app.Get("/static/*", static.New("./static", static.Config{
+			Compress:      false,
+			ByteRange:     true,
+			Browse:        true,
+			IndexNames:    []string{"index.html"},
+			CacheDuration: 31536000 * time.Second,
+			MaxAge:        31536000,
+		}))
+
+		app.Get("/uploads/*", static.New("./uploads", static.Config{
+			Compress:      false,
+			ByteRange:     true,
+			Browse:        true,
+			IndexNames:    []string{"index.html"},
+			CacheDuration: 31536000 * time.Second,
+			MaxAge:        31536000,
+		}))
+	}
 
 	if config.Templates == nil {
 		if !helpers.FileExists("views/index.html") {
