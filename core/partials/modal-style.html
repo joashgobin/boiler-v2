@@ -1,6 +1,6 @@
 <style>
     .modal {
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: rgba(0, 0, 0, 0.7);
         position: fixed;
         top: 0;
         bottom: 0;
@@ -9,9 +9,11 @@
         height: 100vh;
         width: 100vw;
         z-index: 2000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
     }
 
     .modal.hidden {
@@ -19,19 +21,22 @@
     }
 
     .modal-body {
+        z-index: 10;
         background-color: black;
         padding: 0.5rem;
         max-width: 100%;
-        width: 90%;
-        height: 90%;
+        width: min(80vh, 80vw);
+        height: min(80vh, 80vw);
         display: flex;
         justify-content: center;
         align-items: center;
+        border: 1px solid white;
     }
 
-    .modal-frame {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: center;
+    .modal-close {
+        border: 1px solid white;
+        background-color: crimson;
+        padding: 1rem;
+        border-radius: 1rem;
     }
 </style>

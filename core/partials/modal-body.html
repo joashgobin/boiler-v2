@@ -1,5 +1,6 @@
-<div class="modal hidden" onclick="hideModal()">
-    <div class="modal-body">
-        <img class="modal-frame">
+<div class="modal hidden">
+    <div onclick="hideModal();event.stopPropagation()" class="modal-close"><span>x Close</span></div>
+    <div class="modal-body" onclick="event.stopPropagation()">
+        {{template "views/modal" .}}
     </div>
 </div>
