@@ -811,6 +811,9 @@ exec bash
 			}
 			return ""
 		},
+		"valueOf": func(inputs map[string]string, key string) string {
+			return inputs[key]
+		},
 		"safeHTML": func(s string) ht.HTML {
 			return ht.HTML(s)
 		},
