@@ -593,17 +593,6 @@ exec bash
 <img alt="` + outputPath + `" class="rev-image" hx-trigger="revealed" src="` + outputPath + `">
 			`)
 		},
-		"gfont": func(fontName string, selector string) ht.HTML {
-			return ht.HTML(`
-			<link rel="preconnect" href="https://fonts.googleapis.com">
-			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-			<link href="https://fonts.googleapis.com/css2?family=` + strings.ReplaceAll(fontName, " ", "+") + `&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-				<style>
-				` + selector + `{
-					font-family: "` + fontName + `", sans-serif;
-				}
-				</style>`)
-		},
 		"gfonts": func(args ...string) ht.HTML {
 			if len(args)%2 != 0 {
 				return ht.HTML("<!-- (gfonts) Please specify font-selectors pairs -->")
