@@ -599,29 +599,30 @@ exec bash
 			}
 			var selectorsQueue strings.Builder
 			selectorsQueue.WriteString(`<style>`)
-			start := `
+			var start strings.Builder
+			start.WriteString(`
 			<link rel="preconnect" href="https://fonts.googleapis.com">
 			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-			<link href="https://fonts.googleapis.com/css2`
+			<link href="https://fonts.googleapis.com/css2`)
 			for i := 0; i < len(args); i += 2 {
 				fontName := args[i]
 				selectors := args[i+1]
 				if i == 0 {
-					start += "?family="
+					start.WriteString("?family=")
 				} else {
-					start += "&family="
+					start.WriteString("&family=")
 				}
 				selectorsQueue.WriteString(selectors + `{ font-family: "` + fontName + `",sans-serif; } `)
-				start += strings.ReplaceAll(fontName, " ", "+")
+				start.WriteString(strings.ReplaceAll(fontName, " ", "+"))
 			}
 
 			end := `&display=swap&text=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890" rel="stylesheet" media="print" onload="this.media='all'">
 				`
 			selectorsQueue.WriteString(`</style>`)
-			start += end
-			start += selectorsQueue.String()
-			return ht.HTML(start)
+			start.WriteString(end)
+			start.WriteString(selectorsQueue.String())
+			return ht.HTML(start.String())
 		},
 		"role": func(roles any, role string) bool {
 			if roles == nil {
@@ -859,10 +860,7 @@ exec bash
 	showElapsed("template engine load time", start)
 
 	// fiber specific configuration
-	finalReadBufferSize := 4096
-	if config.ReadBufferSize > 4096 {
-		finalReadBufferSize = config.ReadBufferSize
-	}
+	finalReadBufferSize := max(config.ReadBufferSize, 4096)
 
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
