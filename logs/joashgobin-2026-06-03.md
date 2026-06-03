@@ -2,3 +2,4 @@
 
 - Remove gfont function, use gfonts  instead
 - Updated packages
+- Upgrade to go 1.26.4
