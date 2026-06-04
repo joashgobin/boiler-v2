@@ -10,6 +10,7 @@ Wants=network-online.target
 Type=exec
 User=<user>
 Group=<user>
+Environment=GOTRACEBACK=system
 EnvironmentFile=/etc/environment
 WorkingDirectory=/home/<user>/<appName>
 ExecStart=/home/<user>/<appName>/web -prod
