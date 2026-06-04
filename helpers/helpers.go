@@ -381,10 +381,7 @@ func FileExists(filePath string) bool {
 
 func FolderExists(folderPath string) bool {
 	_, err := os.Stat(folderPath)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // helper to create a database connection pool

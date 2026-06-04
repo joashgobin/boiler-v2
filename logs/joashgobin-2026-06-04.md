@@ -3,3 +3,4 @@
 - Updated default service
 - Updated service file
 - Tweak
+- Updated folder exists functions
