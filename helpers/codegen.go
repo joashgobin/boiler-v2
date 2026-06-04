@@ -81,7 +81,7 @@ func ParseTomlWithFields(filePath string, fields []string) (map[string]string, e
 		if value, exists := tomlContent[field]; exists {
 			switch v := value.(type) {
 			case string:
-				if strings.Contains(v, "<") || strings.Contains(v, "<") {
+				if strings.Contains(v, "<") || strings.Contains(v, ">") {
 					continue
 				}
 				filteredContent[field] = v
@@ -92,7 +92,7 @@ func ParseTomlWithFields(filePath string, fields []string) (map[string]string, e
 		if value, exists := tomlContent["params"].(map[string]any)[field]; exists {
 			switch v := value.(type) {
 			case string:
-				if strings.Contains(v, "<") || strings.Contains(v, "<") {
+				if strings.Contains(v, "<") || strings.Contains(v, ">") {
 					continue
 				}
 				filteredContent[field] = v
