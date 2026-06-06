@@ -662,6 +662,14 @@ exec bash
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "uploads/"+imgPath, "uploads/gen", dimensions...)
 			return ht.HTML(outputPath)
 		},
+		"bg": func(imgPath string, dimensions ...int) ht.HTMLAttr {
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
+			return ht.HTMLAttr("style=background-image:url(" + outputPath + ")")
+		},
+		"bgs": func(imgPath string, dimensions ...int) ht.HTMLAttr {
+			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			return ht.HTMLAttr("style=background-image:url(" + outputPath + ")")
+		},
 		"preload": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<link rel='preload' href='" + outputPath + "' as='image' fetchpriority='high'>")

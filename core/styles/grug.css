@@ -6,10 +6,10 @@
     --system-ui: system-ui, sans-serif;
     --body-font: var(--humanist);
     --heading-font: var(--system-ui);
-    --prim: white;
+    --prim: #e6e6e6;
     --sec: royalblue;
     --accent: pink;
-    --black: #222;
+    --black: #111111;
     --measure: 75ch;
     --s0: calc(1.1rem + 0.1vw);
     --ratio: 1.15;

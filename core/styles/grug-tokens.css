@@ -224,20 +224,56 @@
     color: hsl(from var(--text-color) h s l / 0.4);
 }
 
-.darken {
+.darken-10 {
+    background-color: hsl(from var(--bg-color) h s l / 0.1);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-20 {
+    background-color: hsl(from var(--bg-color) h s l / 0.2);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-30 {
+    background-color: hsl(from var(--bg-color) h s l / 0.3);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-40 {
+    background-color: hsl(from var(--bg-color) h s l / 0.4);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-50 {
     background-color: hsl(from var(--bg-color) h s l / 0.5);
     background-blend-mode: darken;
     background-size: cover;
 }
 
-.darken-2 {
-    background-color: hsl(from var(--bg-color) h s l / 0.65);
+.darken-60 {
+    background-color: hsl(from var(--bg-color) h s l / 0.6);
     background-blend-mode: darken;
     background-size: cover;
 }
 
-.darken-3 {
+.darken-70 {
+    background-color: hsl(from var(--bg-color) h s l / 0.7);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-80 {
     background-color: hsl(from var(--bg-color) h s l / 0.8);
+    background-blend-mode: darken;
+    background-size: cover;
+}
+
+.darken-90 {
+    background-color: hsl(from var(--bg-color) h s l / 0.9);
     background-blend-mode: darken;
     background-size: cover;
 }
@@ -310,27 +346,27 @@
     background-color: hsl(from var(--bg-color) h s l / 0.1);
 }
 
-.basis-10{
+.basis-10 {
     flex-basis: 10%;
     flex-grow: 1;
 }
 
-.basis-20{
+.basis-20 {
     flex-basis: 20%;
     flex-grow: 1;
 }
 
-.basis-30{
+.basis-30 {
     flex-basis: 30%;
     flex-grow: 1;
 }
 
-.basis-40{
+.basis-40 {
     flex-basis: 40%;
     flex-grow: 1;
 }
 
-.basis-50{
+.basis-50 {
     flex-basis: 50%;
     flex-grow: 1;
 }
