@@ -73,7 +73,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 	if err != nil {
 		log.Errorf("error renaming temp safe image: %v", err)
 	}
-	log.Infof("(%v) converted image (%s) to webp: %s", time.Since(si.startTime), si.srcPath, si.outputPath)
+	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.srcPath, si.outputPath)
 }
 
 func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
@@ -245,6 +245,10 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	outputFolderPath := filepath.Dir(outputPath) + "/"
 	outputName := filepath.Base(outputPath)
 	tempPath := filepath.Dir(inputPath) + "/" + outputName
+	endArgs := ""
+	if strings.HasSuffix(outputName, ".avif") {
+		endArgs = "[Q=40,effort=5,subsample-mode=auto,strip]"
+	}
 
 	dimStr := "500x"
 	if len(dimensions) > 0 {
@@ -253,8 +257,9 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	if len(dimensions) > 1 {
 		dimStr = fmt.Sprintf("%dx%d", dimensions[0], dimensions[1])
 	}
-	cmd := exec.Command("vipsthumbnail", inputPath, "--size", dimStr, "-o", outputName)
+	cmd := exec.Command("vipsthumbnail", inputPath, "--size", dimStr, "-o", outputName+endArgs)
 	_, err := cmd.Output()
+	// log.Info(cmd.String())
 	if err != nil {
 		return fmt.Errorf("vips thumbnail error: %v", err)
 	}

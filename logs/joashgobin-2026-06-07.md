@@ -5,3 +5,4 @@
 - Updated the lazy image loading function to use picture element
 - Updated functions for image gen
 - Create temp version of image while processing it
+- Lower avif quality to 40
