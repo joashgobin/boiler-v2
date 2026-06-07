@@ -61,11 +61,17 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 		return
 	}
 
-	vipsThumbnail(si.intermediatePath, si.outputPath, si.outputWidth)
+	tempOutputPath := filepath.Dir(si.outputPath) + "/__temp__" + filepath.Base(si.outputPath)
+	// fmt.Println(tempOutputPath)
+	vipsThumbnail(si.intermediatePath, tempOutputPath, si.outputWidth)
 
 	err = DeleteFile(lockPath)
 	if err != nil {
 		log.Errorf("error deleting safe image lock file: %v", err)
+	}
+	err = os.Rename(tempOutputPath, si.outputPath)
+	if err != nil {
+		log.Errorf("error renaming temp safe image: %v", err)
 	}
 	log.Infof("(%v) converted image (%s) to webp: %s", time.Since(si.startTime), si.srcPath, si.outputPath)
 }
