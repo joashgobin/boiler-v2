@@ -662,6 +662,32 @@ exec bash
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "uploads/"+imgPath, "uploads/gen", dimensions...)
 			return ht.HTML(outputPath)
 		},
+		"pics": func(imgPath string, dimensions ...int) ht.HTML {
+			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			var picBuilder strings.Builder
+			picBuilder.WriteString("<picture>")
+			picBuilder.WriteString(`<source srcset="`)
+			picBuilder.WriteString(avifPath)
+			picBuilder.WriteString(`" type="image/avif">`)
+
+			picBuilder.WriteString(`<source srcset="`)
+			picBuilder.WriteString(webpPath)
+			picBuilder.WriteString(`" type="image/webp">`)
+
+			picBuilder.WriteString(`<img src="`)
+			picBuilder.WriteString(fallbackPath)
+			picBuilder.WriteString(`" class="" alt="">`)
+			picBuilder.WriteString("</picture>")
+			return ht.HTML(picBuilder.String())
+		},
+		"class": func(classes string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `class=""`, `class="`+classes+`"`))
+		},
+		"alt": func(alt string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `alt=""`, `alt="`+alt+`"`))
+		},
 		"bg": func(imgPath string, dimensions ...int) ht.HTMLAttr {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTMLAttr("style=background-image:url(" + outputPath + ")")

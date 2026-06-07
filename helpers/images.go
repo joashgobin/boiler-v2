@@ -70,25 +70,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 	log.Infof("(%v) converted image (%s) to webp: %s", time.Since(si.startTime), si.srcPath, si.outputPath)
 }
 
-/*
-func ConvertInlineWebpFolder(imageChannel *chan *SafeImage, folderPath string, exts ...string) {
-	entries, err := os.ReadDir(folderPath)
-	if err != nil {
-		fmt.Printf("error reading directory (%s): %v\n", folderPath, err)
-		return
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && slices.Contains(exts, filepath.Ext(entry.Name())) {
-			fullPath := filepath.Join(folderPath, entry.Name())
-			// fmt.Println("converting", fullPath)
-			ConvertInlineWebp(imageChannel, fullPath, "static/gen/img", 1000)
-		}
-	}
-}
-*/
-
-func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
-	// now := time.Now()
+func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
 	width := 500
 	intermediateWidth := 1000
 
@@ -96,18 +78,12 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 		width = dimensions[0]
 	}
 	fromDir := filepath.Dir(srcPath)
-	// start := time.Now()
 	hashString := GetFileHash(srcPath)
 	var lruKeyBuilder strings.Builder
 	lruKeyBuilder.WriteString(hashString)
+	lruKeyBuilder.WriteString("-")
 	lruKeyBuilder.WriteString(strconv.Itoa(width))
-	// log.Infof("*image hash gen time: %v", time.Since(now))
-
-	/*
-		outputPath := fmt.Sprintf("%s_%dx.%s.webp",
-			strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
-				filepath.Ext(srcPath)), width, hashString)
-	*/
+	lruKeyBuilder.WriteString("-avif")
 
 	var outputPath string
 	cachedOutputPath := lru.Get(lruKeyBuilder.String())
@@ -119,13 +95,11 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 		outputBuilder.WriteString(strconv.Itoa(width))
 		outputBuilder.WriteString("x.")
 		outputBuilder.WriteString(hashString)
-		outputBuilder.WriteString(".webp")
+		outputBuilder.WriteString(".avif")
 		outputPath = outputBuilder.String()
 		lru.Set(lruKeyBuilder.String(), outputPath)
-		// log.Infof("uncached image output path time: %v", time.Since(now))
 	} else {
 		outputPath = cachedOutputPath
-		// log.Infof("cached image output path time: %v", time.Since(now))
 	}
 
 	if !FileExists(outputPath) {
@@ -142,12 +116,119 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 		}
 
 		*imageChannel <- &si
-		// log.Infof("image lookup time: %v", time.Since(now))
+		// fmt.Println("avif output path:", outputPath)
 		return srcPath
 
-		// si.ProcessImage(time.Now())
 	}
-	// log.Infof("image lookup time: %v", time.Since(now))
+	// fmt.Println("avif output path:", outputPath)
+	return outputPath
+}
+
+func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
+	width := 500
+	intermediateWidth := 1000
+
+	if len(dimensions) > 0 {
+		width = dimensions[0]
+	}
+	fromDir := filepath.Dir(srcPath)
+	hashString := GetFileHash(srcPath)
+	var lruKeyBuilder strings.Builder
+	lruKeyBuilder.WriteString(hashString)
+	lruKeyBuilder.WriteString("-")
+	lruKeyBuilder.WriteString(strconv.Itoa(width))
+	lruKeyBuilder.WriteString("-webp")
+
+	var outputPath string
+	cachedOutputPath := lru.Get(lruKeyBuilder.String())
+	if cachedOutputPath == "" {
+		var outputBuilder strings.Builder
+		outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+			filepath.Ext(srcPath)))
+		outputBuilder.WriteString("_")
+		outputBuilder.WriteString(strconv.Itoa(width))
+		outputBuilder.WriteString("x.")
+		outputBuilder.WriteString(hashString)
+		outputBuilder.WriteString(".webp")
+		outputPath = outputBuilder.String()
+		lru.Set(lruKeyBuilder.String(), outputPath)
+	} else {
+		outputPath = cachedOutputPath
+	}
+
+	if !FileExists(outputPath) {
+		intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
+			strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+				filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
+
+		si := SafeImage{
+			srcPath:           srcPath,
+			intermediatePath:  intermediatePath,
+			intermediateWidth: intermediateWidth,
+			outputPath:        outputPath,
+			outputWidth:       width,
+		}
+
+		*imageChannel <- &si
+		// fmt.Println("webp output path:", outputPath)
+		return srcPath
+
+	}
+	// fmt.Println("webp output path:", outputPath)
+	return outputPath
+}
+
+func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
+	width := 500
+	intermediateWidth := 1000
+
+	if len(dimensions) > 0 {
+		width = dimensions[0]
+	}
+	fromDir := filepath.Dir(srcPath)
+	hashString := GetFileHash(srcPath)
+	var lruKeyBuilder strings.Builder
+	lruKeyBuilder.WriteString(hashString)
+	lruKeyBuilder.WriteString("-")
+	lruKeyBuilder.WriteString(strconv.Itoa(width))
+	lruKeyBuilder.WriteString("-original")
+
+	var outputPath string
+	cachedOutputPath := lru.Get(lruKeyBuilder.String())
+	if cachedOutputPath == "" {
+		var outputBuilder strings.Builder
+		outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+			filepath.Ext(srcPath)))
+		outputBuilder.WriteString("_")
+		outputBuilder.WriteString(strconv.Itoa(width))
+		outputBuilder.WriteString("x.")
+		outputBuilder.WriteString(hashString)
+		outputBuilder.WriteString(filepath.Ext(srcPath))
+		outputPath = outputBuilder.String()
+		lru.Set(lruKeyBuilder.String(), outputPath)
+	} else {
+		outputPath = cachedOutputPath
+	}
+
+	if !FileExists(outputPath) {
+		intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
+			strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+				filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
+
+		si := SafeImage{
+			srcPath:           srcPath,
+			intermediatePath:  intermediatePath,
+			intermediateWidth: intermediateWidth,
+			outputPath:        outputPath,
+			outputWidth:       width,
+		}
+
+		*imageChannel <- &si
+		// fmt.Println("webp output path:", outputPath)
+		return srcPath
+
+	}
+	// fmt.Println("webp output path:", outputPath)
 	return outputPath
 }
 
