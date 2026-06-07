@@ -650,6 +650,15 @@ exec bash
 </script>
 			`)
 		},
+		"class": func(classes string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `class=""`, `class="`+classes+`"`))
+		},
+		"alt": func(alt string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `alt=""`, `alt="`+alt+`"`))
+		},
+		"style": func(style string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `style=""`, `style="`+style+`"`))
+		},
 		"gen": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(outputPath)
@@ -678,23 +687,35 @@ exec bash
 
 			picBuilder.WriteString(`<img src="`)
 			picBuilder.WriteString(fallbackPath)
-			picBuilder.WriteString(`" class="" alt="">`)
+			picBuilder.WriteString(`" class="" alt="" style="">`)
 			picBuilder.WriteString("</picture>")
 			return ht.HTML(picBuilder.String())
 		},
-		"class": func(classes string, input ht.HTML) ht.HTML {
-			return ht.HTML(strings.ReplaceAll(string(input), `class=""`, `class="`+classes+`"`))
-		},
-		"alt": func(alt string, input ht.HTML) ht.HTML {
-			return ht.HTML(strings.ReplaceAll(string(input), `alt=""`, `alt="`+alt+`"`))
-		},
-		"bg": func(imgPath string, dimensions ...int) ht.HTMLAttr {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
-			return ht.HTMLAttr("style=background-image:url(" + outputPath + ")")
-		},
 		"bgs": func(imgPath string, dimensions ...int) ht.HTMLAttr {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
-			return ht.HTMLAttr("style=background-image:url(" + outputPath + ")")
+			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			var srcBuilder strings.Builder
+			srcBuilder.WriteString(`url('`)
+			srcBuilder.WriteString(avifPath)
+			srcBuilder.WriteString(`') type('image/avif'),`)
+
+			srcBuilder.WriteString(`url('`)
+			srcBuilder.WriteString(webpPath)
+			srcBuilder.WriteString(`') type('image/webp'),`)
+
+			ext := filepath.Ext(imgPath)
+			switch ext {
+			case ".png":
+				srcBuilder.WriteString(`url('`)
+				srcBuilder.WriteString(fallbackPath)
+				srcBuilder.WriteString(`') type('image/png')`)
+			default:
+				srcBuilder.WriteString(`url('`)
+				srcBuilder.WriteString(fallbackPath)
+				srcBuilder.WriteString(`') type('image/jpeg')`)
+			}
+			return ht.HTMLAttr(`style="background-image:url(` + fallbackPath + `);background-image:image-set(` + srcBuilder.String() + `)"`)
 		},
 		"preload": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
