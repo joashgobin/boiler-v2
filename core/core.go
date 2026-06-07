@@ -685,7 +685,7 @@ exec bash
 			picBuilder.WriteString(webpPath)
 			picBuilder.WriteString(`" type="image/webp">`)
 
-			picBuilder.WriteString(`<img src="`)
+			picBuilder.WriteString(`<img hx-trigger="revealed" src="`)
 			picBuilder.WriteString(fallbackPath)
 			picBuilder.WriteString(`" class="" alt="" style="">`)
 			picBuilder.WriteString("</picture>")
@@ -737,13 +737,25 @@ exec bash
 				            </div>`
 			return ht.HTML(htmxString)
 		},
-		"lazy": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
-			return ht.HTML("<img loading='lazy' decode='async' alt='" + outputPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + outputPath + "'>")
-		},
 		"lazys": func(imgPath string, dimensions ...int) ht.HTML {
-			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
-			return ht.HTML("<img loading='lazy' decode='async' alt='" + outputPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + outputPath + "'>")
+			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			var picBuilder strings.Builder
+			picBuilder.WriteString("<picture>")
+			picBuilder.WriteString(`<source srcset="`)
+			picBuilder.WriteString(avifPath)
+			picBuilder.WriteString(`" type="image/avif">`)
+
+			picBuilder.WriteString(`<source srcset="`)
+			picBuilder.WriteString(webpPath)
+			picBuilder.WriteString(`" type="image/webp">`)
+
+			picBuilder.WriteString(`<img loading='lazy' decode='async' style='opacity:0' onload='this.style.opacity=1' src="`)
+			picBuilder.WriteString(fallbackPath)
+			picBuilder.WriteString(`" class="gen-image" alt="">`)
+			picBuilder.WriteString("</picture>")
+			return ht.HTML(picBuilder.String())
 		},
 		"icon": func(iconName ...string) ht.HTML {
 			width := "20px"
