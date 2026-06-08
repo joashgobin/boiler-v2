@@ -3,3 +3,4 @@
 - Upgraded packages
 - Vips copy image into output folder before doing conversion
 - Changed vips conversion strategy
+- Remove delay
