@@ -244,6 +244,14 @@ func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath stri
 	return outputPath
 }
 
+func GetFileSize(path string) int {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	return int(fileInfo.Size())
+}
+
 func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	outputFolderPath := filepath.Dir(outputPath) + "/"
 	outputName := filepath.Base(outputPath)
@@ -265,29 +273,100 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	}
 
 	inputCopyPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath)
+	lockPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath) + ".lock"
+	finalImageLockPath := outputFolderPath + "_convert_" + ext + "_" + dimStr + "_" + outputName + ".lock"
 
-	// copy input file to output directory
-	err := CopyFile(inputPath, inputCopyPath)
-	if err != nil {
-		return fmt.Errorf("vips copy input error: %v", err)
-	}
-
-	// convert input in output directory
-	cmd := exec.Command("vipsthumbnail", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
-	// cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
-	_, err = cmd.Output()
-	if err != nil {
-		return fmt.Errorf("vips thumbnail error: %v", err)
-	}
-
-	/*
-		// move to target directory
-		mvCmd := exec.Command("mv", tempPath, outputFolderPath)
-		_, err = mvCmd.Output()
-		if err != nil {
-			return fmt.Errorf("vips move image error: %v", err)
+	// check if lock files are causing conflict
+	if FileExists(inputCopyPath) {
+		if GetFileSize(inputCopyPath) == 0 {
+			err := DeleteFile(inputCopyPath)
+			if err != nil {
+				err = fmt.Errorf("vips clear input copy error: %v", err)
+				log.Error(err)
+			}
+			err = DeleteFile(lockPath)
+			if err != nil {
+				err = fmt.Errorf("vips clear input copy lock file error: %v", err)
+				log.Error(err)
+			}
+			err = DeleteFile(finalImageLockPath)
+			if err != nil {
+				err = fmt.Errorf("vips clear final image lock file error: %v", err)
+				log.Error(err)
+			}
+			vipsThumbnail(inputPath, outputPath, dimensions...)
 		}
-	*/
+	}
+
+	if !FileExists(lockPath) {
+		// create lock file to indicate that input file is being copied
+		err := TouchFile(lockPath)
+		if err != nil {
+			err = fmt.Errorf("vips input copy lock file create error: %v", err)
+			log.Error(err)
+			return err
+		}
+		// copy input file to output directory
+		err = CopyFile(inputPath, inputCopyPath)
+		if err != nil {
+			err = fmt.Errorf("vips copy input error: %v", err)
+			log.Error(err)
+			return err
+		}
+		// delete lock file after successful input file copying
+		err = DeleteFile(lockPath)
+		if err != nil {
+			err = fmt.Errorf("vips input copy lock file delete error: %v", err)
+			log.Error(err)
+			return err
+		}
+	}
+
+	if FileExists(inputCopyPath) {
+		// create lock file to indicate that input file is being copied
+		err := TouchFile(finalImageLockPath)
+		if err != nil {
+			err = fmt.Errorf("vips final image lock file create error: %v", err)
+			log.Error(err)
+			return err
+		}
+
+		// convert input copy in output directory
+		cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
+		_, err = cmd.Output()
+		if err != nil {
+			err = fmt.Errorf("vips thumbnail conversion error: %v", err)
+			log.Error(err)
+			return err
+		}
+
+		// delete input copy
+		err = DeleteFile(inputCopyPath)
+		if err != nil {
+			err = fmt.Errorf("vips input copy delete error: %v", err)
+			log.Error(err)
+			return err
+		}
+
+		// delete lock file after successful conversion
+		err = DeleteFile(finalImageLockPath)
+		if err != nil {
+			err = fmt.Errorf("vips final image lock file delete error: %v", err)
+			log.Error(err)
+			return err
+		}
+
+		/*
+			// delete input copy lock file after successful conversion
+			err = DeleteFile(lockPath)
+			if err != nil {
+				err = fmt.Errorf("vips lock file delete error: %v", err)
+				log.Error(err)
+				return err
+			}
+		*/
+	}
+
 	return nil
 }
 

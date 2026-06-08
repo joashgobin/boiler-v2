@@ -267,6 +267,7 @@ func showElapsed(description string, start time.Time) {
 func imageWorker(workerID int, start time.Time, imageJobs <-chan *helpers.SafeImage) {
 	for si := range imageJobs {
 		si.ProcessImage(start)
+		<-time.After(200 * time.Millisecond)
 		// fmt.Printf("worker %d done...\n", workerID)
 		/*
 			go func() {
@@ -489,7 +490,7 @@ exec bash
 	var wg sync.WaitGroup
 
 	go func() {
-		for i := range runtime.NumCPU() {
+		for i := range 1 {
 			go imageWorker(i, start, imageChannel)
 		}
 	}()
