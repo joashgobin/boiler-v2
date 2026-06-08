@@ -61,19 +61,21 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 		return
 	}
 
-	ext := strings.TrimPrefix(filepath.Ext(si.outputPath), ".")
-	tempOutputPath := filepath.Dir(si.outputPath) + "/__temp__" + ext + "__" + filepath.Base(si.outputPath)
+	// ext := strings.TrimPrefix(filepath.Ext(si.outputPath), ".")
+	// tempOutputPath := filepath.Dir(si.outputPath) + "/__temp__" + ext + "__" + filepath.Base(si.outputPath)
 	// fmt.Println(tempOutputPath)
-	vipsThumbnail(si.intermediatePath, tempOutputPath, si.outputWidth)
+	vipsThumbnail(si.intermediatePath, si.outputPath, si.outputWidth)
 
 	err = DeleteFile(lockPath)
 	if err != nil {
 		log.Errorf("error deleting safe image lock file: %v", err)
 	}
-	err = os.Rename(tempOutputPath, si.outputPath)
-	if err != nil {
-		log.Errorf("error renaming temp safe image: %v", err)
-	}
+	/*
+		err = os.Rename(tempOutputPath, si.outputPath)
+		if err != nil {
+			log.Errorf("error renaming temp safe image: %v", err)
+		}
+	*/
 	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.srcPath, si.outputPath)
 }
 
@@ -245,12 +247,15 @@ func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath stri
 func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	outputFolderPath := filepath.Dir(outputPath) + "/"
 	outputName := filepath.Base(outputPath)
-	tempPath := filepath.Dir(inputPath) + "/" + outputName
+	// tempPath := filepath.Dir(inputPath) + "/" + outputName
+	ext := strings.TrimPrefix(filepath.Ext(outputPath), ".")
+
 	endArgs := ""
 	if strings.HasSuffix(outputName, ".avif") {
 		endArgs = "[Q=40,effort=5,subsample-mode=auto,strip]"
 	}
 
+	// set target dimensions for conversion
 	dimStr := "500x"
 	if len(dimensions) > 0 {
 		dimStr = fmt.Sprintf("%dx", dimensions[0])
@@ -258,18 +263,31 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	if len(dimensions) > 1 {
 		dimStr = fmt.Sprintf("%dx%d", dimensions[0], dimensions[1])
 	}
-	cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputPath, "--size", dimStr, "-o", outputName+endArgs)
-	_, err := cmd.Output()
-	// log.Info(cmd.String())
+
+	inputCopyPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath)
+
+	// copy input file to output directory
+	err := CopyFile(inputPath, inputCopyPath)
+	if err != nil {
+		return fmt.Errorf("vips copy input error: %v", err)
+	}
+
+	// convert input in output directory
+	cmd := exec.Command("vipsthumbnail", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
+	// cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
+	_, err = cmd.Output()
 	if err != nil {
 		return fmt.Errorf("vips thumbnail error: %v", err)
 	}
 
-	mvCmd := exec.Command("mv", tempPath, outputFolderPath)
-	_, err = mvCmd.Output()
-	if err != nil {
-		return fmt.Errorf("vips move image error: %v", err)
-	}
+	/*
+		// move to target directory
+		mvCmd := exec.Command("mv", tempPath, outputFolderPath)
+		_, err = mvCmd.Output()
+		if err != nil {
+			return fmt.Errorf("vips move image error: %v", err)
+		}
+	*/
 	return nil
 }
 
