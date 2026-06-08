@@ -61,7 +61,8 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 		return
 	}
 
-	tempOutputPath := filepath.Dir(si.outputPath) + "/__temp__" + filepath.Base(si.outputPath)
+	ext := strings.TrimPrefix(filepath.Ext(si.outputPath), ".")
+	tempOutputPath := filepath.Dir(si.outputPath) + "/__temp__" + ext + "__" + filepath.Base(si.outputPath)
 	// fmt.Println(tempOutputPath)
 	vipsThumbnail(si.intermediatePath, tempOutputPath, si.outputWidth)
 
@@ -257,7 +258,7 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	if len(dimensions) > 1 {
 		dimStr = fmt.Sprintf("%dx%d", dimensions[0], dimensions[1])
 	}
-	cmd := exec.Command("vipsthumbnail", inputPath, "--size", dimStr, "-o", outputName+endArgs)
+	cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputPath, "--size", dimStr, "-o", outputName+endArgs)
 	_, err := cmd.Output()
 	// log.Info(cmd.String())
 	if err != nil {

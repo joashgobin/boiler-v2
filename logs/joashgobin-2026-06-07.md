@@ -7,3 +7,4 @@
 - Create temp version of image while processing it
 - Lower avif quality to 40
 - Added more functions
+- Updated image processing

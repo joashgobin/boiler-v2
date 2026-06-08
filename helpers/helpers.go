@@ -424,6 +424,14 @@ func CreateDirectory(path string) error {
 	return nil
 }
 
+func CopyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, data, 0644)
+}
+
 func CopyDir(src, dst string, skipRepeats bool) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
