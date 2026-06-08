@@ -8,3 +8,4 @@
 - Lower avif quality to 40
 - Added more functions
 - Updated image processing
+- Use 1 worker for image processing via libvips
