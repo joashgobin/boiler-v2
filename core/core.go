@@ -490,7 +490,7 @@ exec bash
 	var wg sync.WaitGroup
 
 	go func() {
-		for i := range 1 {
+		for i := range min(runtime.NumCPU(), 1) {
 			go imageWorker(i, start, imageChannel)
 		}
 	}()

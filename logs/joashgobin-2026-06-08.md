@@ -4,3 +4,4 @@
 - Vips copy image into output folder before doing conversion
 - Changed vips conversion strategy
 - Remove delay
+- To test image processing with more cores
