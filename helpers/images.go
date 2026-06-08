@@ -260,7 +260,7 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 
 	endArgs := ""
 	if strings.HasSuffix(outputName, ".avif") {
-		endArgs = "[Q=40,effort=5,subsample-mode=auto,strip]"
+		endArgs = "[Q=40,effort=4,subsample-mode=auto,strip]"
 	}
 
 	// set target dimensions for conversion
