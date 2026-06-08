@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -908,6 +909,16 @@ exec bash
 			trigger.WriteString(styles)
 			trigger.WriteString(`"'></span>`)
 			return ht.HTML(trigger.String())
+		},
+		"cat": func(strs ...string) string {
+			var builder strings.Builder
+			for _, str := range strs {
+				builder.WriteString(str)
+			}
+			return builder.String()
+		},
+		"itoa": func(i int) string {
+			return strconv.Itoa(i)
 		},
 	}
 	// add functions to template engine
