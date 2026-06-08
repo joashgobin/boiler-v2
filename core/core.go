@@ -264,17 +264,33 @@ func showElapsed(description string, start time.Time) {
 	}
 }
 
-func imageWorker(workerID int, start time.Time, imageJobs <-chan *helpers.SafeImage) {
+type KeyedMutexPool struct {
+	mu    sync.Mutex
+	locks map[string]*sync.Mutex
+}
+
+func NewKeyedMutexPool() *KeyedMutexPool {
+	return &KeyedMutexPool{locks: make(map[string]*sync.Mutex)}
+}
+
+func (p *KeyedMutexPool) GetLock(key string) *sync.Mutex {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	lock, exists := p.locks[key]
+	if !exists {
+		lock = &sync.Mutex{}
+		p.locks[key] = lock
+	}
+	return lock
+}
+
+func imageWorker(workerID int, start time.Time, imageJobs <-chan *helpers.SafeImage, lockPool *KeyedMutexPool) {
 	for si := range imageJobs {
+		imageLock := lockPool.GetLock(si.SrcPath)
+		imageLock.Lock()
 		si.ProcessImage(start)
-		// <-time.After(200 * time.Millisecond)
-		// fmt.Printf("worker %d done...\n", workerID)
-		/*
-			go func() {
-				// log.Infof("received safe image from image channel: %v", si)
-				si.ProcessImage(start)
-			}()
-		*/
+		imageLock.Unlock()
 	}
 }
 
@@ -488,10 +504,11 @@ exec bash
 	imageChannel := make(chan *helpers.SafeImage, 10)
 
 	var wg sync.WaitGroup
+	muPool := NewKeyedMutexPool()
 
 	go func() {
-		for i := range min(runtime.NumCPU(), 1) {
-			go imageWorker(i, start, imageChannel)
+		for i := range min(runtime.NumCPU(), 4) {
+			go imageWorker(i, start, imageChannel, muPool)
 		}
 	}()
 

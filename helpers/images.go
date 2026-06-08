@@ -15,7 +15,7 @@ import (
 )
 
 type SafeImage struct {
-	srcPath           string
+	SrcPath           string
 	intermediatePath  string
 	intermediateWidth int
 	outputPath        string
@@ -42,7 +42,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 	// log.Infof("processing image: %s -> %s -> %s", si.srcPath, si.intermediatePath, si.outputPath)
 	// use intermediate if present
 	if !FileExists(si.intermediatePath) {
-		vipsThumbnail(si.srcPath, si.intermediatePath, si.intermediateWidth)
+		vipsThumbnail(si.SrcPath, si.intermediatePath, si.intermediateWidth)
 	}
 
 	if FileExists(si.outputPath) {
@@ -76,7 +76,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 			log.Errorf("error renaming temp safe image: %v", err)
 		}
 	*/
-	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.srcPath, si.outputPath)
+	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.SrcPath, si.outputPath)
 }
 
 func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
@@ -117,7 +117,7 @@ func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 				filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
 
 		si := SafeImage{
-			srcPath:           srcPath,
+			SrcPath:           srcPath,
 			intermediatePath:  intermediatePath,
 			intermediateWidth: intermediateWidth,
 			outputPath:        outputPath,
@@ -172,7 +172,7 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 				filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
 
 		si := SafeImage{
-			srcPath:           srcPath,
+			SrcPath:           srcPath,
 			intermediatePath:  intermediatePath,
 			intermediateWidth: intermediateWidth,
 			outputPath:        outputPath,
@@ -227,7 +227,7 @@ func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath stri
 				filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
 
 		si := SafeImage{
-			srcPath:           srcPath,
+			SrcPath:           srcPath,
 			intermediatePath:  intermediatePath,
 			intermediateWidth: intermediateWidth,
 			outputPath:        outputPath,
