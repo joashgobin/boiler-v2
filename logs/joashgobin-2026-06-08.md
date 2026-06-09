@@ -11,3 +11,4 @@
 - Updated favicon generation
 - Tweaks
 - Ignore zone ids
+- Updated packages
