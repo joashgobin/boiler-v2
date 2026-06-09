@@ -10,3 +10,4 @@
 - Revert
 - Updated favicon generation
 - Tweaks
+- Ignore zone ids

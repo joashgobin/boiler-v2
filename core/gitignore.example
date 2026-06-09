@@ -9,3 +9,4 @@ merchants/
 views/cmp/
 <appName>.log
 *_templ.go
+*:Zone.Identifier
