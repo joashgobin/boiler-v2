@@ -13,3 +13,4 @@
 - Ignore zone ids
 - Updated packages
 - Updated packages
+- Utilize all cores for image processing

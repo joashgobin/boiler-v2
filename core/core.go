@@ -507,7 +507,7 @@ exec bash
 	muPool := NewKeyedMutexPool()
 
 	go func() {
-		for i := range min(runtime.NumCPU(), 4) {
+		for i := range runtime.NumCPU() {
 			go imageWorker(i, start, imageChannel, muPool)
 		}
 	}()
