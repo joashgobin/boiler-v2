@@ -8,3 +8,4 @@
 - Use keyed mutex pool to ensure that image workers are not sharing the same file
 - Use all cores for image processing
 - Revert
+- Updated favicon generation

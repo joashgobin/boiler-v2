@@ -897,13 +897,14 @@ exec bash
 			return s1 == s2
 		},
 		"favicon": func() ht.HTML {
+			// requires a fav.png icon in the static/img folder
 			links := `
 		<link rel="apple-touch-icon" sizes="180x180" href="/static/gen/img/apple-touch-icon.png?v=(())">
 		<link rel="icon" type="image/png" sizes="32x32" href="/static/gen/img/favicon-32x32.png?v=(())">
 		<link rel="icon" type="image/png" sizes="16x16" href="/static/gen/img/favicon-16x16.png?v=(())">
 		<link rel="manifest" href="/static/gen/img/site.webmanifest?v=(())">
 			`
-			return ht.HTML(strings.ReplaceAll(links, "(())", optimizations["img/favicon.png"]))
+			return ht.HTML(strings.ReplaceAll(links, "(())", helpers.GetFileHash("static/img/favicon.png")))
 		},
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
 			return cmpLog[name]
