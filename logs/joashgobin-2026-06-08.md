@@ -9,3 +9,4 @@
 - Use all cores for image processing
 - Revert
 - Updated favicon generation
+- Tweaks

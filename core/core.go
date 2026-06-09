@@ -904,7 +904,7 @@ exec bash
 		<link rel="icon" type="image/png" sizes="16x16" href="/static/gen/img/favicon-16x16.png?v=(())">
 		<link rel="manifest" href="/static/gen/img/site.webmanifest?v=(())">
 			`
-			return ht.HTML(strings.ReplaceAll(links, "(())", helpers.GetFileHash("static/img/favicon.png")))
+			return ht.HTML(strings.ReplaceAll(links, "(())", helpers.GetFileHash("static/img/fav.png")))
 		},
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
 			return cmpLog[name]
