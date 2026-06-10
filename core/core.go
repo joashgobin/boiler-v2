@@ -744,6 +744,25 @@ exec bash
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<link rel='preload' href='" + outputPath + "' as='image' fetchpriority='high'>")
 		},
+		"preloadpics": func(imgPath string, dimensions ...int) ht.HTML {
+			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			var preloadBuilder strings.Builder
+
+			preloadBuilder.WriteString(`<link rel="preload" as="image" href="`)
+			preloadBuilder.WriteString(avifPath)
+			preloadBuilder.WriteString(`" fetchpriority="high">`)
+
+			preloadBuilder.WriteString(`<link rel="preload" as="image" href="`)
+			preloadBuilder.WriteString(webpPath)
+			preloadBuilder.WriteString(`" fetchpriority="high">`)
+
+			preloadBuilder.WriteString(`<link rel="preload" as="image" href="`)
+			preloadBuilder.WriteString(fallbackPath)
+			preloadBuilder.WriteString(`" fetchpriority="high">`)
+			return ht.HTML(preloadBuilder.String())
+		},
 		"him": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			htmxString := `<div class="full-w" hx-get="/image?path=` + outputPath + `" hx-trigger="revealed" hx-swap="outerHTML">
