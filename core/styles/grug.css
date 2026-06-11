@@ -41,7 +41,7 @@ small {
 }
 
 strong {
-    color: var(--text-color);
+    color: hsl(from var(--text-color) h s l / var(--text-lightness-1));
 }
 
 body {
