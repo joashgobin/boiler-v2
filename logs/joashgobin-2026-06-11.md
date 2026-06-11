@@ -3,3 +3,4 @@
 - Updated grug
 - Tweak mute
 - Updated grug
+- Fixed partials
