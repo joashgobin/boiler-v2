@@ -51,13 +51,14 @@
     swup.hooks.on('page:view', (visit) => {
         htmx.process(document.body);
         {{template "views/scripts" .}}
+        initScroll();
     });
 
     document.addEventListener('DOMContentLoaded', () => {
         htmx.process(document.body);
         {{template "views/scripts" .}}
+        initScroll();
     });
 
-    initScroll();
 
 </script>
