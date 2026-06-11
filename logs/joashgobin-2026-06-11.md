@@ -4,3 +4,4 @@
 - Tweak mute
 - Updated grug
 - Fixed partials
+- Set up intersection observer for scrolling behavious

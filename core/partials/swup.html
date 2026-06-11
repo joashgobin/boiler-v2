@@ -3,6 +3,40 @@
 {{if not prod}}
 <script src="/static/script/swup-debug-plugin.js"></script>
 {{end}}
+<style>
+    .scroll-target {
+        background-color: transparent;
+        min-height: 40px;
+        min-width: 40px;
+        position: absolute;
+        top: 20vh;
+    }
+
+    main{
+        position: relative;
+    }
+</style>
+<script>
+    function initScroll(){
+        const root = document.documentElement;
+        const mainElement = document.querySelector('main');
+        const newDiv = document.createElement('div');
+        newDiv.classList.add("scroll-target");
+        mainElement.appendChild(newDiv);
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    root.classList.add('scrolled');
+                } else {
+                    root.classList.remove('scrolled');
+                }
+            });
+        }, { rootMargin: "0px 0px 0px 0px" });
+
+        observer.observe(newDiv);
+    }
+</script>
 <script>
     const swup = new Swup({
         containers: ['#swup', 'header', 'footer'],
@@ -23,5 +57,7 @@
         htmx.process(document.body);
         {{template "views/scripts" .}}
     });
+
+    initScroll();
 
 </script>
