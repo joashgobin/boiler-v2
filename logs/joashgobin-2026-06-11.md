@@ -6,3 +6,4 @@
 - Fixed partials
 - Set up intersection observer for scrolling behavious
 - Updated app
+- Fixed scrolling issue with html document

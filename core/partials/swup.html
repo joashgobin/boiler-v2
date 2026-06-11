@@ -4,7 +4,7 @@
 <script src="/static/script/swup-debug-plugin.js"></script>
 {{end}}
 <style>
-    .scroll-target {
+    #scroll-target {
         background-color: transparent;
         min-height: 40px;
         min-width: 40px;
@@ -18,23 +18,23 @@
 </style>
 <script>
     function initScroll(){
-        const root = document.documentElement;
-        const mainElement = document.querySelector('main');
-        const newDiv = document.createElement('div');
-        newDiv.classList.add("scroll-target");
-        mainElement.appendChild(newDiv);
+        const header = document.querySelector('header');
+        const scrollTargetBox = document.querySelector('main #scroll-target');
+        header.classList.remove('scrolled');
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) {
-                    root.classList.add('scrolled');
-                } else {
-                    root.classList.remove('scrolled');
-                }
-            });
-        }, { rootMargin: "0px 0px 0px 0px" });
+        if (scrollTargetBox!==null){
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) {
+                        header.classList.add('scrolled');
+                    } else {
+                        header.classList.remove('scrolled');
+                    }
+                });
+            }, { rootMargin: "0px 0px 0px 0px" });
 
-        observer.observe(newDiv);
+            observer.observe(scrollTargetBox);
+        }
     }
 </script>
 <script>
@@ -49,15 +49,15 @@
     });
 
     swup.hooks.on('page:view', (visit) => {
+        initScroll();
         htmx.process(document.body);
         {{template "views/scripts" .}}
-        initScroll();
     });
 
     document.addEventListener('DOMContentLoaded', () => {
+        initScroll();
         htmx.process(document.body);
         {{template "views/scripts" .}}
-        initScroll();
     });
 
 
