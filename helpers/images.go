@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3/log"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 type SafeImage struct {
@@ -21,6 +23,22 @@ type SafeImage struct {
 	outputPath        string
 	outputWidth       int
 	startTime         time.Time
+}
+
+func GetImageDimensions(imgPath string) (int, int) {
+	file, err := os.Open(imgPath)
+	if err != nil {
+		log.Errorf("error getting image dimensions: %v", err)
+		return 0, 0
+	}
+	defer file.Close()
+
+	config, _, err := image.DecodeConfig(file)
+	if err != nil {
+		log.Errorf("error getting image dimensions: %v", err)
+		return 0, 0
+	}
+	return config.Width, config.Height
 }
 
 func GetTempName(name string) string {
@@ -82,6 +100,10 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
 	width := 500
 	intermediateWidth := 1000
+	imageWidth, _ := GetImageDimensions(srcPath)
+	if imageWidth > 0 {
+		intermediateWidth = min(1000, imageWidth)
+	}
 
 	if len(dimensions) > 0 {
 		width = dimensions[0]
@@ -137,6 +159,10 @@ func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
 	width := 500
 	intermediateWidth := 1000
+	imageWidth, _ := GetImageDimensions(srcPath)
+	if imageWidth > 0 {
+		intermediateWidth = min(1000, imageWidth)
+	}
 
 	if len(dimensions) > 0 {
 		width = dimensions[0]
@@ -192,6 +218,10 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
 	width := 500
 	intermediateWidth := 1000
+	imageWidth, _ := GetImageDimensions(srcPath)
+	if imageWidth > 0 {
+		intermediateWidth = min(1000, imageWidth)
+	}
 
 	if len(dimensions) > 0 {
 		width = dimensions[0]
