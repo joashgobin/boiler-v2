@@ -5,3 +5,4 @@
 - Revert to using source path as placeholder
 - Added fallbacks
 - Fixed commas
+- Updated fallback mechanism

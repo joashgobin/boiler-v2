@@ -709,7 +709,19 @@ exec bash
 			picBuilder.WriteString(fallbackPath)
 			picBuilder.WriteString(`" class="" alt="" style="" onerror="this.onerror=null;this.src='/`)
 			picBuilder.WriteString(fullPath)
-			picBuilder.WriteString(`'">`)
+			picBuilder.WriteString(`';Array.from(this.parentNode.querySelectorAll('source')).forEach(s => { s.srcset='/`)
+			picBuilder.WriteString(fullPath)
+			picBuilder.WriteString(`'; s.type='`)
+
+			ext := filepath.Ext(imgPath)
+			switch ext {
+			case ".png":
+				picBuilder.WriteString(`image/png`)
+			default:
+				picBuilder.WriteString(`image/jpeg`)
+			}
+
+			picBuilder.WriteString(`'; });">`)
 			picBuilder.WriteString("</picture>")
 			return ht.HTML(picBuilder.String())
 		},
@@ -788,6 +800,7 @@ exec bash
 			return ht.HTML(htmxString)
 		},
 		"lazys": func(imgPath string, dimensions ...int) ht.HTML {
+			fullPath := "static/img/" + imgPath
 			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
@@ -803,7 +816,22 @@ exec bash
 
 			picBuilder.WriteString(`<img loading='lazy' decode='async' style='opacity:0' onload='this.style.opacity=1' src="`)
 			picBuilder.WriteString(fallbackPath)
-			picBuilder.WriteString(`" class="gen-image" alt="">`)
+			picBuilder.WriteString(`" class="gen-image" alt="" onerror="this.onerror=null;this.src='/`)
+			picBuilder.WriteString(fullPath)
+			picBuilder.WriteString(`';Array.from(this.parentNode.querySelectorAll('source')).forEach(s => { s.srcset='/`)
+			picBuilder.WriteString(fullPath)
+			picBuilder.WriteString(`'; s.type='`)
+
+			ext := filepath.Ext(imgPath)
+			switch ext {
+			case ".png":
+				picBuilder.WriteString(`image/png`)
+			default:
+				picBuilder.WriteString(`image/jpeg`)
+			}
+
+			picBuilder.WriteString(`'; });">`)
+
 			picBuilder.WriteString("</picture>")
 			return ht.HTML(picBuilder.String())
 		},
