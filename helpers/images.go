@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3/log"
-	_ "image/jpeg"
-	_ "image/png"
 )
 
 type SafeImage struct {
