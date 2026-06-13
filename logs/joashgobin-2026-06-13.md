@@ -2,3 +2,4 @@
 
 - Get image dimensions function
 - Tweak
+- Revert to using source path as placeholder
