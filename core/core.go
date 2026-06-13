@@ -732,10 +732,18 @@ exec bash
 			case ".png":
 				srcBuilder.WriteString(`url('`)
 				srcBuilder.WriteString(fallbackPath)
+				srcBuilder.WriteString(`') type('image/png'),`)
+
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(fullPath)
 				srcBuilder.WriteString(`') type('image/png')`)
 			default:
 				srcBuilder.WriteString(`url('`)
 				srcBuilder.WriteString(fallbackPath)
+				srcBuilder.WriteString(`') type('image/jpeg'),`)
+
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(fullPath)
 				srcBuilder.WriteString(`') type('image/jpeg')`)
 			}
 			return ht.HTMLAttr(`style="background-image:url('` + fallbackPath + `'),url('/` + fullPath + `');background-image:image-set(` + srcBuilder.String() + `)"`)
