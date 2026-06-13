@@ -146,8 +146,8 @@ func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 
 		*imageChannel <- &si
 		// fmt.Println("avif output path:", outputPath)
-		// return outputPath
-		return srcPath
+		return outputPath
+		// return srcPath
 
 	}
 	// fmt.Println("avif output path:", outputPath)
@@ -205,8 +205,8 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 
 		*imageChannel <- &si
 		// fmt.Println("webp output path:", outputPath)
-		// return outputPath
-		return srcPath
+		return outputPath
+		// return srcPath
 
 	}
 	// fmt.Println("webp output path:", outputPath)
@@ -264,8 +264,8 @@ func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath stri
 
 		*imageChannel <- &si
 		// fmt.Println("fallback output path:", outputPath)
-		// return outputPath
-		return srcPath
+		return outputPath
+		// return srcPath
 
 	}
 	// fmt.Println("webp output path:", outputPath)
