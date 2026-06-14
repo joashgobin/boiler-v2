@@ -2,3 +2,4 @@
 
 - Updated nginx template
 - Updated nginx tempalte
+- Updated swup

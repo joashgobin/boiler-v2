@@ -3,6 +3,7 @@
 {{if not prod}}
 <script src="/static/script/swup-debug-plugin.js"></script>
 {{end}}
+{{inline "scroll-control" `
 <style>
     #scroll-target {
         background-color: transparent;
@@ -37,6 +38,7 @@
         }
     }
 </script>
+`}}
 <script>
     const swup = new Swup({
         containers: ['#swup', 'header', 'footer'],
