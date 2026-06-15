@@ -1032,6 +1032,9 @@ exec bash
 			microdataBuilder.WriteString(`</div>`)
 			return ht.HTML(microdataBuilder.String())
 		},
+		"enctype": func() string {
+			return `enctype="multipart/form-data"`
+		},
 	}
 	// add functions to template engine
 	engine.AddFuncMap(startingFunctions)

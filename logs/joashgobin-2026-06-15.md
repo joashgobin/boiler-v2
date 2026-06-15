@@ -2,3 +2,4 @@
 
 - Updated meta
 - Added microdata template functions
+- Added enctype function
