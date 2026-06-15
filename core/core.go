@@ -1001,6 +1001,37 @@ exec bash
 		"itoa": func(i int) string {
 			return strconv.Itoa(i)
 		},
+		"md_faq": func(content ...string) ht.HTML {
+			var microdataBuilder strings.Builder
+			microdataBuilder.WriteString(`<div class="microdata-faq" itemscope itemtype="https://schema.org">`)
+			questions := []string{}
+			answers := []string{}
+			for i, item := range content {
+				if i%2 == 0 {
+					questions = append(questions, item)
+				} else {
+					answers = append(answers, item)
+				}
+			}
+			for i := range len(questions) {
+				question := questions[i]
+				answer := answers[i]
+				microdataBuilder.WriteString(`
+				<details itemprop="mainEntity" itemscope itemtype="https://schema.org">
+					<summary itemprop="name">`)
+				microdataBuilder.WriteString(question)
+				microdataBuilder.WriteString(`</summary>
+						<div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org">
+							<p itemprop="text">`)
+				microdataBuilder.WriteString(answer)
+				microdataBuilder.WriteString(`</p>
+						</div>
+				</details>
+				`)
+			}
+			microdataBuilder.WriteString(`</div>`)
+			return ht.HTML(microdataBuilder.String())
+		},
 	}
 	// add functions to template engine
 	engine.AddFuncMap(startingFunctions)
