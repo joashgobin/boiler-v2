@@ -206,6 +206,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		user := sess.Get("user")
 		c.Locals("user", user)
 		c.Locals("csrf", csrf.TokenFromContext(c))
+		c.Locals("canonical", c.OriginalURL())
 
 		c.Locals("_messages", c.Redirect().Messages())
 		c.Locals("old", c.Redirect().OldInputs())

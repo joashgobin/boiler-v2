@@ -8,3 +8,4 @@
 <meta property='og:image' content='{{with (get "image")}}{{.}}{{else}}Meta Image URL{{end}}'>
 <meta property='og:image:type' content='{{with (get "image")}}{{mimeType .}}{{else}}Meta Image URL{{end}}'>
 <meta property='og:url' content='{{with (get "url")}}{{.}}{{else}}Meta Page URL{{end}}'>
+<link rel="canonical" href='https://{{get "ip"}}{{.canonical}}'>

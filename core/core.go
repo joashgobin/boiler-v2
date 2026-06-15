@@ -532,6 +532,9 @@ exec bash
 	formPresets := helpers.FormPresets()
 	externalPresets := helpers.ExternalPresets()
 
+	// append site info
+	(*config.SiteInfo)["ip"] = config.IP
+
 	startingFunctions := map[string]any{
 		"whatsapp": func(phoneNumber string, message ...string) ht.HTML {
 			phoneNumberStripped := strings.ReplaceAll(phoneNumber, " ", "")
