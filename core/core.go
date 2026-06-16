@@ -1032,7 +1032,7 @@ exec bash
 			microdataBuilder.WriteString(`</div>`)
 			return ht.HTML(microdataBuilder.String())
 		},
-		"enctype": func() string {
+		"enctype": func() ht.HTMLAttr {
 			return `enctype="multipart/form-data"`
 		},
 	}
