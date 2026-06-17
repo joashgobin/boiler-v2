@@ -18,17 +18,21 @@ import (
 )
 
 type BucketManager struct {
-	client     *s3.Client
-	presigner  *s3.PresignClient
-	bucketName string
-	publicURL  string
-	config     *aws.Config
+	client      *s3.Client
+	presigner   *s3.PresignClient
+	bucketName  string
+	publicURL   string
+	config      *aws.Config
+	bank        BankInterface
+	cacheExpiry time.Duration
 }
 
 type BucketManagerInterface interface {
 	Ping()
 	GetObjects() []Object
+	GetObjectsCached() []Object
 	GetBuckets() []string
+	ClearCache()
 }
 
 var _ BucketManagerInterface = (*BucketManager)(nil)
@@ -53,6 +57,21 @@ type Object struct {
 	LastModified time.Time `json:"LastModified"`
 	Size         int       `json:"Size"`
 	URL          string
+}
+
+func (bm *BucketManager) GetObjectsCached() []Object {
+	cacheKey := "r2-objects"
+	cachedObjects := BytesToSlice[Object](bm.bank.GetBytes("r2-objects"))
+	if len(cachedObjects) == 0 {
+		cachedObjects = bm.GetObjects()
+		bm.bank.SetBytes(cacheKey, SliceToBytes[Object](cachedObjects), bm.cacheExpiry)
+	}
+	return cachedObjects
+}
+
+func (bm *BucketManager) ClearCache() {
+	cacheKey := "r2-objects"
+	bm.bank.Delete(cacheKey)
 }
 
 func (bm *BucketManager) GetObjects() []Object {
@@ -88,15 +107,15 @@ func (bm *BucketManager) GetObjects() []Object {
 
 }
 
-func NewBucketManager(bucketName string) *BucketManager {
+func NewBucketManager(bucketName string, bank BankInterface) *BucketManager {
 	// Provide your Cloudflare account ID
-	var accountId = helpers.GetEnv("R2_ACCOUNT_ID")
+	var accountId = GetEnv("R2_ACCOUNT_ID")
 	// Retrieve your S3 API credentials for your R2 bucket via API tokens
 	// (see: https://developers.cloudflare.com/r2/api/tokens)
-	var accessKeyId = helpers.GetEnv("R2_ACCESS_KEY_ID")
-	var accessKeySecret = helpers.GetEnv("R2_SECRET_ACCESS_KEY")
+	var accessKeyId = GetEnv("R2_ACCESS_KEY_ID")
+	var accessKeySecret = GetEnv("R2_SECRET_ACCESS_KEY")
 
-	var publicURL = helpers.GetEnv("R2_PUBLIC_URL")
+	var publicURL = GetEnv("R2_PUBLIC_URL")
 
 	cfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
@@ -118,11 +137,13 @@ func NewBucketManager(bucketName string) *BucketManager {
 	presigner := s3.NewPresignClient(client)
 
 	return &BucketManager{
-		client:     client,
-		bucketName: bucketName,
-		publicURL:  publicURL,
-		config:     &cfg,
-		presigner:  presigner,
+		client:      client,
+		bucketName:  bucketName,
+		publicURL:   publicURL,
+		config:      &cfg,
+		presigner:   presigner,
+		bank:        bank,
+		cacheExpiry: time.Minute * 3,
 	}
 }
 
