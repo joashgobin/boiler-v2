@@ -1,4 +1,4 @@
-package bucket
+package helpers
 
 import (
 	"bytes"
@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/joashgobin/boiler-v2/helpers"
 )
 
 type BucketManager struct {
