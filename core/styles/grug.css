@@ -151,8 +151,6 @@ button {
     font-family: inherit;
     background-color: transparent;
     color: inherit;
-    margin: 0.5rem 0;
-    padding: 0.5rem;
     border-radius: 0.5rem;
     min-width: 0;
     max-width: 100%;
