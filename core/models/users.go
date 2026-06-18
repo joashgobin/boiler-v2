@@ -336,7 +336,7 @@ func (m *UserModel) Exists(email string) (bool, error) {
 	return exists, err
 }
 
-func RequireRole(store *session.Store, flash helpers.FlashInterface, role string) fiber.Handler {
+func RequireRole(role string, store *session.Store, flash helpers.FlashInterface) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		sess, err := store.Get(c)
 		defer sess.Release()
