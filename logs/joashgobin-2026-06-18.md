@@ -4,3 +4,4 @@
 - Refactored require role middleware
 - Removed form elements padding and margin
 - Updated base grug styles
+- Added alias for time function

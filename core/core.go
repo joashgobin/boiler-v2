@@ -863,6 +863,9 @@ exec bash
 		"ct": func() time.Time {
 			return time.Now()
 		},
+		"now": func() time.Time {
+			return time.Now()
+		},
 		"input": func(key string) ht.HTML {
 			return ht.HTML(formPresets[key])
 		},
