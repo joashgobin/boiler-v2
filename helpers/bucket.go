@@ -136,7 +136,7 @@ func NewBucketManager(bucketName string, bank BankInterface) *BucketManager {
 
 	presigner := s3.NewPresignClient(client)
 
-	return &BucketManager{
+	bm := &BucketManager{
 		client:      client,
 		bucketName:  bucketName,
 		publicURL:   publicURL,
@@ -145,6 +145,8 @@ func NewBucketManager(bucketName string, bank BankInterface) *BucketManager {
 		bank:        bank,
 		cacheExpiry: time.Minute * 3,
 	}
+	bm.ClearCache()
+	return bm
 }
 
 func (bm *BucketManager) getPutURL(key string) (string, error) {
@@ -159,27 +161,33 @@ func (bm *BucketManager) getPutURL(key string) (string, error) {
 }
 
 func (bm *BucketManager) Upload(c fiber.Ctx, key string) error {
+	// get presigned PUT url
 	url, err := bm.getPutURL(key)
 	if err != nil {
 		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
 	}
+
+	// get file submitted via form
 	file, err := c.FormFile("file")
 	if err != nil {
 		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
 	}
+
+	// get file stream
 	fileStream, err := file.Open()
 	if err != nil {
 		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
 	}
 	defer fileStream.Close()
 
-	if err != nil {
-		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
-	}
+	// upload payload to bucket
 	err = bm.uploadPayload(url, fileStream, file.Size, file.Header.Get("Content-Type"))
 	if err != nil {
 		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
 	}
+
+	// clear object cache
+	bm.ClearCache()
 	return nil
 }
 
@@ -193,7 +201,7 @@ func (bm *BucketManager) downloadObject(key string) (string, error) {
 	}
 	defer result.Body.Close()
 
-	// Read stream into a string
+	// read stream into a string
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, result.Body)
 	if err != nil {
@@ -204,23 +212,27 @@ func (bm *BucketManager) downloadObject(key string) (string, error) {
 }
 
 func (bm *BucketManager) uploadPayload(url string, payload io.Reader, payloadSize int64, contentType string) error {
+	// create new request
 	req, err := http.NewRequest(http.MethodPut, url, payload)
 	if err != nil {
 		return err
 	}
 
+	// set request content length
 	req.ContentLength = payloadSize
 
+	// create http client
 	client := &http.Client{}
+	// get http response
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
+	// check response code
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("bad status code from S3: %s", resp.Status)
 	}
-
 	return nil
 }
