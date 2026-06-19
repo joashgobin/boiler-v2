@@ -3,9 +3,21 @@
 <meta name='robots' content='{{with (get "robots")}}{{.}}{{else}}index, follow{{end}}'>
 <meta name='author' content='{{with (get "author")}}{{.}}{{else}}Admin{{end}}'>
 <meta name='keywords' content='{{with (get "keywords")}}{{.}}{{else}}fiber{{end}}'>
+<meta property='og:site_name' content='{{with (get "title")}}{{.}}{{else}}Meta Title{{end}}'>
+
 <meta property='og:title' content='{{with (get "title")}}{{.}}{{else}}Meta Title{{end}}'>
 <meta property='og:description' content='{{with (get "description")}}{{.}}{{else}}Meta Description{{end}}'>
 <meta property='og:image' content='{{with (get "image")}}{{.}}{{else}}Meta Image URL{{end}}'>
 <meta property='og:image:type' content='{{with (get "image")}}{{mimeType .}}{{else}}Meta Image URL{{end}}'>
 <meta property='og:url' content='{{with (get "url")}}{{.}}{{else}}Meta Page URL{{end}}'>
+
 <link rel="canonical" href='https://{{get "ip"}}{{.canonical}}'>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "{{get `title`}}",
+  "alternateName": "{{get `title`}}",
+  "url": "https://{{get `ip`}}"
+}
+</script>
