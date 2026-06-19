@@ -222,7 +222,7 @@ func (bm *BucketManager) uploadPayload(url string, payload io.Reader, payloadSiz
 	req.ContentLength = payloadSize
 
 	// create http client
-	client := &http.Client{}
+	client := TimedHTTPClient()
 	// get http response
 	resp, err := client.Do(req)
 	if err != nil {
