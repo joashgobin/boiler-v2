@@ -289,7 +289,7 @@ github.com/tdewolff/parse/v2/strconv
 # github.com/tinylib/msgp v1.6.4
 ## explicit; go 1.24
 github.com/tinylib/msgp/msgp
-# github.com/valkey-io/valkey-go v1.0.75
+# github.com/valkey-io/valkey-go v1.0.76
 ## explicit; go 1.25.0
 github.com/valkey-io/valkey-go
 github.com/valkey-io/valkey-go/internal/cmds

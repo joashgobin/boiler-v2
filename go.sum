@@ -206,8 +206,8 @@ github.com/tklauser/go-sysconf v0.4.0 h1:7H0uAN+7RkwWRaxhYXDLqa5V3LPrJeV8wmD9dRU
 github.com/tklauser/go-sysconf v0.4.0/go.mod h1:8mTNWyog7H+MpKijp4VmKJAd2bbYQ2zuUwkYRbUArPI=
 github.com/tklauser/numcpus v0.12.0 h1:NR85qdvHA9pFse3x3weVZ0r0ST8R6l5RHbZrlRaqob4=
 github.com/tklauser/numcpus v0.12.0/go.mod h1:ABHeXzJnr/qqwguhClkZKT1/8VABcYrsyUiUGobwWJg=
-github.com/valkey-io/valkey-go v1.0.75 h1:cfq9DODW2ntuUgyHJmFWb4/p+xpLpQB1t5SQyWM9uJ4=
-github.com/valkey-io/valkey-go v1.0.75/go.mod h1:6X581PhgfeMkJmyfjIsa2eFdq6dy3Qkkg9zwjM1p42M=
+github.com/valkey-io/valkey-go v1.0.76 h1:Rcown7FFseVhG9b0+4MWfMs4xWu8otPzHjrsK044ET4=
+github.com/valkey-io/valkey-go v1.0.76/go.mod h1:6X581PhgfeMkJmyfjIsa2eFdq6dy3Qkkg9zwjM1p42M=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.71.0 h1:tepR7H+Guh9VUqxxcPggYi8R3lGUu2Rsdh+z7/FCY3k=
