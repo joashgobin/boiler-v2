@@ -29,8 +29,8 @@ type BucketManager struct {
 
 type BucketManagerInterface interface {
 	Ping()
-	GetObjects() []Object
-	GetObjectsCached() []Object
+	GetObjects(folderPath ...string) []Object
+	GetObjectsCached(folderPath ...string) []Object
 	GetBuckets() []string
 	ClearCache()
 }
@@ -59,25 +59,39 @@ type Object struct {
 	URL          string
 }
 
-func (bm *BucketManager) GetObjectsCached() []Object {
-	cacheKey := "r2-objects"
-	cachedObjects := BytesToSlice[Object](bm.bank.GetBytes("r2-objects"))
+func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
+	prefix := ""
+	if len(folderPath) > 0 {
+		prefix = folderPath[0]
+	}
+
+	cacheKey := "r2-objects-" + prefix
+	cachedObjects := BytesToSlice[Object](bm.bank.GetBytes(cacheKey))
 	if len(cachedObjects) == 0 {
-		cachedObjects = bm.GetObjects()
+		cachedObjects = bm.GetObjects(folderPath...)
 		bm.bank.SetBytes(cacheKey, SliceToBytes[Object](cachedObjects), bm.cacheExpiry)
 	}
 	return cachedObjects
 }
 
 func (bm *BucketManager) ClearCache() {
-	cacheKey := "r2-objects"
+	// TODO: make record of keys for various prefixes and delete them in bulk
+	cacheKey := "r2-objects-"
 	bm.bank.Delete(cacheKey)
 }
 
-func (bm *BucketManager) GetObjects() []Object {
+func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
+	delimiter := "/"
+
+	prefix := ""
+	if len(folderPath) > 0 {
+		prefix = folderPath[0]
+	}
 
 	listObjectsOutput, err := bm.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
-		Bucket: &bm.bucketName,
+		Bucket:    &bm.bucketName,
+		Prefix:    &prefix,
+		Delimiter: &delimiter,
 	})
 	if err != nil {
 		log.Fatal(err)
