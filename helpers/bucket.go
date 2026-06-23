@@ -189,7 +189,7 @@ func NewBucketManager(bucketName string, bank BankInterface) *BucketManager {
 		config:      &cfg,
 		presigner:   presigner,
 		bank:        bank,
-		cacheExpiry: time.Minute * 3,
+		cacheExpiry: time.Minute * 15,
 	}
 	bm.ClearCache()
 	return bm
