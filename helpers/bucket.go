@@ -109,7 +109,8 @@ func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 
 	listObjectsOutput, err := bm.client.ListObjectsV2(context.Background(), input)
 	if err != nil {
-		log.Fatal(err)
+		log.Errorf("get bucket objects error: %v", err)
+		return []Object{}
 	}
 
 	folders := listObjectsOutput.CommonPrefixes
