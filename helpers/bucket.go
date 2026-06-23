@@ -121,7 +121,7 @@ func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 	for _, object := range folders {
 		var newObject Object
 		newObject.Key = *object.Prefix
-		newObject.Name = filepath.Base(*object.Prefix) + "/"
+		newObject.Name = filepath.Base(*object.Prefix)
 		newObject.IsFolder = true
 		objects = append(objects, newObject)
 	}
