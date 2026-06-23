@@ -233,7 +233,7 @@ github.com/orisano/wyhash
 # github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 ## explicit
 github.com/pahanini/go-sitemap-generator
-# github.com/pelletier/go-toml/v2 v2.4.0
+# github.com/pelletier/go-toml/v2 v2.4.1
 ## explicit; go 1.21.0
 github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/parserbridge

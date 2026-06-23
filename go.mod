@@ -16,7 +16,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
-	github.com/pelletier/go-toml/v2 v2.4.0
+	github.com/pelletier/go-toml/v2 v2.4.1
 	github.com/spf13/viper v1.21.0
 	github.com/tdewolff/minify/v2 v2.24.13
 	github.com/wneessen/go-mail v0.7.3

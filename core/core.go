@@ -1004,6 +1004,18 @@ exec bash
 		"itoa": func(i int) string {
 			return strconv.Itoa(i)
 		},
+		"hasPrefix": func(str, prefix string) bool {
+			return strings.HasPrefix(str, prefix)
+		},
+		"hasSuffix": func(str, suffix string) bool {
+			return strings.HasSuffix(str, suffix)
+		},
+		"startsWith": func(str, prefix string) bool {
+			return strings.HasPrefix(str, prefix)
+		},
+		"endsWith": func(str, suffix string) bool {
+			return strings.HasSuffix(str, suffix)
+		},
 		"md_faq": func(content ...string) ht.HTML {
 			var microdataBuilder strings.Builder
 			microdataBuilder.WriteString(`<div class="microdata-faq" itemscope itemtype="https://schema.org">`)

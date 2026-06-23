@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -57,6 +58,8 @@ type Object struct {
 	LastModified time.Time `json:"LastModified"`
 	Size         int       `json:"Size"`
 	URL          string
+	Name         string
+	IsFolder     bool
 }
 
 func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
@@ -82,30 +85,59 @@ func (bm *BucketManager) ClearCache() {
 
 func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 	delimiter := "/"
-
-	prefix := ""
-	if len(folderPath) > 0 {
-		prefix = folderPath[0]
+	input := &s3.ListObjectsV2Input{
+		Bucket:    &bm.bucketName,
+		Delimiter: &delimiter,
 	}
 
-	listObjectsOutput, err := bm.client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
-		Bucket:    &bm.bucketName,
-		Prefix:    &prefix,
-		Delimiter: &delimiter,
-	})
+	if len(folderPath) > 0 {
+		if folderPath[0] != "" {
+			prefix := folderPath[0]
+			if !strings.HasSuffix(prefix, "/") {
+				prefix += "/"
+			}
+
+			input = &s3.ListObjectsV2Input{
+				Bucket:    &bm.bucketName,
+				Prefix:    &prefix,
+				Delimiter: &delimiter,
+			}
+		}
+	}
+
+	listObjectsOutput, err := bm.client.ListObjectsV2(context.Background(), input)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	folders := listObjectsOutput.CommonPrefixes
 	contents := listObjectsOutput.Contents
-	objects := make([]Object, 0, len(contents))
+	objects := make([]Object, 0, len(contents)+len(folders))
+
+	// append folders
+	for _, object := range folders {
+		var newObject Object
+		newObject.Key = *object.Prefix
+		newObject.Name = filepath.Base(*object.Prefix) + "/"
+		newObject.IsFolder = true
+		objects = append(objects, newObject)
+		// log.Info(newObject.Key)
+	}
+
+	// append contents
 	for _, object := range contents {
 		var newObject Object
 		newObject.Key = *object.Key
+		if strings.HasSuffix(newObject.Key, "/") {
+			continue
+		}
+		newObject.Name = filepath.Base(*object.Key)
 		newObject.LastModified = *object.LastModified
 		newObject.Size = int(*object.Size)
 		newObject.URL = bm.publicURL + "/" + *object.Key
+		newObject.IsFolder = false
 		objects = append(objects, newObject)
+		// log.Info(newObject.Key)
 	}
 
 	//  {
