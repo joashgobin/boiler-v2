@@ -93,10 +93,12 @@ func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 	if len(folderPath) > 0 {
 		if folderPath[0] != "" {
 			prefix := folderPath[0]
+			// append slash if not present
 			if !strings.HasSuffix(prefix, "/") {
 				prefix += "/"
 			}
 
+			// use new input to account for prefix
 			input = &s3.ListObjectsV2Input{
 				Bucket:    &bm.bucketName,
 				Prefix:    &prefix,
@@ -114,17 +116,16 @@ func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 	contents := listObjectsOutput.Contents
 	objects := make([]Object, 0, len(contents)+len(folders))
 
-	// append folders
+	// include folders
 	for _, object := range folders {
 		var newObject Object
 		newObject.Key = *object.Prefix
 		newObject.Name = filepath.Base(*object.Prefix) + "/"
 		newObject.IsFolder = true
 		objects = append(objects, newObject)
-		// log.Info(newObject.Key)
 	}
 
-	// append contents
+	// include regular objects
 	for _, object := range contents {
 		var newObject Object
 		newObject.Key = *object.Key
@@ -132,12 +133,12 @@ func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 			continue
 		}
 		newObject.Name = filepath.Base(*object.Key)
+		newObject.IsFolder = false
+		// set other fields for non-folder objects
 		newObject.LastModified = *object.LastModified
 		newObject.Size = int(*object.Size)
 		newObject.URL = bm.publicURL + "/" + *object.Key
-		newObject.IsFolder = false
 		objects = append(objects, newObject)
-		// log.Info(newObject.Key)
 	}
 
 	//  {
