@@ -896,8 +896,19 @@ exec bash
 		"in": func(outer string, inner string) bool {
 			return strings.Contains(outer, inner)
 		},
-		"add": func(a, b int) int {
-			return a + b
+		"add": func(nums ...int) int {
+			sum := 0
+			for _, num := range nums {
+				sum += num
+			}
+			return sum
+		},
+		"mul": func(nums ...int) int {
+			product := 1
+			for _, num := range nums {
+				product *= num
+			}
+			return product
 		},
 		"mod": func(a, b int) int {
 			return a % b

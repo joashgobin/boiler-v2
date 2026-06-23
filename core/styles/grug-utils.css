@@ -9,7 +9,6 @@
     gap: var(--space);
     justify-content: center;
     align-items: center;
-    width: 100%;
     max-width: 100%;
 }
 
