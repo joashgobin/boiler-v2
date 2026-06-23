@@ -4,3 +4,4 @@
 - Updated bucket folder and file listings
 - Increase cache expiry
 - Added comments
+- Updated swup
