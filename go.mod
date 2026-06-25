@@ -11,12 +11,12 @@ require (
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gofiber/fiber/v3 v3.3.0
-	github.com/gofiber/storage/valkey v0.2.8
+	github.com/gofiber/storage/valkey v0.3.0
 	github.com/gofiber/template/html/v3 v3.0.5
 	github.com/google/uuid v1.6.0
 	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
-	github.com/pelletier/go-toml/v2 v2.4.1
+	github.com/pelletier/go-toml/v2 v2.4.2
 	github.com/spf13/viper v1.21.0
 	github.com/tdewolff/minify/v2 v2.24.13
 	github.com/wneessen/go-mail v0.7.3
