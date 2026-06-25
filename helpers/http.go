@@ -10,11 +10,11 @@ func TimedHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   5 * time.Second,
+				KeepAlive: 5 * time.Second,
 			}).Dial,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
+			TLSHandshakeTimeout:   4 * time.Second,
+			ResponseHeaderTimeout: 4 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
