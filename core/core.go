@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"embed"
 	"encoding/gob"
@@ -223,6 +224,23 @@ func (base Base) Serve(app *fiber.App) {
 		return c.SendString(htmlContent)
 	})
 
+	app.Hooks().OnPostShutdown(func(_ error) error {
+		// cleanup tasks
+		log.Info("running cleanup tasks...")
+		if base.DB != nil {
+			if err := base.DB.Close(); err != nil {
+				log.Errorf("failed to close database connection: %v", err)
+			}
+		}
+		if base.WaitGroup != nil {
+			base.WaitGroup.Wait()
+		}
+
+		base.Bank.Close()
+		close(*base.ImageChannel)
+		return nil
+	})
+
 	go func() {
 		if err := app.Listen(base.Anchor, fiber.ListenConfig{EnablePrefork: base.isPrefork}); err != nil {
 			log.Panic(err)
@@ -230,31 +248,34 @@ func (base Base) Serve(app *fiber.App) {
 	}()
 
 	// create channel to signify a signal being sent
-	c := make(chan os.Signal, 1)
+	quit := make(chan os.Signal, 1)
 
 	// when an interrupt or termination signal is sent, notify the channel
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	// block the main thread until an interrupt is received
-	_ = <-c
+	<-quit
 	log.Info("gracefully shutting down...")
-	_ = app.Shutdown()
 
-	// cleanup tasks
-	log.Info("running cleanup tasks...")
-	if base.DB != nil {
-		if err := base.DB.Close(); err != nil {
-			log.Errorf("failed to close database connection: %v", err)
+	// Give active requests 10 seconds to finish
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- app.Shutdown()
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			log.Infof("shutdown error: %v", err)
 		}
-	}
-	if base.WaitGroup != nil {
-		base.WaitGroup.Wait()
+		log.Info("fiber app was successfully shutdown.")
+	case <-ctx.Done():
+		log.Info("shutdown timed out, forcing exit")
 	}
 
-	base.Bank.Close()
-	close(*base.ImageChannel)
-
-	log.Info("fiber app was successfully shutdown.")
 }
 
 func showElapsed(description string, start time.Time) {
