@@ -3,3 +3,4 @@
 - Updated some packages
 - Updated fiber graceful shutdown
 - Updated timeouts
+- Updated grug
