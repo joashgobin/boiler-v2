@@ -1033,6 +1033,9 @@ exec bash
 			}
 			return builder.String()
 		},
+		"ext": func(fileName string) string {
+			return filepath.Ext(fileName)
+		},
 		"itoa": func(i int) string {
 			return strconv.Itoa(i)
 		},

@@ -36,7 +36,7 @@ type BucketManagerInterface interface {
 	Ping()
 	GetObjects(folderPath ...string) []Object
 	GetObjectsCached(folderPath ...string) []Object
-	appendCacheKey(key string)
+	addCacheKey(key string)
 	GetBuckets() []string
 	ClearCache()
 }
@@ -45,7 +45,7 @@ var _ BucketManagerInterface = (*BucketManager)(nil)
 
 func (bm *BucketManager) Ping() {}
 
-func (bm *BucketManager) appendCacheKey(key string) {
+func (bm *BucketManager) addCacheKey(key string) {
 	bm.mu.Lock()
 	defer bm.mu.Unlock()
 	if !slices.Contains(bm.cacheKeys, key) {
@@ -92,7 +92,7 @@ func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
 	}
 
 	cacheKey := "r2-objects-" + prefix
-	bm.appendCacheKey(cacheKey)
+	bm.addCacheKey(cacheKey)
 
 	cachedObjects := BytesToSlice[Object](bm.bank.GetBytes(cacheKey))
 	if len(cachedObjects) == 0 {
