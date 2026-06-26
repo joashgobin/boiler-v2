@@ -83,6 +83,9 @@ type AppConfig struct {
 	IsProduction           bool
 	ReduceMemoryUsage      bool
 	ReadBufferSize         int
+	BodyLimit              int
+	ReadTimeout            time.Duration
+	WriteTimeout           time.Duration
 	EnablePrefork          bool
 	SessionIdleTimeout     time.Duration
 	SessionAbsoluteTimeout time.Duration
@@ -1105,6 +1108,13 @@ exec bash
 	// fiber specific configuration
 	finalReadBufferSize := max(config.ReadBufferSize, 4096)
 
+	// fiber body limit
+	finalBodyLimit := max(config.BodyLimit, 4096)
+
+	// fiber timeouts
+	finalReadTimeout := max(config.ReadTimeout, 5*time.Second)
+	finalWriteTimeout := max(config.WriteTimeout, 5*time.Second)
+
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
 		AppName:           config.AppName,
@@ -1112,11 +1122,12 @@ exec bash
 		ViewsLayout:       "views/layouts/main",
 		PassLocalsToViews: true,
 		CaseSensitive:     true,
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      5 * time.Second,
+		ReadTimeout:       finalReadTimeout,
+		WriteTimeout:      finalWriteTimeout,
 		IdleTimeout:       20 * time.Second,
 		ReduceMemoryUsage: config.ReduceMemoryUsage,
 		ReadBufferSize:    finalReadBufferSize,
+		BodyLimit:         finalBodyLimit,
 	})
 
 	// init fiber logger format

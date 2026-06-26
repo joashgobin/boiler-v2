@@ -36,6 +36,7 @@ type BucketManagerInterface interface {
 	Ping()
 	GetObjects(folderPath ...string) []Object
 	GetObjectsCached(folderPath ...string) []Object
+	GetPresignedURL(key string) string
 	addCacheKey(key string)
 	removeCacheKeys(keys ...string)
 	GetBuckets() []string
@@ -232,7 +233,16 @@ func (bm *BucketManager) getPutURL(key string) (string, error) {
 	return res.URL, nil
 }
 
-func (bm *BucketManager) Upload(c fiber.Ctx, targetFolder string) error {
+func (bm *BucketManager) GetPresignedURL(key string) string {
+	url, err := bm.getPutURL(key)
+	if err != nil {
+		log.Errorf("get presigned url error: %v", err)
+		return ""
+	}
+	return url
+}
+
+func (bm *BucketManager) upload(c fiber.Ctx, targetFolder string) error {
 	// get file submitted via form
 	file, err := c.FormFile("file")
 	if err != nil {
