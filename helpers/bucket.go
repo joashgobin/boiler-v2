@@ -37,6 +37,7 @@ type BucketManagerInterface interface {
 	GetObjects(folderPath ...string) []Object
 	GetObjectsCached(folderPath ...string) []Object
 	addCacheKey(key string)
+	removeCacheKeys(keys ...string)
 	GetBuckets() []string
 	ClearCache()
 }
@@ -85,19 +86,19 @@ type Object struct {
 }
 
 func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
-	fmt.Println(bm.cacheKeys)
+	// fmt.Println(bm.cacheKeys)
 	prefix := ""
 	if len(folderPath) > 0 {
 		prefix = folderPath[0]
 	}
 
 	cacheKey := "r2-objects-" + prefix
-	bm.addCacheKey(cacheKey)
 
 	cachedObjects := BytesToSlice[Object](bm.bank.GetBytes(cacheKey))
 	if len(cachedObjects) == 0 {
 		cachedObjects = bm.GetObjects(folderPath...)
 		bm.bank.SetBytes(cacheKey, SliceToBytes[Object](cachedObjects), bm.cacheExpiry)
+		bm.addCacheKey(cacheKey)
 	}
 	return cachedObjects
 }
