@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,12 +28,15 @@ type BucketManager struct {
 	config      *aws.Config
 	bank        BankInterface
 	cacheExpiry time.Duration
+	mu          sync.Mutex
+	cacheKeys   []string
 }
 
 type BucketManagerInterface interface {
 	Ping()
 	GetObjects(folderPath ...string) []Object
 	GetObjectsCached(folderPath ...string) []Object
+	appendCacheKey(key string)
 	GetBuckets() []string
 	ClearCache()
 }
@@ -39,6 +44,23 @@ type BucketManagerInterface interface {
 var _ BucketManagerInterface = (*BucketManager)(nil)
 
 func (bm *BucketManager) Ping() {}
+
+func (bm *BucketManager) appendCacheKey(key string) {
+	bm.mu.Lock()
+	defer bm.mu.Unlock()
+	if !slices.Contains(bm.cacheKeys, key) {
+		bm.cacheKeys = append(bm.cacheKeys, key)
+	}
+}
+
+func (bm *BucketManager) removeCacheKeys(keys ...string) {
+	bm.mu.Lock()
+	defer bm.mu.Unlock()
+	bm.cacheKeys = slices.DeleteFunc(bm.cacheKeys, func(val string) bool {
+		bm.bank.Delete(val)
+		return slices.Contains(keys, val)
+	})
+}
 
 func (bm *BucketManager) GetBuckets() []string {
 	var bucketNames []string
@@ -63,12 +85,15 @@ type Object struct {
 }
 
 func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
+	fmt.Println(bm.cacheKeys)
 	prefix := ""
 	if len(folderPath) > 0 {
 		prefix = folderPath[0]
 	}
 
 	cacheKey := "r2-objects-" + prefix
+	bm.appendCacheKey(cacheKey)
+
 	cachedObjects := BytesToSlice[Object](bm.bank.GetBytes(cacheKey))
 	if len(cachedObjects) == 0 {
 		cachedObjects = bm.GetObjects(folderPath...)
@@ -78,9 +103,7 @@ func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
 }
 
 func (bm *BucketManager) ClearCache() {
-	// TODO: make record of keys for various prefixes and delete them in bulk
-	cacheKey := "r2-objects-"
-	bm.bank.Delete(cacheKey)
+	bm.removeCacheKeys(bm.cacheKeys...)
 }
 
 func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
@@ -208,15 +231,20 @@ func (bm *BucketManager) getPutURL(key string) (string, error) {
 	return res.URL, nil
 }
 
-func (bm *BucketManager) Upload(c fiber.Ctx, key string) error {
-	// get presigned PUT url
-	url, err := bm.getPutURL(key)
+func (bm *BucketManager) Upload(c fiber.Ctx, targetFolder string) error {
+	// get file submitted via form
+	file, err := c.FormFile("file")
 	if err != nil {
 		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
 	}
 
-	// get file submitted via form
-	file, err := c.FormFile("file")
+	// get original file name
+	safeName := filepath.Base(file.Filename)
+	key := targetFolder + safeName
+	key = strings.TrimPrefix(key, "/")
+
+	// get presigned PUT url
+	url, err := bm.getPutURL(key)
 	if err != nil {
 		return c.SendString(fmt.Sprintf("Error uploading: %v", err))
 	}
