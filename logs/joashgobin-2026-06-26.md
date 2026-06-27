@@ -4,3 +4,4 @@
 - Add extension function
 - Updated bucket code
 - Hide upload method
+- Updated aws package
