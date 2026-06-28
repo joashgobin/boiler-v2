@@ -37,16 +37,41 @@ type BucketManagerInterface interface {
 	GetObjects(folderPath ...string) []Object
 	GetObjectsCached(folderPath ...string) []Object
 	GetPresignedURL(key string) string
-	addCacheKey(key string)
-	removeCacheKeys(keys ...string)
+	CreateFolder(folderPath string) error
 	GetBuckets() []string
 	ClearCache()
 	BreakCache(fileKey string)
+
+	addCacheKey(key string)
+	removeCacheKeys(keys ...string)
 }
 
 var _ BucketManagerInterface = (*BucketManager)(nil)
 
 func (bm *BucketManager) Ping() {}
+
+func (bm *BucketManager) CreateFolder(folderKey string) error {
+	key := folderKey
+	key = strings.TrimPrefix(key, "/")
+	if !strings.HasSuffix(key, "/") {
+		key += "/"
+	}
+	input := &s3.PutObjectInput{
+		Bucket: aws.String(bm.bucketName),
+		Key:    aws.String(key),
+		Body:   strings.NewReader(""),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := bm.client.PutObject(ctx, input)
+	if err != nil {
+		return fmt.Errorf("create folder error: %v", err)
+	}
+	bm.BreakCache(filepath.Dir(key))
+	return nil
+}
 
 func (bm *BucketManager) addCacheKey(key string) {
 	bm.mu.Lock()
@@ -110,7 +135,12 @@ func (bm *BucketManager) ClearCache() {
 }
 
 func (bm *BucketManager) BreakCache(fileKey string) {
-	bm.removeCacheKeys("r2-objects-" + filepath.Dir(fileKey))
+	target := "r2-objects-" + filepath.Dir(fileKey)
+	if strings.HasSuffix(target, ".") {
+		target = strings.TrimSuffix(target, ".")
+	}
+	// log.Infof("breaking cache: %s", target)
+	bm.bank.Delete(target)
 }
 
 func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
