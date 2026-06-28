@@ -41,6 +41,7 @@ type BucketManagerInterface interface {
 	removeCacheKeys(keys ...string)
 	GetBuckets() []string
 	ClearCache()
+	BreakCache(fileKey string)
 }
 
 var _ BucketManagerInterface = (*BucketManager)(nil)
@@ -106,6 +107,10 @@ func (bm *BucketManager) GetObjectsCached(folderPath ...string) []Object {
 
 func (bm *BucketManager) ClearCache() {
 	bm.removeCacheKeys(bm.cacheKeys...)
+}
+
+func (bm *BucketManager) BreakCache(fileKey string) {
+	bm.removeCacheKeys("r2-objects-" + filepath.Dir(fileKey))
 }
 
 func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
@@ -218,7 +223,6 @@ func NewBucketManager(bucketName string, bank BankInterface) *BucketManager {
 		bank:        bank,
 		cacheExpiry: time.Minute * 15,
 	}
-	bm.ClearCache()
 	return bm
 }
 
