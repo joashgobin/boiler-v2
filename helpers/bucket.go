@@ -136,8 +136,8 @@ func (bm *BucketManager) ClearCache() {
 
 func (bm *BucketManager) BreakCache(fileKey string) {
 	target := "r2-objects-" + filepath.Dir(fileKey)
-	if strings.HasSuffix(target, ".") {
-		target = strings.TrimSuffix(target, ".")
+	if before, ok := strings.CutSuffix(target, "."); ok {
+		target = before
 	}
 	// log.Infof("breaking cache: %s", target)
 	bm.bank.Delete(target)
