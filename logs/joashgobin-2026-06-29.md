@@ -3,3 +3,4 @@
 - Updated packages
 - Modernize code
 - Changed Makefile
+- Added staticcheck

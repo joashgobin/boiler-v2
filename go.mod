@@ -28,6 +28,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.13 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.29 // indirect
@@ -68,8 +69,15 @@ require (
 	github.com/valyala/fasthttp v1.72.0 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/image v0.43.0 // indirect
+	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
+	honnef.co/go/tools v0.7.0 // indirect
 )
+
+tool honnef.co/go/tools/cmd/staticcheck
