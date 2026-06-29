@@ -2,3 +2,4 @@
 
 - Updated packages
 - Modernize code
+- Changed Makefile

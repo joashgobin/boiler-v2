@@ -92,7 +92,7 @@ tidy:
 audit:
 	@-figlet "Audit"
 	@echo '• checking module dependencies...'
-	go mod tidy -diff
+	go mod tidy
 	go mod verify
 	@echo '• vetting code...'
 	go vet ./...
