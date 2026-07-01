@@ -189,7 +189,7 @@ github.com/gofiber/schema
 # github.com/gofiber/storage/valkey v0.3.0
 ## explicit; go 1.25.0
 github.com/gofiber/storage/valkey
-# github.com/gofiber/template/html/v3 v3.0.5
+# github.com/gofiber/template/html/v3 v3.0.6
 ## explicit; go 1.25.0
 github.com/gofiber/template/html/v3
 # github.com/gofiber/template/v2 v2.1.0
@@ -209,7 +209,7 @@ github.com/golang/freetype/truetype
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
-# github.com/klauspost/compress v1.18.7
+# github.com/klauspost/compress v1.19.0
 ## explicit; go 1.24
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
