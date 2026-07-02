@@ -5,8 +5,10 @@ import (
 	"hash/crc32"
 	"math"
 	"slices"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/utils/v2"
 	"github.com/valyala/bytebufferpool"
 )
 
@@ -59,6 +61,12 @@ func New(config ...Config) fiber.Handler {
 			return err
 		}
 
+		// Never generate ETags for Server-Sent Events: hashing the body would
+		// materialize the stream and break real-time delivery.
+		if isEventStream(c) {
+			return nil
+		}
+
 		// Don't generate ETags for invalid responses
 		if c.Response().StatusCode() != fiber.StatusOK {
 			return nil
@@ -85,35 +93,72 @@ func New(config ...Config) fiber.Handler {
 			etag = Generate(body)
 		}
 
+		// The ETag header is sent on both 200 and 304 responses (RFC 9110 §15.4.5).
+		c.Response().Header.SetCanonical(normalizedHeaderETag, etag)
+
 		// Get ETag header from request
 		clientEtag := c.Request().Header.Peek(fiber.HeaderIfNoneMatch)
 
-		// Check if client's ETag is weak
-		if bytes.HasPrefix(clientEtag, weakPrefix) {
-			// Check if server's ETag is weak
-			if bytes.Equal(clientEtag[2:], etag) || bytes.Equal(clientEtag[2:], etag[2:]) {
-				// W/1 == 1 || W/1 == W/1
-				c.RequestCtx().ResetBody()
-
-				return c.SendStatus(fiber.StatusNotModified)
-			}
-			// W/1 != W/2 || W/1 != 2
-			c.Response().Header.SetCanonical(normalizedHeaderETag, etag)
-
-			return nil
-		}
-
-		if bytes.Contains(clientEtag, etag) {
-			// 1 == 1
+		if isNoneMatch(clientEtag, etag) {
 			c.RequestCtx().ResetBody()
 
 			return c.SendStatus(fiber.StatusNotModified)
 		}
-		// 1 != 2
-		c.Response().Header.SetCanonical(normalizedHeaderETag, etag)
 
 		return nil
 	}
+}
+
+// isNoneMatch reports whether any entity tag in the If-None-Match header value
+// matches the response ETag, using the weak comparison required for
+// If-None-Match by RFC 9110 §8.8.3.2.
+func isNoneMatch(header, etag []byte) bool {
+	header = utils.TrimSpace(header)
+	if len(header) == 0 {
+		return false
+	}
+	if len(header) == 1 && header[0] == '*' {
+		return true
+	}
+
+	for len(header) > 0 {
+		// RFC 9110 allows a comma inside an opaque-tag, so this split can
+		// mis-parse such tags. It fails open and Fiber's ETags never contain
+		// commas, so it is acceptable here.
+		entry, rest, _ := bytes.Cut(header, []byte(","))
+		header = rest
+		if etagWeakMatch(utils.TrimSpace(entry), etag) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// etagWeakMatch compares two entity tags, ignoring weak indicators
+// (RFC 9110 §8.8.3.2). Both tags must be quoted to match.
+func etagWeakMatch(a, b []byte) bool {
+	a = bytes.TrimPrefix(a, weakPrefix)
+	b = bytes.TrimPrefix(b, weakPrefix)
+	if len(a) < 2 || a[0] != '"' || a[len(a)-1] != '"' {
+		return false
+	}
+	if len(b) < 2 || b[0] != '"' || b[len(b)-1] != '"' {
+		return false
+	}
+
+	return bytes.Equal(a, b)
+}
+
+// isEventStream reports whether the response is a Server-Sent Events stream.
+// Such responses must be passed through untouched: buffering the body to hash
+// it would break real-time delivery.
+func isEventStream(c fiber.Ctx) bool {
+	ct := c.GetRespHeader(fiber.HeaderContentType)
+	if i := strings.IndexByte(ct, ';'); i >= 0 {
+		ct = ct[:i]
+	}
+	return utils.EqualFold(utils.TrimSpace(ct), fiber.MIMETextEventStream)
 }
 
 // appendUint appends n to dst and returns the extended dst.
@@ -125,7 +170,7 @@ func appendUint(dst []byte, n uint32) []byte {
 	for n >= 10 {
 		i--
 		q = n / 10
-		buf[i] = '0' + byte(n-q*10)
+		buf[i] = '0' + byte(n-q*10) //nolint:gosec // G115: integer overflow conversion uint32 -> byte
 		n = q
 	}
 	i--

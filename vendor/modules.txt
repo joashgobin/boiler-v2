@@ -164,7 +164,7 @@ github.com/go-sql-driver/mysql
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/gofiber/fiber/v3 v3.3.0
+# github.com/gofiber/fiber/v3 v3.4.0
 ## explicit; go 1.25.0
 github.com/gofiber/fiber/v3
 github.com/gofiber/fiber/v3/binder
@@ -172,7 +172,9 @@ github.com/gofiber/fiber/v3/extractors
 github.com/gofiber/fiber/v3/internal/contextvalue
 github.com/gofiber/fiber/v3/internal/logtemplate
 github.com/gofiber/fiber/v3/internal/memory
+github.com/gofiber/fiber/v3/internal/nilerror
 github.com/gofiber/fiber/v3/internal/redact
+github.com/gofiber/fiber/v3/internal/schemehost
 github.com/gofiber/fiber/v3/internal/storage/memory
 github.com/gofiber/fiber/v3/log
 github.com/gofiber/fiber/v3/middleware/csrf
