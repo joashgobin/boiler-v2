@@ -8,3 +8,5 @@ styles:
 .PHONY: update
 update:
 	go get -u -v ./...
+	go mod tidy
+	go mod vendor
