@@ -879,7 +879,8 @@ exec bash
     data-svg-src="/static/img/bootstrap-icons/` + iconName[0] + `.svg"
     hx-get="/static/img/bootstrap-icons/` + iconName[0] + `.svg"
     hx-swap="outerHTML"
-    hx-trigger="load">
+	hx-on::response-error="this.setAttribute('data-svg-src','/static/img/bootstrap-icons/patch-question.svg');this.setAttribute('hx-get','/static/img/bootstrap-icons/patch-question.svg');console.log(this);htmx.process(this);this.dispatchEvent(new Event('refreshIcon'))"
+    hx-trigger="load, refreshIcon">
 </script>
 </div>
 			`)
