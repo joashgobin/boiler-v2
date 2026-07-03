@@ -18,7 +18,7 @@ type RedirectBuilder struct {
 
 // Redirect back to the previous route
 func (rb RedirectBuilder) Back() error {
-	return rb.context.Redirect().WithInput().With("message", rb.message).Back()
+	return rb.context.Redirect().WithInput().With("message", rb.message).Back(rb.context.Get("Referer"))
 }
 
 // Redirect to a particular URL
