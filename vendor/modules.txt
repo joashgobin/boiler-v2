@@ -312,9 +312,11 @@ github.com/valyala/fasthttp/prefork
 github.com/valyala/fasthttp/reuseport
 github.com/valyala/fasthttp/stackless
 github.com/valyala/fasthttp/tcplisten
-# github.com/wneessen/go-mail v0.7.3
+# github.com/wneessen/go-mail v0.8.0
 ## explicit; go 1.25.0
 github.com/wneessen/go-mail
+github.com/wneessen/go-mail/internal/dkim
+github.com/wneessen/go-mail/internal/ntlm
 github.com/wneessen/go-mail/internal/pkcs7
 github.com/wneessen/go-mail/log
 github.com/wneessen/go-mail/smtp
@@ -341,6 +343,7 @@ golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
+golang.org/x/crypto/md4
 # golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678
 ## explicit; go 1.18
 golang.org/x/exp/typeparams
