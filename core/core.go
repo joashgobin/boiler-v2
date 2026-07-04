@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3/extractors"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/js"
 
 	"github.com/gofiber/fiber/v3/middleware/static"
 
@@ -400,6 +402,10 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 		if !helpers.FileExists("static/main.css") {
 			helpers.TouchFile("static/main.css")
+		}
+
+		if !helpers.FileExists("static/script/init-swup.js") {
+			helpers.TouchFile("static/script/init-swup.js")
 		}
 	}
 
@@ -1036,6 +1042,20 @@ exec bash
 				builder.WriteString(str)
 			}
 			return builder.String()
+		},
+		"js": func(filePath string) ht.JS {
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return ht.JS("")
+			}
+			m := minify.New()
+			m.AddFunc("text/javascript", js.Minify)
+			text := string(content)
+			minifiedText, err := m.String("text/javascript", text)
+			if err != nil {
+				return ht.JS("")
+			}
+			return ht.JS(minifiedText)
 		},
 		"ext": func(fileName string) string {
 			return filepath.Ext(fileName)

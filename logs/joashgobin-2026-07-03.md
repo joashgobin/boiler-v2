@@ -2,3 +2,4 @@
 
 - Updated makefile
 - Fixed issue of referer not working
+- Added function for injecting js file into template

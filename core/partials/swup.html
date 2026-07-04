@@ -53,14 +53,12 @@
     swup.hooks.on('page:view', (visit) => {
         initScroll();
         htmx.process(document.body);
-        {{template "views/scripts" .}}
+        {{js "static/script/init-swup.js"}}
     });
 
     document.addEventListener('DOMContentLoaded', () => {
         initScroll();
         htmx.process(document.body);
-        {{template "views/scripts" .}}
+        {{js "static/script/init-swup.js"}}
     });
-
-
 </script>

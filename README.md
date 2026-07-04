@@ -102,7 +102,6 @@ mkdir -p views/partials
 touch views/layouts/main.html
 touch views/partials/placeholder.html
 touch views/index.html
-touch views/scripts.html
 ```
 
 Run the program:
