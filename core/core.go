@@ -24,8 +24,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3/extractors"
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/js"
 
 	"github.com/gofiber/fiber/v3/middleware/static"
 
@@ -520,6 +518,9 @@ exec bash
 	cmpLog := map[string]ht.HTML{}
 	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
 	inlineLog := map[string]ht.HTML{}
+
+	fileSnippetLog := map[string]string{}
+	err = helpers.SaveFileSnippets(config.Templates, &fileSnippetLog)
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -1044,18 +1045,7 @@ exec bash
 			return builder.String()
 		},
 		"js": func(filePath string) ht.JS {
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				return ht.JS("")
-			}
-			m := minify.New()
-			m.AddFunc("text/javascript", js.Minify)
-			text := string(content)
-			minifiedText, err := m.String("text/javascript", text)
-			if err != nil {
-				return ht.JS("")
-			}
-			return ht.JS(minifiedText)
+			return ht.JS(fileSnippetLog[filePath])
 		},
 		"ext": func(fileName string) string {
 			return filepath.Ext(fileName)

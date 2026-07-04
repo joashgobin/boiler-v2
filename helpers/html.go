@@ -5,9 +5,11 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"os"
 	"regexp"
 	"strings"
 
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/html"
@@ -63,6 +65,62 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 				continue
 			}
 			shelf.Set(key, minifiedHTML)
+		}
+	}
+	return nil
+}
+
+func SaveFileSnippets(fs *embed.FS, snippetLog *map[string]string) error {
+	if fs == nil {
+		return fmt.Errorf("files not embedded")
+	}
+	viewFiles, err := GetEmbedFiles(fs, "views")
+	if err != nil {
+		return err
+	}
+	for _, file := range viewFiles {
+		ExtractFileSnippets(fs, file, snippetLog)
+	}
+	return nil
+}
+
+func ExtractFileSnippets(fs *embed.FS, filePath string, snippetLog *map[string]string) error {
+	data, err := fs.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %v", err)
+	}
+
+	/*
+		m := minify.New()
+		m.AddFunc("text/html", html.Minify)
+		m.AddFunc("text/css", css.Minify)
+		m.AddFunc("text/javascript", js.Minify)
+	*/
+
+	re := regexp.MustCompile(`{{\s*(js|css|html)\s+"(.*?)"\s*}}`)
+	results := re.FindAllStringSubmatch(string(data), -1)
+	for _, v := range results {
+		if len(v) > 1 {
+			switch v[1] {
+			case "js":
+				m := minify.New()
+				m.AddFunc("text/javascript", js.Minify)
+				// fmt.Println("reading", v[2])
+				jsText, err := os.ReadFile(v[2])
+				if err != nil {
+					log.Errorf("error reading snippet: %v", err)
+					continue
+				}
+				minifiedJS, err := m.String("text/javascript", string(jsText))
+				if err != nil {
+					log.Errorf("error minifying snippet: %v", err)
+					continue
+				}
+				// fmt.Println("storing", minifiedJS)
+				(*snippetLog)[v[2]] = minifiedJS
+			default:
+				(*snippetLog)[v[2]] = string(data)
+			}
 		}
 	}
 	return nil
