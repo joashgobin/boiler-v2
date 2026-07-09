@@ -72,8 +72,8 @@ deploy/static:
 build:
 	@-figlet "Build app"
 	@echo "• building binary locally"
-	@go build -ldflags='-w -s' -o=./bin/web .
-	@GOOS=linux GOARCH=amd64 go build -ldflags='-w -s' -o=./bin/linux_amd64/web .
+	@go build -o=./bin/web .
+	@GOOS=linux GOARCH=amd64 go build -o=./bin/linux_amd64/web .
 
 ## tidy: tidy module dependencies and format all .go files
 .PHONY: tidy
