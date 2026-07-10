@@ -312,7 +312,7 @@ github.com/valyala/fasthttp/prefork
 github.com/valyala/fasthttp/reuseport
 github.com/valyala/fasthttp/stackless
 github.com/valyala/fasthttp/tcplisten
-# github.com/wneessen/go-mail v0.8.0
+# github.com/wneessen/go-mail v0.8.1
 ## explicit; go 1.25.0
 github.com/wneessen/go-mail
 github.com/wneessen/go-mail/internal/dkim
