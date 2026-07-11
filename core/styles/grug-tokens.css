@@ -43,19 +43,23 @@
 }
 
 .ob {
-    border: 1px solid var(--black);
+    --outline-color: var(--black);
+    border: 1px solid var(--outline-color);
 }
 
 .op {
-    border: 1px solid var(--prim);
+    --outline-color: var(--prim);
+    border: 1px solid var(--outline-color);
 }
 
 .os {
-    border: 1px solid var(--sec);
+    --outline-color: var(--sec);
+    border: 1px solid var(--outline-color);
 }
 
 .oa {
-    border: 1px solid var(--accent);
+    --outline-color: var(--accent);
+    border: 1px solid var(--outline-color);
 }
 
 .t-2 {
@@ -96,6 +100,19 @@
 
 .margin {
     margin: 1rem;
+}
+
+h1.trim,
+h2.trim,
+h3.trim,
+h4.trim,
+h5.trim,
+h6.trim {
+    margin: 0;
+}
+
+p.trim {
+    margin: 0;
 }
 
 .pad {
