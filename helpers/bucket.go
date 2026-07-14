@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 )
@@ -38,6 +39,9 @@ type BucketManagerInterface interface {
 	GetObjectsCached(folderPath ...string) []Object
 	GetPresignedURL(key string) string
 	CreateFolder(folderPath string) error
+
+	Delete(folderPrefix string) error
+
 	GetBuckets() []string
 	ClearCache()
 	BreakCache(fileKey string)
@@ -49,6 +53,50 @@ type BucketManagerInterface interface {
 var _ BucketManagerInterface = (*BucketManager)(nil)
 
 func (bm *BucketManager) Ping() {}
+
+func (bm *BucketManager) Delete(folderPrefix string) error {
+	paginator := s3.NewListObjectsV2Paginator(bm.client, &s3.ListObjectsV2Input{
+		Bucket: &bm.bucketName,
+		Prefix: aws.String(folderPrefix),
+	})
+
+	for paginator.HasMorePages() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			log.Errorf("delete error: %v", err)
+		}
+		if len(page.Contents) == 0 {
+			continue
+		}
+		var objectIDs []types.ObjectIdentifier
+		for _, object := range page.Contents {
+			objectIDs = append(objectIDs, types.ObjectIdentifier{
+				Key: object.Key,
+			})
+		}
+		nctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		output, err := bm.client.DeleteObjects(nctx, &s3.DeleteObjectsInput{
+			Bucket: &bm.bucketName,
+			Delete: &types.Delete{
+				Objects: objectIDs,
+				Quiet:   aws.Bool(false),
+			},
+		})
+		if err != nil {
+			log.Errorf("batch delete error: %v", err)
+		}
+		if len(output.Errors) > 0 {
+			for _, deleteError := range output.Errors {
+				log.Errorf("error deleting key %s: %s", *deleteError.Key, *deleteError.Message)
+			}
+		}
+	}
+
+	return nil
+}
 
 func (bm *BucketManager) CreateFolder(folderKey string) error {
 	key := folderKey
