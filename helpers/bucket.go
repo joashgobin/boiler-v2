@@ -60,6 +60,8 @@ func (bm *BucketManager) Delete(folderPrefix string) error {
 		Prefix: aws.String(folderPrefix),
 	})
 
+	bm.BreakCache(filepath.Dir(folderPrefix))
+
 	for paginator.HasMorePages() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -75,6 +77,7 @@ func (bm *BucketManager) Delete(folderPrefix string) error {
 			objectIDs = append(objectIDs, types.ObjectIdentifier{
 				Key: object.Key,
 			})
+			bm.BreakCache(*object.Key)
 		}
 		nctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -183,6 +186,7 @@ func (bm *BucketManager) ClearCache() {
 }
 
 func (bm *BucketManager) BreakCache(fileKey string) {
+	// log.Infof("ready to break cache for: %s", fileKey)
 	target := "r2-objects-" + filepath.Dir(fileKey)
 	if before, ok := strings.CutSuffix(target, "."); ok {
 		target = before
