@@ -612,7 +612,13 @@ exec bash
 			builder.WriteString("<a href='tel:")
 			builder.WriteString(phoneNumberStripped)
 			builder.WriteString("'>")
+			if len(message) > 0 {
+				builder.WriteString(message[0])
+			}
 			builder.WriteString(phoneNumber)
+			if len(message) > 1 {
+				builder.WriteString(message[1])
+			}
 			builder.WriteString("</a>")
 			return ht.HTML(builder.String())
 		},
