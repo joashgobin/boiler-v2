@@ -1023,7 +1023,7 @@ exec bash
 		"cmp": func(name string, snippet ...ht.HTML) ht.HTML {
 			return cmpLog[name]
 		},
-		"inline": func(name string, content ht.HTML) ht.HTML {
+		"inline": func(name string, content ...ht.HTML) ht.HTML {
 			return inlineLog[name]
 		},
 		"trigger": func(code string) ht.HTML {
