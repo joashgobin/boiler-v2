@@ -185,7 +185,7 @@ github.com/gofiber/fiber/v3/middleware/pprof
 github.com/gofiber/fiber/v3/middleware/recover
 github.com/gofiber/fiber/v3/middleware/session
 github.com/gofiber/fiber/v3/middleware/static
-# github.com/gofiber/schema v1.8.2
+# github.com/gofiber/schema v1.8.3
 ## explicit; go 1.25.0
 github.com/gofiber/schema
 # github.com/gofiber/storage/valkey v0.3.0
