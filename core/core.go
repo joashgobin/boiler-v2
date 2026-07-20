@@ -1073,7 +1073,7 @@ exec bash
 		},
 		"md_faq": func(content ...string) ht.HTML {
 			var microdataBuilder strings.Builder
-			microdataBuilder.WriteString(`<div class="microdata-faq" itemscope itemtype="https://schema.org">`)
+			microdataBuilder.WriteString(`<div class="microdata-faq" itemscope itemtype="https://schema.org/FAQPage">`)
 			questions := []string{}
 			answers := []string{}
 			for i, item := range content {
@@ -1087,11 +1087,11 @@ exec bash
 				question := questions[i]
 				answer := answers[i]
 				microdataBuilder.WriteString(`
-				<details itemprop="mainEntity" itemscope itemtype="https://schema.org">
+				<details itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
 					<summary itemprop="name">`)
 				microdataBuilder.WriteString(question)
 				microdataBuilder.WriteString(`</summary>
-						<div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org">
+						<div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
 							<p itemprop="text">`)
 				microdataBuilder.WriteString(answer)
 				microdataBuilder.WriteString(`</p>
