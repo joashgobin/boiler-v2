@@ -2,3 +2,4 @@
 
 - Updated packages
 - Updated microdata values
+- Added functions for width and height editing

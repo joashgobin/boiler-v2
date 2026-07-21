@@ -718,6 +718,12 @@ exec bash
 		"style": func(style string, input ht.HTML) ht.HTML {
 			return ht.HTML(strings.ReplaceAll(string(input), `style=""`, `style="`+style+`"`))
 		},
+		"width": func(width string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `width=""`, `width="`+width+`"`))
+		},
+		"height": func(height string, input ht.HTML) ht.HTML {
+			return ht.HTML(strings.ReplaceAll(string(input), `height=""`, `height="`+height+`"`))
+		},
 		"gen": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML(outputPath)
@@ -747,7 +753,7 @@ exec bash
 
 			picBuilder.WriteString(`<img hx-trigger="revealed" src="`)
 			picBuilder.WriteString(fallbackPath)
-			picBuilder.WriteString(`" class="" alt="" style="" onerror="this.onerror=null;this.src='/`)
+			picBuilder.WriteString(`" width="" height="" class="" alt="" style="" onerror="this.onerror=null;this.src='/`)
 			picBuilder.WriteString(fullPath)
 			picBuilder.WriteString(`';Array.from(this.parentNode.querySelectorAll('source')).forEach(s => { s.srcset='/`)
 			picBuilder.WriteString(fullPath)
