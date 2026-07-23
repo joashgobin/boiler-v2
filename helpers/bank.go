@@ -47,13 +47,11 @@ func NewBank(storage *valkey.Storage, appName string) *Bank {
 
 func (ba *BankAdaptor[T]) Get(key string) T {
 	bytes := ba.bank.GetBytes(key)
-	value := FromBytes[T](bytes)
-	return value
+	return FromBytes[T](bytes)
 }
 
 func (ba *BankAdaptor[T]) Set(key string, value T, exp time.Duration) {
-	bytes := ToBytes(value)
-	ba.bank.SetBytes(key, bytes, exp)
+	ba.bank.SetBytes(key, ToBytes(value), exp)
 }
 
 func (ba *BankAdaptor[T]) GetSlice(key string) []T {
