@@ -26,8 +26,45 @@ type BankInterface interface {
 
 var _ BankInterface = (*Bank)(nil)
 
+type BankAdaptorInterface[T any] interface {
+	Get(key string) T
+	Set(key string, value T, exp time.Duration)
+	GetSlice(key string) []T
+	SetSlice(key string, value []T, exp time.Duration)
+}
+
+type BankAdaptor[T any] struct {
+	bank BankInterface
+}
+
+func NewBankAdaptor[T any](bank BankInterface) *BankAdaptor[T] {
+	return &BankAdaptor[T]{bank: bank}
+}
+
 func NewBank(storage *valkey.Storage, appName string) *Bank {
 	return &Bank{storage: storage, prefix: appName + "-"}
+}
+
+func (ba *BankAdaptor[T]) Get(key string) T {
+	bytes := ba.bank.GetBytes(key)
+	value := FromBytes[T](bytes)
+	return value
+}
+
+func (ba *BankAdaptor[T]) Set(key string, value T, exp time.Duration) {
+	bytes := ToBytes(value)
+	ba.bank.SetBytes(key, bytes, exp)
+}
+
+func (ba *BankAdaptor[T]) GetSlice(key string) []T {
+	bytes := ba.bank.GetBytes(key)
+	slice := BytesToSlice[T](bytes)
+	return slice
+}
+
+func (ba *BankAdaptor[T]) SetSlice(key string, value []T, exp time.Duration) {
+	bytes := SliceToBytes[T](value)
+	ba.bank.SetBytes(key, bytes, exp)
 }
 
 func (b *Bank) Close() {
@@ -90,7 +127,7 @@ func ToBytes(p any) []byte {
 	return buf.Bytes()
 }
 
-func BytesToStruct[T any](s []byte) T {
+func FromBytes[T any](s []byte) T {
 	p := new(T)
 	dec := gob.NewDecoder(bytes.NewReader(s))
 	err := dec.Decode(&p)

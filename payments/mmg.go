@@ -750,7 +750,7 @@ func (m *MMGModel) GetWallet(merchantNumber int) MMGWallet {
 	data := m.Bank.GetBytes(cacheKey)
 	if len(data) > 0 {
 		// log.Infof("wallet cache found. skipping load...")
-		return helpers.BytesToStruct[MMGWallet](data)
+		return helpers.FromBytes[MMGWallet](data)
 	}
 
 	// log.Infof("loading wallet...")
