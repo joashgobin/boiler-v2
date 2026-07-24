@@ -252,6 +252,7 @@ Add the following to your *views/layouts/main.html* file:
         <div class="pad-2"></div>
         {{template "views/partials/flash-body" .}}
         {{embed}}
+        <div id="scroll-target"></div>
     </main>
     <footer class="grid gap-2 fit-3 bb cp pad-3"></footer>
     {{template "views/partials/swup" .}}
