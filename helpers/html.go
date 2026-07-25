@@ -62,6 +62,7 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 			bank.Delete(key)
 			minifiedHTML, err := m.String("text/html", strings.TrimSpace(v[2]))
 			if err != nil {
+				log.Errorf("extract component error: %v", err)
 				continue
 			}
 			shelf.Set(key, minifiedHTML)
@@ -167,12 +168,14 @@ func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template
 
 			err = tmpl.Execute(&buf, nil)
 			if err != nil {
+				log.Errorf("extract inline template execute error: %v", err)
 				continue
 			}
 
 			minifiedHTML, err := m.String("text/html", buf.String())
 			// fmt.Println(buf.String(), minifiedHTML)
 			if err != nil {
+				log.Errorf("extract inline minify error: %v", err)
 				continue
 			}
 			(*inlineLog)[v[1]] = template.HTML(minifiedHTML)
