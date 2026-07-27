@@ -115,7 +115,7 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc/types
 github.com/aws/aws-sdk-go-v2/service/sts
 github.com/aws/aws-sdk-go-v2/service/sts/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/sts/types
-# github.com/aws/smithy-go v1.27.4
+# github.com/aws/smithy-go v1.27.5
 ## explicit; go 1.24
 github.com/aws/smithy-go
 github.com/aws/smithy-go/auth
@@ -305,7 +305,7 @@ github.com/valkey-io/valkey-go/internal/util
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v1.72.0
+# github.com/valyala/fasthttp v1.73.0
 ## explicit; go 1.25.0
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttpadaptor
