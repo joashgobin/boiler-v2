@@ -1093,8 +1093,9 @@ exec bash
 				question := questions[i]
 				answer := answers[i]
 				microdataBuilder.WriteString(`
-				<details itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
-					<summary itemprop="name">`)
+				<details itemprop="mainEntity" itemscope itemtype="https://schema.org/Question" id="faq-no-`)
+				microdataBuilder.WriteString(strconv.Itoa(i + 1))
+				microdataBuilder.WriteString(`"><summary itemprop="name">`)
 				microdataBuilder.WriteString(question)
 				microdataBuilder.WriteString(`</summary>
 						<div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
