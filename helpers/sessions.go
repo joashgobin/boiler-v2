@@ -239,11 +239,12 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 }
 
 func (flash *FlashModel) Require(keys ...string) fiber.Handler {
+	// log.Infof("required keys: %v", keys)
 	return func(c fiber.Ctx) error {
 		warning, err := EnsureFiberFormFields(c, keys)
 		if err != nil {
 			// flash.Push(c, warning)
-			return c.Redirect().WithInput().With("warning", warning).Back()
+			return c.Redirect().WithInput().With("warning", warning).Back(c.Get("Referer"))
 		}
 		return c.Next()
 	}
