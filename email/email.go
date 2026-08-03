@@ -13,6 +13,7 @@ import (
 	ht "html/template"
 
 	"github.com/gofiber/fiber/v3/log"
+	"github.com/joashgobin/boiler-v2/email/cfg"
 	"github.com/joashgobin/boiler-v2/helpers"
 )
 
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS mail (
 	return &MailModel{DB: db, WaitGroup: wg}
 }
 
+/*
 func sendEmail(to string, subject string, body string, bcc string, wg *sync.WaitGroup) {
 	helpers.Background(
 		func() {
@@ -114,6 +116,7 @@ func sendEmail(to string, subject string, body string, bcc string, wg *sync.Wait
 			// log.Infof("Sending email\n'%s'\n to: %s", message, to)
 		}, wg)
 }
+*/
 
 type Mail struct {
 	ID        int
@@ -124,67 +127,9 @@ type Mail struct {
 	Body      string
 }
 
-type MailConfig struct {
-	Recipients []string
-	Sender     string
-	SenderName string
-	Cc         []string
-	Bcc        []string
-	Subject    string
-	Body       string
-	WaitGroup  *sync.WaitGroup
-}
-
-type MailOption func(*MailConfig)
-
-func NewMailConfig(wg *sync.WaitGroup, opts ...MailOption) MailConfig {
-	cfg := &MailConfig{WaitGroup: wg}
-	for _, opt := range opts {
-		opt(cfg)
-	}
-	return *cfg
-}
-
-func WithSenderAddress(senderAddress string) MailOption {
-	return func(c *MailConfig) {
-		c.Sender = senderAddress
-	}
-}
-
-func WithSenderName(senderName string) MailOption {
-	return func(c *MailConfig) {
-		c.SenderName = senderName
-	}
-}
-
-func WithRecipients(cc ...string) MailOption {
-	return func(c *MailConfig) {
-		c.Recipients = cc
-	}
-}
-
-func WithBlindRecipients(bcc ...string) MailOption {
-	return func(c *MailConfig) {
-		c.Bcc = bcc
-	}
-}
-
-func WithSubject(subject string) MailOption {
-	return func(c *MailConfig) {
-		c.Subject = subject
-	}
-}
-
-func WithBody(body string) MailOption {
-	return func(c *MailConfig) {
-		c.Body = body
-	}
-}
-
 type MailInterface interface {
-	Send(to, bcc, subject string, swaps ...any)
+	Send(opts ...cfg.MailOption) error
 	GetAll(filter string) []Mail
-	NotifyAdmin(subject string, swaps ...any)
 	GetMagicLink(email, purpose, urlPrefix string) string
 	GetMagicLinks() []MagicLink
 	IsMagicLinkValid(link string) bool
@@ -311,44 +256,30 @@ func (m *MailModel) GetMagicLink(email, purpose, urlPrefix string) string {
 	return urlPrefix + value
 }
 
-func (m *MailModel) NotifyAdmin(subject string, swaps ...any) {
-	body := ""
-	if len(swaps) > 1 {
-		body = fmt.Sprintf(swaps[0].(string), swaps[1:]...)
-	} else {
-		body = swaps[0].(string)
-	}
-	// SendEmail(, subject, body, "", m.WaitGroup)
-	SendEmail(NewMailConfig(m.WaitGroup,
-		WithRecipients(helpers.GetEnv("ADMIN_EMAIL")),
-		WithSubject(subject),
-		WithBody(body)))
-}
-
-func SendEmail(cfg MailConfig) {
+func SendEmail(config cfg.MailConfig) {
 	helpers.Background(
 		func() {
-			data := emailData{Subject: cfg.Subject, Body: cfg.Body}
+			data := emailData{Subject: config.Subject, Body: config.Body}
 
 			var senderAddr string = helpers.GetEnv("MAIL_USER_EMAIL")
 			var senderName string = helpers.GetEnv("MAIL_USERNAME")
 
-			username := senderAddr
 			password := helpers.GetEnv("MAIL_PW")
 			mailHost := helpers.GetEnv("MAIL_HOST")
+			username := senderAddr
 
 			message := mail.NewMsg()
 			// set email from and to
 			if err := message.FromFormat(senderName, senderAddr); err != nil {
 				log.Infof("failed to set 'from' address: %s", senderAddr)
 			}
-			if err := message.To(cfg.Recipients...); err != nil {
-				log.Infof("failed to set 'to' address: %v", cfg.Recipients)
+			if err := message.To(config.Recipients...); err != nil {
+				log.Infof("failed to set 'to' address: %v", config.Recipients)
 			}
 
 			// set email subject and body string
-			message.Subject(cfg.Subject)
-			message.SetBodyString(mail.TypeTextPlain, cfg.Body)
+			message.Subject(config.Subject)
+			message.SetBodyString(mail.TypeTextPlain, config.Body)
 
 			// parse html template
 			htmlTmpl, err := ht.New("").Funcs(ht.FuncMap{
@@ -371,12 +302,12 @@ func SendEmail(cfg MailConfig) {
 			message.AddAlternativeString(mail.TypeTextHTML, htmlBody.String())
 
 			// add cc
-			for _, c := range cfg.Cc {
+			for _, c := range config.Cc {
 				message.AddCc(c)
 			}
 
 			// add bcc
-			for _, b := range cfg.Bcc {
+			for _, b := range config.Bcc {
 				message.AddBcc(b)
 			}
 
@@ -393,33 +324,43 @@ func SendEmail(cfg MailConfig) {
 
 			// helpers.WasteTime(5)
 			// log.Infof("Sending email\n'%s'\n to: %s", message, to)
-		}, cfg.WaitGroup)
+		}, config.WaitGroup)
 }
 
-func (m *MailModel) Send(to, bcc, subject string, swaps ...any) {
-	body := ""
-	if len(swaps) > 1 {
-		body = fmt.Sprintf(swaps[0].(string), swaps[1:]...)
-	} else {
-		body = swaps[0].(string)
+func (m *MailModel) Send(opts ...cfg.MailOption) error {
+	config := cfg.NewMailConfig(m.WaitGroup, opts...)
+
+	if len(config.Recipients) == 0 {
+		return fmt.Errorf("send mail error: no recipients specified")
 	}
+	if config.Subject == "" {
+		return fmt.Errorf("send mail error: no subject specified")
+	}
+	if config.Body == "" {
+		return fmt.Errorf("send mail error: no body specified")
+	}
+
+	recipients := fmt.Sprintf("%v", config.Recipients)
+	bcc := ""
+	if len(config.Bcc) > 0 {
+		bcc = fmt.Sprintf("%v", config.Bcc)
+	}
+
 	query := `
 	INSERT INTO mail (recipient, bcc, subject, body)
 	VALUES (?,?,?,?)
 	`
-	result, err := m.DB.Exec(query, to, bcc, subject, body)
+	result, err := m.DB.Exec(query, recipients, bcc, config.Subject, config.Body)
 	if err != nil {
-		log.Errorf("store email exec error: %v", err)
-		return
+		return fmt.Errorf("store email exec error: %v", err)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Errorf("store email rows error: %v", err)
-		return
+		return fmt.Errorf("store email rows error: %v", err)
 	}
 	if rowsAffected == 0 {
-		log.Errorf("store email error: no rows affected")
-		return
+		return fmt.Errorf("store email error: no rows affected")
 	}
-	SendEmail(to, subject, body, bcc, m.WaitGroup)
+	SendEmail(config)
+	return nil
 }
