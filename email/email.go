@@ -63,6 +63,58 @@ CREATE TABLE IF NOT EXISTS mail (
 	return &MailModel{DB: db, WaitGroup: wg}
 }
 
+func sendEmail(to string, subject string, body string, bcc string, wg *sync.WaitGroup) {
+	helpers.Background(
+		func() {
+			data := emailData{Subject: subject, Body: body}
+			var senderAddr string = helpers.GetEnv("MAIL_USER_EMAIL")
+			var senderName string = helpers.GetEnv("MAIL_USERNAME")
+			username := senderAddr
+			password := helpers.GetEnv("MAIL_PW")
+			mailHost := helpers.GetEnv("MAIL_HOST")
+
+			message := mail.NewMsg()
+			if err := message.FromFormat(senderName, senderAddr); err != nil {
+				log.Infof("failed to set 'from' address: %s", senderAddr)
+			}
+			if err := message.To(to); err != nil {
+				log.Infof("failed to set 'to' address: %s", to)
+			}
+			message.Subject(subject)
+			message.SetBodyString(mail.TypeTextPlain, body)
+			htmlTmpl, err := ht.New("").Funcs(ht.FuncMap{
+				"safeHTML": func(s string) ht.HTML {
+					return ht.HTML(s)
+				},
+			}).ParseFS(templatesFS, "templates/email.html")
+			if err != nil {
+				log.Infof("could not parse email template: %v", err)
+				return
+			}
+			htmlBody := new(bytes.Buffer)
+			err = htmlTmpl.ExecuteTemplate(htmlBody, "htmlBody", data)
+			if err != nil {
+				log.Infof("could not parse email template: %v", err)
+				return
+			}
+			message.AddAlternativeString(mail.TypeTextHTML, htmlBody.String())
+			message.AddBcc(bcc)
+
+			client, err := mail.NewClient(mailHost, mail.WithTLSPortPolicy(mail.TLSMandatory),
+				mail.WithSMTPAuth(mail.SMTPAuthPlain), mail.WithUsername(username), mail.WithPassword(password))
+			if err != nil {
+				log.Infof("failed to create mail client: %s\n", err)
+			}
+
+			if err := client.DialAndSend(message); err != nil {
+				log.Infof("failed to send mail: %s", err)
+			}
+
+			// helpers.WasteTime(5)
+			// log.Infof("Sending email\n'%s'\n to: %s", message, to)
+		}, wg)
+}
+
 type Mail struct {
 	ID        int
 	Recipient string
@@ -70,6 +122,63 @@ type Mail struct {
 	BCC       sql.NullString
 	Subject   string
 	Body      string
+}
+
+type MailConfig struct {
+	Recipients []string
+	Sender     string
+	SenderName string
+	Cc         []string
+	Bcc        []string
+	Subject    string
+	Body       string
+	WaitGroup  *sync.WaitGroup
+}
+
+type MailOption func(*MailConfig)
+
+func NewMailConfig(wg *sync.WaitGroup, opts ...MailOption) MailConfig {
+	cfg := &MailConfig{WaitGroup: wg}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return *cfg
+}
+
+func WithSenderAddress(senderAddress string) MailOption {
+	return func(c *MailConfig) {
+		c.Sender = senderAddress
+	}
+}
+
+func WithSenderName(senderName string) MailOption {
+	return func(c *MailConfig) {
+		c.SenderName = senderName
+	}
+}
+
+func WithRecipients(cc ...string) MailOption {
+	return func(c *MailConfig) {
+		c.Recipients = cc
+	}
+}
+
+func WithBlindRecipients(bcc ...string) MailOption {
+	return func(c *MailConfig) {
+		c.Bcc = bcc
+	}
+}
+
+func WithSubject(subject string) MailOption {
+	return func(c *MailConfig) {
+		c.Subject = subject
+	}
+}
+
+func WithBody(body string) MailOption {
+	return func(c *MailConfig) {
+		c.Body = body
+	}
 }
 
 type MailInterface interface {
@@ -209,7 +318,82 @@ func (m *MailModel) NotifyAdmin(subject string, swaps ...any) {
 	} else {
 		body = swaps[0].(string)
 	}
-	SendEmail(helpers.GetEnv("ADMIN_EMAIL"), subject, body, "", m.WaitGroup)
+	// SendEmail(, subject, body, "", m.WaitGroup)
+	SendEmail(NewMailConfig(m.WaitGroup,
+		WithRecipients(helpers.GetEnv("ADMIN_EMAIL")),
+		WithSubject(subject),
+		WithBody(body)))
+}
+
+func SendEmail(cfg MailConfig) {
+	helpers.Background(
+		func() {
+			data := emailData{Subject: cfg.Subject, Body: cfg.Body}
+
+			var senderAddr string = helpers.GetEnv("MAIL_USER_EMAIL")
+			var senderName string = helpers.GetEnv("MAIL_USERNAME")
+
+			username := senderAddr
+			password := helpers.GetEnv("MAIL_PW")
+			mailHost := helpers.GetEnv("MAIL_HOST")
+
+			message := mail.NewMsg()
+			// set email from and to
+			if err := message.FromFormat(senderName, senderAddr); err != nil {
+				log.Infof("failed to set 'from' address: %s", senderAddr)
+			}
+			if err := message.To(cfg.Recipients...); err != nil {
+				log.Infof("failed to set 'to' address: %v", cfg.Recipients)
+			}
+
+			// set email subject and body string
+			message.Subject(cfg.Subject)
+			message.SetBodyString(mail.TypeTextPlain, cfg.Body)
+
+			// parse html template
+			htmlTmpl, err := ht.New("").Funcs(ht.FuncMap{
+				"safeHTML": func(s string) ht.HTML {
+					return ht.HTML(s)
+				},
+			}).ParseFS(templatesFS, "templates/email.html")
+			if err != nil {
+				log.Infof("could not parse email template: %v", err)
+				return
+			}
+
+			// set email body
+			htmlBody := new(bytes.Buffer)
+			err = htmlTmpl.ExecuteTemplate(htmlBody, "htmlBody", data)
+			if err != nil {
+				log.Infof("could not parse email template: %v", err)
+				return
+			}
+			message.AddAlternativeString(mail.TypeTextHTML, htmlBody.String())
+
+			// add cc
+			for _, c := range cfg.Cc {
+				message.AddCc(c)
+			}
+
+			// add bcc
+			for _, b := range cfg.Bcc {
+				message.AddBcc(b)
+			}
+
+			// send email
+			client, err := mail.NewClient(mailHost, mail.WithTLSPortPolicy(mail.TLSMandatory),
+				mail.WithSMTPAuth(mail.SMTPAuthPlain), mail.WithUsername(username), mail.WithPassword(password))
+			if err != nil {
+				log.Infof("failed to create mail client: %s\n", err)
+			}
+
+			if err := client.DialAndSend(message); err != nil {
+				log.Infof("failed to send mail: %s", err)
+			}
+
+			// helpers.WasteTime(5)
+			// log.Infof("Sending email\n'%s'\n to: %s", message, to)
+		}, cfg.WaitGroup)
 }
 
 func (m *MailModel) Send(to, bcc, subject string, swaps ...any) {
@@ -238,56 +422,4 @@ func (m *MailModel) Send(to, bcc, subject string, swaps ...any) {
 		return
 	}
 	SendEmail(to, subject, body, bcc, m.WaitGroup)
-}
-
-func SendEmail(to string, subject string, body string, bcc string, wg *sync.WaitGroup) {
-	helpers.Background(
-		func() {
-			data := emailData{Subject: subject, Body: body}
-			var senderAddr string = helpers.GetEnv("MAIL_USER_EMAIL")
-			var senderName string = helpers.GetEnv("MAIL_USERNAME")
-			username := senderAddr
-			password := helpers.GetEnv("MAIL_PW")
-			mailHost := helpers.GetEnv("MAIL_HOST")
-
-			message := mail.NewMsg()
-			if err := message.FromFormat(senderName, senderAddr); err != nil {
-				log.Infof("failed to set 'from' address: %s", senderAddr)
-			}
-			if err := message.To(to); err != nil {
-				log.Infof("failed to set 'to' address: %s", to)
-			}
-			message.Subject(subject)
-			message.SetBodyString(mail.TypeTextPlain, body)
-			htmlTmpl, err := ht.New("").Funcs(ht.FuncMap{
-				"safeHTML": func(s string) ht.HTML {
-					return ht.HTML(s)
-				},
-			}).ParseFS(templatesFS, "templates/email.html")
-			if err != nil {
-				log.Infof("could not parse email template: %v", err)
-				return
-			}
-			htmlBody := new(bytes.Buffer)
-			err = htmlTmpl.ExecuteTemplate(htmlBody, "htmlBody", data)
-			if err != nil {
-				log.Infof("could not parse email template: %v", err)
-				return
-			}
-			message.AddAlternativeString(mail.TypeTextHTML, htmlBody.String())
-			message.AddBcc(bcc)
-
-			client, err := mail.NewClient(mailHost, mail.WithTLSPortPolicy(mail.TLSMandatory),
-				mail.WithSMTPAuth(mail.SMTPAuthPlain), mail.WithUsername(username), mail.WithPassword(password))
-			if err != nil {
-				log.Infof("failed to create mail client: %s\n", err)
-			}
-
-			if err := client.DialAndSend(message); err != nil {
-				log.Infof("failed to send mail: %s", err)
-			}
-
-			// helpers.WasteTime(5)
-			// log.Infof("Sending email\n'%s'\n to: %s", message, to)
-		}, wg)
 }
