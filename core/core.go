@@ -1115,7 +1115,7 @@ exec bash
 	}
 	// add functions to template engine
 	engine.AddFuncMap(startingFunctions)
-	err = helpers.SaveInline(config.Templates, &inlineLog, startingFunctions)
+	err = helpers.SaveInline(config.Templates, &inlineLog, startingFunctions, config.FuncMap)
 
 	// add other func map
 	if config.FuncMap != nil {

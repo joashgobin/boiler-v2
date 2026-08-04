@@ -127,7 +127,7 @@ func ExtractFileSnippets(fs *embed.FS, filePath string, snippetLog *map[string]s
 	return nil
 }
 
-func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMap map[string]any) error {
+func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMaps ...map[string]any) error {
 	if fs == nil {
 		return fmt.Errorf("files not embedded")
 	}
@@ -137,7 +137,11 @@ func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMap map[s
 	}
 	for _, file := range viewFiles {
 		// fmt.Printf("saving inline from %s\n", file)
-		ExtractInline(fs, file, inlineLog, funcMap)
+		for _, fm := range funcMaps {
+			if len(fm) > 0 {
+				ExtractInline(fs, file, inlineLog, fm)
+			}
+		}
 	}
 	return nil
 }
