@@ -322,11 +322,11 @@ github.com/wneessen/go-mail/internal/ntlm
 github.com/wneessen/go-mail/internal/pkcs7
 github.com/wneessen/go-mail/log
 github.com/wneessen/go-mail/smtp
-# github.com/yeqown/go-qrcode/v2 v2.2.5
-## explicit; go 1.18
+# github.com/yeqown/go-qrcode/v2 v2.3.0
+## explicit; go 1.19
 github.com/yeqown/go-qrcode/v2
-# github.com/yeqown/go-qrcode/writer/standard v1.3.0
-## explicit; go 1.17
+# github.com/yeqown/go-qrcode/writer/standard v1.4.0
+## explicit; go 1.19
 github.com/yeqown/go-qrcode/writer/standard
 github.com/yeqown/go-qrcode/writer/standard/imgkit
 # github.com/yeqown/reedsolomon v1.0.0
@@ -376,6 +376,7 @@ golang.org/x/text/cases
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/japanese
 golang.org/x/text/encoding/unicode
 golang.org/x/text/internal
 golang.org/x/text/internal/language
