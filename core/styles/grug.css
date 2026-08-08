@@ -23,10 +23,10 @@
     --deep-shadow: inset 0 3px 4px rgba(130, 130, 130, 0.7),
         inset 0 0px 4px rgba(130, 130, 130, 0.7);
     --highlight: inset 0 1px 2px rgba(255, 255, 255, 0.7);
-    --text-lightness-1: 0.92;
-    --text-lightness-2: 0.65;
-    --text-lightness-3: 0.43;
-    --text-lightness-4: 0.30;
+    --text-lightness-1: 0.97;
+    --text-lightness-2: 0.70;
+    --text-lightness-3: 0.48;
+    --text-lightness-4: 0.35;
 }
 
 * {
