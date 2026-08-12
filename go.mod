@@ -18,7 +18,7 @@ require (
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/spf13/viper v1.21.0
-	github.com/tdewolff/minify/v2 v2.24.16
+	github.com/tdewolff/minify/v2 v2.24.17
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yeqown/go-qrcode/v2 v2.3.0
 	github.com/yeqown/go-qrcode/writer/standard v1.4.0
@@ -62,7 +62,7 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.15 // indirect
+	github.com/tdewolff/parse/v2 v2.8.16 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/valkey-io/valkey-go v1.0.76 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
