@@ -20,7 +20,7 @@ type BankInterface interface {
 	SetString(key string, value string, exp time.Duration)
 	Delete(key string)
 	GetBytes(key string) []byte
-	SetBytes(key string, value []byte, exp time.Duration)
+	SetBytes(key string, valueAsBytes []byte, exp time.Duration)
 	Close()
 }
 
@@ -93,8 +93,8 @@ func (b *Bank) GetBytes(key string) []byte {
 	return data
 }
 
-func (b *Bank) SetBytes(key string, value []byte, exp time.Duration) {
-	b.storage.Set(b.prefix+key, value, exp)
+func (b *Bank) SetBytes(key string, valueAsBytes []byte, exp time.Duration) {
+	b.storage.Set(b.prefix+key, valueAsBytes, exp)
 }
 
 func SliceToBytes[T any](data []T) []byte {
