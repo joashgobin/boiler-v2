@@ -68,7 +68,8 @@
     .grid {
         grid-template-columns: repeat(auto-fit, minmax(min(var(--minimum), 100%), 1fr));
     }
-    .grid.fill{
+
+    .grid.fill {
         grid-template-columns: repeat(auto-fill, minmax(min(var(--minimum), 100%), 1fr));
     }
 }
@@ -122,11 +123,6 @@
     gap: var(--space);
     display: flex;
     overflow-x: auto;
-}
-
-.reel>* {
-    min-width: 50%;
-    max-width: 100%;
 }
 
 .gap_1 {
