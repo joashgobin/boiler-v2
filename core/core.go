@@ -666,13 +666,15 @@ exec bash
 			<link href="https://fonts.googleapis.com/css2`)
 			for i := 0; i < len(args); i += 2 {
 				fontName := args[i]
+				// trim prefixes such as wght@100..900
+				fontFamily := strings.Split(fontName, ":")[0]
 				selectors := args[i+1]
 				if i == 0 {
 					start.WriteString("?family=")
 				} else {
 					start.WriteString("&family=")
 				}
-				selectorsQueue.WriteString(selectors + `{ font-family: "` + fontName + `",sans-serif; } `)
+				selectorsQueue.WriteString(selectors + `{ font-family: "` + fontFamily + `",sans-serif; } `)
 				start.WriteString(strings.ReplaceAll(fontName, " ", "+"))
 			}
 
