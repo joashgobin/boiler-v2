@@ -135,6 +135,7 @@ section {
 section>div {
     width: 100%;
     max-width: var(--measure);
+    z-index: 5;
 }
 
 img {

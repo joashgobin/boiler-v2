@@ -2,3 +2,4 @@
 
 - Support weights in google fonts
 - Updated packages
+- Updated grug

@@ -62,6 +62,67 @@
     border: 1px solid var(--outline-color);
 }
 
+
+.c-grad {
+    background-image: radial-gradient(circle at bottom, hsl(from var(--bg-color) h s l / 0.3), var(--black) 30%);
+}
+
+.grad {
+    --from-color: transparent;
+    --to-color: transparent;
+    --direction:to bottom;
+    background-image: linear-gradient(var(--direction), var(--from-color), var(--to-color));
+}
+
+.tb {
+    --to-color: var(--black);
+}
+
+.fb {
+    --from-color: var(--black);
+}
+
+.tp {
+    --to-color: var(--prim);
+}
+
+.fp {
+    --from-color: var(--prim);
+}
+
+.ts {
+    --to-color: var(--sec);
+}
+
+.fs {
+    --from-color: var(--sec);
+}
+
+.ta {
+    --to-color: var(--accent);
+}
+
+.fa {
+    --from-color: var(--accent);
+}
+
+.curtain {
+    z-index: 1;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+:has(.curtain) {
+    position: relative;
+}
+
 .t-2 {
     border-width: 2px;
 }
@@ -241,6 +302,11 @@ p.trim {
     color: hsl(from var(--text-color) h s l / var(--text-lightness-4));
 }
 
+.darken-0 {
+    background-color: transparent;
+    background-size: cover;
+}
+
 .darken-10 {
     background-color: hsl(from var(--bg-color) h s l / 0.1);
     background-blend-mode: darken;
@@ -293,14 +359,6 @@ p.trim {
     background-color: hsl(from var(--bg-color) h s l / 0.9);
     background-blend-mode: darken;
     background-size: cover;
-}
-
-.c-grad {
-    background-image: radial-gradient(circle at bottom, hsl(from var(--bg-color) h s l / 0.3), var(--black) 30%);
-}
-
-.grad {
-    background-image: linear-gradient(to bottom, var(--black) 80%, hsl(from var(--bg-color) h s l / 0.2));
 }
 
 .floor {
