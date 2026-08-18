@@ -192,7 +192,7 @@ github.com/gofiber/fiber/v3/middleware/static
 # github.com/gofiber/schema v1.8.4
 ## explicit; go 1.25.0
 github.com/gofiber/schema
-# github.com/gofiber/storage/valkey v0.3.1
+# github.com/gofiber/storage/valkey v0.3.2
 ## explicit; go 1.25.0
 github.com/gofiber/storage/valkey
 # github.com/gofiber/template/html/v3 v3.0.7
