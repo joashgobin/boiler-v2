@@ -36,7 +36,8 @@
 }
 
 p,
-small {
+small,
+li {
     color: hsl(from var(--text-color) h s l / var(--text-lightness-2));
 }
 
