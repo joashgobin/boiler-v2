@@ -3,7 +3,7 @@ package helpers
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
+	"encoding/json/v2"
 	"time"
 
 	"github.com/gofiber/fiber/v3/log"
