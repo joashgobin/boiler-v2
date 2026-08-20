@@ -32,26 +32,10 @@ func (rb RedirectBuilder) Route(routeName string) error {
 }
 
 type FlashModel struct {
-	Store *session.Store
+	store *session.Store
 }
 
-type FlashInterface interface {
-	// Redirect redirects the user to another page with the specified message
-	Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder
-	// Require is a middleware that ensures that a route has certain keys in its form values
-	Require(keys ...string) fiber.Handler
-
-	// Set sets/updates value for key
-	Set(c fiber.Ctx, key string, value any) error
-	// SetMany sets/updates multiple values for keys associated with the current session
-	SetMany(c fiber.Ctx, pairs map[string]any) error
-
-	Prefetch(c fiber.Ctx, urls ...string)
-	KeepCached(c fiber.Ctx, maxAge int)
-}
-
-var _ FlashInterface = (*FlashModel)(nil)
-
+// Prefetch indicates to the browser a set of url enpoints to prefetch upon visiting the current handler
 func (flash *FlashModel) Prefetch(c fiber.Ctx, urls ...string) {
 	var urlChunk strings.Builder
 	for i := range urls {
@@ -62,13 +46,14 @@ func (flash *FlashModel) Prefetch(c fiber.Ctx, urls ...string) {
 	c.Locals("prefetch", urlChunk.String())
 }
 
+// KeepCached indicates to the browser how long the current handler response should be cached
 func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
 	c.Set("Cache-Control", fmt.Sprintf("private,max-age=%d", maxAge))
 }
 
 // Get returns the value for a key if exists in the current session otherwise the default value specified
 func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue T) T {
-	sess, err := flash.Store.Get(c)
+	sess, err := flash.store.Get(c)
 	defer sess.Release()
 	if err != nil {
 		return defaultValue
@@ -84,8 +69,9 @@ func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue T) T {
 	return castedValue
 }
 
+// Set sets/updates value for key
 func (flash *FlashModel) Set(c fiber.Ctx, key string, value any) error {
-	sess, err := flash.Store.Get(c)
+	sess, err := flash.store.Get(c)
 	defer sess.Release()
 	if err != nil {
 		return err
@@ -97,8 +83,9 @@ func (flash *FlashModel) Set(c fiber.Ctx, key string, value any) error {
 	return nil
 }
 
+// SetMany sets/updates multiple values for keys associated with the current session
 func (flash *FlashModel) SetMany(c fiber.Ctx, pairs map[string]any) error {
-	sess, err := flash.Store.Get(c)
+	sess, err := flash.store.Get(c)
 	defer sess.Release()
 	if err != nil {
 		return err
@@ -158,6 +145,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 	}
 }
 
+// Require is a middleware that ensures that a route has certain keys in its form values
 func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 	// log.Infof("required keys: %v", keys)
 	return func(c fiber.Ctx) error {
@@ -170,6 +158,7 @@ func (flash *FlashModel) Require(keys ...string) fiber.Handler {
 	}
 }
 
+// Redirect redirects the user to another page with the specified message
 func (flash *FlashModel) Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder {
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)

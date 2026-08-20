@@ -4,3 +4,4 @@
 - Updated flash
 - Updated flash
 - Updated flash 
+- Refactored flash model
