@@ -5,3 +5,4 @@
 - Updated grug
 - Updated json package
 - Updated grug
+- Updated partial
