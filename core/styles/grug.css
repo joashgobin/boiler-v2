@@ -72,7 +72,7 @@ h5,
 h6 {
     line-height: 1.3;
     font-family: var(--heading-font);
-    font-weight: 500;
+    font-weight: bold;
     letter-spacing: -0.05ch;
     text-wrap: balance;
     transform: scaleY(0.95) skewX(-1deg);
