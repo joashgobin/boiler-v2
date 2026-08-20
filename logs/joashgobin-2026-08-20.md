@@ -7,3 +7,4 @@
 - Refactored flash model
 - Added function for creating new flash model
 - Format code
+- Remove bank interface

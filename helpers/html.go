@@ -16,7 +16,7 @@ import (
 	"github.com/tdewolff/minify/v2/js"
 )
 
-func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]template.HTML) error {
+func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank *Bank, cmpLog *map[string]template.HTML) error {
 	if fs == nil {
 		return fmt.Errorf("files not embedded")
 	}
@@ -33,7 +33,7 @@ func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank BankInterface, cmpL
 	return nil
 }
 
-func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank BankInterface, cmpLog *map[string]template.HTML) error {
+func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank *Bank, cmpLog *map[string]template.HTML) error {
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)

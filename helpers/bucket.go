@@ -27,7 +27,7 @@ type BucketManager struct {
 	bucketName  string
 	publicURL   string
 	config      *aws.Config
-	bank        BankInterface
+	bank        *Bank
 	cacheExpiry time.Duration
 	mu          sync.Mutex
 	cacheKeys   []string
@@ -267,7 +267,7 @@ func (bm *BucketManager) GetObjects(folderPath ...string) []Object {
 
 }
 
-func NewBucketManager(bucketName string, bank BankInterface) *BucketManager {
+func NewBucketManager(bucketName string, bank *Bank) *BucketManager {
 	// Provide your Cloudflare account ID
 	var accountId = GetEnv("R2_ACCOUNT_ID")
 	// Retrieve your S3 API credentials for your R2 bucket via API tokens

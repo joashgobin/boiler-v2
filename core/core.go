@@ -61,7 +61,7 @@ type Base struct {
 	Shelf   helpers.ShelfInterface
 	Flash   *helpers.FlashModel
 	Files   helpers.FilesInterface
-	Bank    helpers.BankInterface
+	Bank    *helpers.Bank
 	MMG     payments.MMGInterface
 	Mail    email.MailInterface
 	QR      helpers.QRInterface

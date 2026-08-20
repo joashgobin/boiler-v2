@@ -15,6 +15,7 @@ type Bank struct {
 	prefix  string
 }
 
+/*
 type BankInterface interface {
 	GetString(key string) string
 	SetString(key string, value string, exp time.Duration)
@@ -41,10 +42,6 @@ func NewBankAdaptor[T any](bank BankInterface) *BankAdaptor[T] {
 	return &BankAdaptor[T]{bank: bank}
 }
 
-func NewBank(storage *valkey.Storage, appName string) *Bank {
-	return &Bank{storage: storage, prefix: appName + "-"}
-}
-
 func (ba *BankAdaptor[T]) Get(key string) T {
 	bytes := ba.bank.GetBytes(key)
 	return FromBytes[T](bytes)
@@ -63,6 +60,11 @@ func (ba *BankAdaptor[T]) GetSlice(key string) []T {
 func (ba *BankAdaptor[T]) SetSlice(key string, value []T, exp time.Duration) {
 	bytes := SliceToBytes[T](value)
 	ba.bank.SetBytes(key, bytes, exp)
+}
+*/
+
+func NewBank(storage *valkey.Storage, appName string) *Bank {
+	return &Bank{storage: storage, prefix: appName + "-"}
 }
 
 func (b *Bank) Close() {
@@ -133,4 +135,31 @@ func FromBytes[T any](s []byte) T {
 		log.Errorf("to struct error: %v", err)
 	}
 	return *p
+}
+
+func (b *Bank) Get[T any](key string, defaultValue T) T {
+	data := b.GetBytes(key)
+	if len(data) > 0 {
+		return defaultValue
+	}
+	p := new(T)
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(&p)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
+func (b *Bank) GetSlice[T any](key string, exampleSliceValue T) []T {
+	data := b.GetBytes(key)
+	if len(data) > 0 {
+		return []T{}
+	}
+	var decoded []T
+	err := json.Unmarshal(data, &decoded)
+	if err != nil {
+		return []T{}
+	}
+	return decoded
 }

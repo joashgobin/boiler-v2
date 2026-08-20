@@ -73,7 +73,7 @@ type MMGInterface interface {
 type MMGModel struct {
 	DB               *sql.DB
 	WaitGroup        *sync.WaitGroup
-	Bank             helpers.BankInterface
+	Bank             *helpers.Bank
 	Shelf            helpers.ShelfInterface
 	DefaultCacheTime time.Duration
 }
@@ -1267,7 +1267,7 @@ func (m *MMGModel) initiateCheckout(userEmail string, merchantNumber int, mercha
 	return generateURL(token, config.MerchantMsisdn, config.ClientID)
 }
 
-func NewMMG(db *sql.DB, bank helpers.BankInterface, shelf helpers.ShelfInterface, wg *sync.WaitGroup, appName string) *MMGModel {
+func NewMMG(db *sql.DB, bank *helpers.Bank, shelf helpers.ShelfInterface, wg *sync.WaitGroup, appName string) *MMGModel {
 
 	// create database
 	helpers.RunMigration(strings.ReplaceAll(`
