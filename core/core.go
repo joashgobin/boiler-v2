@@ -59,7 +59,7 @@ type Base struct {
 	// public interfaces
 	Users   models.UserModelInterface
 	Shelf   helpers.ShelfInterface
-	Flash   helpers.FlashInterface
+	Flash   *helpers.FlashModel
 	Files   helpers.FilesInterface
 	Bank    helpers.BankInterface
 	MMG     payments.MMGInterface

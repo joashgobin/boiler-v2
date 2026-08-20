@@ -38,32 +38,27 @@ type FlashInterface interface {
 	// Require is a middleware that ensures that a route has certain keys in its form values
 	Require(keys ...string) fiber.Handler
 
-	// Get returns the value for a key if exists in the current session otherwise the default value specified
-	Get(c fiber.Ctx, key string, defaultValue ...any) any
+	/*
+		// Get returns the value for a key if exists in the current session otherwise the default value specified
+		Get(c fiber.Ctx, key string, defaultValue ...any) any
+	*/
 	// GetString returns the string value for a key if exists in the current session otherwise the default value specified
-	GetString(c fiber.Ctx, key string, defaultValue ...string) string
-	// GetInt returns the integer value for a key if exists in the current session otherwise the default value specified
-	GetInt(c fiber.Ctx, key string, defaultValue ...int) int
-	// Set sets/updates the value for a key associated with the current session
 	Set(c fiber.Ctx, key string, value any) error
 	// SetMany sets/updates multiple values for keys associated with the current session
 	SetMany(c fiber.Ctx, pairs map[string]any) error
+
+	/*
+		GetString(c fiber.Ctx, key string, defaultValue ...string) string
+		// GetInt returns the integer value for a key if exists in the current session otherwise the default value specified
+		GetInt(c fiber.Ctx, key string, defaultValue ...int) int
+		// Set sets/updates the value for a key associated with the current session
+	*/
 
 	Prefetch(c fiber.Ctx, urls ...string)
 	KeepCached(c fiber.Ctx, maxAge int)
 }
 
 var _ FlashInterface = (*FlashModel)(nil)
-
-func GetUser[T any](c fiber.Ctx, flash FlashInterface) T {
-	user := flash.Get(c, "user")
-	data, ok := user.(T)
-	if ok {
-		return data
-	}
-	var emptyUser T
-	return emptyUser
-}
 
 func (flash *FlashModel) Prefetch(c fiber.Ctx, urls ...string) {
 	var urlChunk strings.Builder
@@ -93,73 +88,29 @@ type FlashModel struct {
 	Store *session.Store
 }
 
-func (flash *FlashModel) Get(c fiber.Ctx, key string, defaultValue ...any) any {
-	sess, err := flash.Store.Get(c)
-	defer sess.Release()
-	if err != nil {
-		// panic(err)
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return nil
-	}
-	value := sess.Get(key)
-	if value == nil {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-	}
-	return value
-}
-
-func (flash *FlashModel) GetString(c fiber.Ctx, key string, defaultValue ...string) string {
+func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue ...T) T {
+	var zeroValue T
 	sess, err := flash.Store.Get(c)
 	defer sess.Release()
 	if err != nil {
 		if len(defaultValue) > 0 {
 			return defaultValue[0]
 		}
-		return ""
+		return zeroValue
 	}
 	value := sess.Get(key)
 	if value == nil {
 		if len(defaultValue) > 0 {
 			return defaultValue[0]
 		}
-		return ""
+		return zeroValue
 	}
-	castedValue, ok := value.(string)
+	castedValue, ok := value.(T)
 	if !ok {
 		if len(defaultValue) > 0 {
 			return defaultValue[0]
 		}
-		return ""
-	}
-	return castedValue
-}
-
-func (flash *FlashModel) GetInt(c fiber.Ctx, key string, defaultValue ...int) int {
-	sess, err := flash.Store.Get(c)
-	defer sess.Release()
-	if err != nil {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return 0
-	}
-	value := sess.Get(key)
-	if value == nil {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return 0
-	}
-	castedValue, ok := value.(int)
-	if !ok {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return 0
+		return zeroValue
 	}
 	return castedValue
 }
