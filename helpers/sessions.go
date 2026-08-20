@@ -34,25 +34,13 @@ func (rb RedirectBuilder) Route(routeName string) error {
 type FlashInterface interface {
 	// Redirect redirects the user to another page with the specified message
 	Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder
-
 	// Require is a middleware that ensures that a route has certain keys in its form values
 	Require(keys ...string) fiber.Handler
 
-	/*
-		// Get returns the value for a key if exists in the current session otherwise the default value specified
-		Get(c fiber.Ctx, key string, defaultValue ...any) any
-	*/
-	// GetString returns the string value for a key if exists in the current session otherwise the default value specified
+	// Set sets/updates value for key
 	Set(c fiber.Ctx, key string, value any) error
 	// SetMany sets/updates multiple values for keys associated with the current session
 	SetMany(c fiber.Ctx, pairs map[string]any) error
-
-	/*
-		GetString(c fiber.Ctx, key string, defaultValue ...string) string
-		// GetInt returns the integer value for a key if exists in the current session otherwise the default value specified
-		GetInt(c fiber.Ctx, key string, defaultValue ...int) int
-		// Set sets/updates the value for a key associated with the current session
-	*/
 
 	Prefetch(c fiber.Ctx, urls ...string)
 	KeepCached(c fiber.Ctx, maxAge int)
@@ -74,20 +62,7 @@ func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
 	c.Set("Cache-Control", fmt.Sprintf("private,max-age=%d", maxAge))
 }
 
-func (flash *FlashModel) GetUser(c fiber.Ctx) any {
-	sess, err := flash.Store.Get(c)
-	defer sess.Release()
-	if err != nil {
-		return nil
-	}
-	value := sess.Get("user")
-	return value
-}
-
-type FlashModel struct {
-	Store *session.Store
-}
-
+// Get returns the value for a key if exists in the current session otherwise the default value specified
 func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue ...T) T {
 	var zeroValue T
 	sess, err := flash.Store.Get(c)
