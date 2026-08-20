@@ -139,7 +139,7 @@ func FromBytes[T any](s []byte) T {
 
 func (b *Bank) Get[T any](key string, defaultValue T) T {
 	data := b.GetBytes(key)
-	if len(data) > 0 {
+	if len(data) == 0 {
 		return defaultValue
 	}
 	p := new(T)
@@ -148,12 +148,12 @@ func (b *Bank) Get[T any](key string, defaultValue T) T {
 	if err != nil {
 		return defaultValue
 	}
-	return value
+	return *p
 }
 
 func (b *Bank) GetSlice[T any](key string, exampleSliceValue T) []T {
 	data := b.GetBytes(key)
-	if len(data) > 0 {
+	if len(data) == 0 {
 		return []T{}
 	}
 	var decoded []T
@@ -162,4 +162,13 @@ func (b *Bank) GetSlice[T any](key string, exampleSliceValue T) []T {
 		return []T{}
 	}
 	return decoded
+}
+
+func (b *Bank) Set[T any](key string, value T, exp time.Duration) {
+	b.SetBytes(key, ToBytes(value), exp)
+}
+
+func (b *Bank) SetSlice[T any](key string, value []T, exp time.Duration) {
+	bytes := SliceToBytes[T](value)
+	b.SetBytes(key, bytes, exp)
 }

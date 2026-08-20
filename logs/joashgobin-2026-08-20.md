@@ -8,3 +8,4 @@
 - Added function for creating new flash model
 - Format code
 - Remove bank interface
+- Updated methods for bank
