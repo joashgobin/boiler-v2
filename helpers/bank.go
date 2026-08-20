@@ -15,62 +15,16 @@ type Bank struct {
 	prefix  string
 }
 
-/*
-type BankInterface interface {
-	GetString(key string) string
-	SetString(key string, value string, exp time.Duration)
-	Delete(key string)
-	GetBytes(key string) []byte
-	SetBytes(key string, valueAsBytes []byte, exp time.Duration)
-	Close()
-}
-
-var _ BankInterface = (*Bank)(nil)
-
-type BankAdaptorInterface[T any] interface {
-	Get(key string) T
-	Set(key string, value T, exp time.Duration)
-	GetSlice(key string) []T
-	SetSlice(key string, value []T, exp time.Duration)
-}
-
-type BankAdaptor[T any] struct {
-	bank BankInterface
-}
-
-func NewBankAdaptor[T any](bank BankInterface) *BankAdaptor[T] {
-	return &BankAdaptor[T]{bank: bank}
-}
-
-func (ba *BankAdaptor[T]) Get(key string) T {
-	bytes := ba.bank.GetBytes(key)
-	return FromBytes[T](bytes)
-}
-
-func (ba *BankAdaptor[T]) Set(key string, value T, exp time.Duration) {
-	ba.bank.SetBytes(key, ToBytes(value), exp)
-}
-
-func (ba *BankAdaptor[T]) GetSlice(key string) []T {
-	bytes := ba.bank.GetBytes(key)
-	slice := BytesToSlice[T](bytes)
-	return slice
-}
-
-func (ba *BankAdaptor[T]) SetSlice(key string, value []T, exp time.Duration) {
-	bytes := SliceToBytes[T](value)
-	ba.bank.SetBytes(key, bytes, exp)
-}
-*/
-
 func NewBank(storage *valkey.Storage, appName string) *Bank {
 	return &Bank{storage: storage, prefix: appName + "-"}
 }
 
+// Close closes the bank's underlying storage for graceful shutdown
 func (b *Bank) Close() {
 	b.storage.Close()
 }
 
+// GetString returns a string from the bank
 func (b *Bank) GetString(key string) string {
 	data, err := b.storage.Get(b.prefix + key)
 	if err != nil {
@@ -79,12 +33,14 @@ func (b *Bank) GetString(key string) string {
 	return string(data)
 }
 
-func (b *Bank) Delete(key string) {
-	b.storage.Delete(b.prefix + key)
-}
-
+// SetString sets/updates the value of a string in the bank
 func (b *Bank) SetString(key string, value string, exp time.Duration) {
 	b.storage.Set(b.prefix+key, []byte(value), exp)
+}
+
+// Delete deletes the value corresponding to the key
+func (b *Bank) Delete(key string) {
+	b.storage.Delete(b.prefix + key)
 }
 
 func (b *Bank) GetBytes(key string) []byte {
@@ -151,15 +107,15 @@ func (b *Bank) Get[T any](key string, defaultValue T) T {
 	return *p
 }
 
-func (b *Bank) GetSlice[T any](key string) []T {
+func (b *Bank) GetSlice[T any](key string, defaultSlice []T) []T {
 	data := b.GetBytes(key)
 	if len(data) == 0 {
-		return []T{}
+		return defaultSlice
 	}
 	var decoded []T
 	err := json.Unmarshal(data, &decoded)
 	if err != nil {
-		return []T{}
+		return defaultSlice
 	}
 	return decoded
 }
