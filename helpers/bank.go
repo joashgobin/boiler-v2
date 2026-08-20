@@ -151,7 +151,7 @@ func (b *Bank) Get[T any](key string, defaultValue T) T {
 	return *p
 }
 
-func (b *Bank) GetSlice[T any](key string, exampleSliceValue T) []T {
+func (b *Bank) GetSlice[T any](key string) []T {
 	data := b.GetBytes(key)
 	if len(data) == 0 {
 		return []T{}

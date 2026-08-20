@@ -9,3 +9,4 @@
 - Format code
 - Remove bank interface
 - Updated methods for bank
+- Updated bank get slice method
