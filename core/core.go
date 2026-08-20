@@ -1274,7 +1274,7 @@ exec bash
 		DB:           db,
 		Store:        sessionStore,
 		Shelf:        shelf,
-		Flash:        &helpers.FlashModel{Store: sessionStore},
+		Flash:        helpers.NewFlashModel(sessionStore),
 		Files:        &helpers.FilesModel{},
 		Bank:         bank,
 		MMG:          payments.NewMMG(db, bank, shelf, &wg, config.AppName),

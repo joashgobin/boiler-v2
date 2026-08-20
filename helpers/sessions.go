@@ -35,6 +35,10 @@ type FlashModel struct {
 	store *session.Store
 }
 
+func NewFlashModel(newStore *session.Store)*FlashModel{
+	return &FlashModel{store: newStore}
+}
+
 // Prefetch indicates to the browser a set of url enpoints to prefetch upon visiting the current handler
 func (flash *FlashModel) Prefetch(c fiber.Ctx, urls ...string) {
 	var urlChunk strings.Builder
