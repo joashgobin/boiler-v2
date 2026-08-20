@@ -11,3 +11,4 @@
 - Updated methods for bank
 - Updated bank get slice method
 - Return default slice from bank when using get slice function
+- Updated aws packages
