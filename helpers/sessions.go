@@ -35,7 +35,7 @@ type FlashModel struct {
 	store *session.Store
 }
 
-func NewFlashModel(newStore *session.Store)*FlashModel{
+func NewFlashModel(newStore *session.Store) *FlashModel {
 	return &FlashModel{store: newStore}
 }
 
