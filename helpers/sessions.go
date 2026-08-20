@@ -31,6 +31,10 @@ func (rb RedirectBuilder) Route(routeName string) error {
 	return rb.context.Redirect().WithInput().With("message", rb.message).Route(routeName)
 }
 
+type FlashModel struct {
+	Store *session.Store
+}
+
 type FlashInterface interface {
 	// Redirect redirects the user to another page with the specified message
 	Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder

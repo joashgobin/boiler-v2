@@ -128,8 +128,7 @@ func (m *UserModel) Create(name, email, password string) error {
 	`
 	_, err = m.db.Exec(stmt, name, email, "|user|", string(hashedPassword))
 	if err != nil {
-		var mySQLError *mysql.MySQLError
-		if errors.As(err, &mySQLError) {
+		if mySQLError, ok := errors.AsType[*mysql.MySQLError](err); ok {
 			if mySQLError.Number == 1062 && strings.Contains(mySQLError.Message, "users_uc_email") {
 				return ErrDuplicateEmail
 			}

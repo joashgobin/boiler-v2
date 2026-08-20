@@ -402,8 +402,7 @@ func RunMigration(migrationQuery string, db *sql.DB) {
 	defer cancel()
 	result, err := db.ExecContext(ctx, migrationQuery)
 	if err != nil {
-		var mySQLError *mysql.MySQLError
-		if errors.As(err, &mySQLError) {
+		if mySQLError, ok := errors.AsType[*mysql.MySQLError](err); ok {
 			if mySQLError.Number == 1064 {
 				log.Errorf("error in migration: %v", err)
 				return
@@ -436,8 +435,7 @@ func MigrateUp(db *sql.DB, migrationQuery string, args map[string]string) {
 	}
 	result, err := db.ExecContext(ctx, finalMigrationQuery)
 	if err != nil {
-		var mySQLError *mysql.MySQLError
-		if errors.As(err, &mySQLError) {
+		if mySQLError, ok := errors.AsType[*mysql.MySQLError](err); ok {
 			if mySQLError.Number == 1064 {
 				log.Errorf("error in migration: %v", err)
 				return

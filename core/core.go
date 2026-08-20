@@ -667,7 +667,7 @@ exec bash
 			for i := 0; i < len(args); i += 2 {
 				fontName := args[i]
 				// trim prefixes such as wght@100..900
-				fontFamily := strings.Split(fontName, ":")[0]
+				fontFamily, _, _ := strings.Cut(fontName, ":")
 				selectors := args[i+1]
 				if i == 0 {
 					start.WriteString("?family=")
