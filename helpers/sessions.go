@@ -67,29 +67,19 @@ func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
 }
 
 // Get returns the value for a key if exists in the current session otherwise the default value specified
-func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue ...T) T {
-	var zeroValue T
+func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue T) T {
 	sess, err := flash.Store.Get(c)
 	defer sess.Release()
 	if err != nil {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return zeroValue
+		return defaultValue
 	}
 	value := sess.Get(key)
 	if value == nil {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return zeroValue
+		return defaultValue
 	}
 	castedValue, ok := value.(T)
 	if !ok {
-		if len(defaultValue) > 0 {
-			return defaultValue[0]
-		}
-		return zeroValue
+		return defaultValue
 	}
 	return castedValue
 }
