@@ -133,6 +133,15 @@
     overflow-x: auto;
 }
 
+.reel {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.reel::-webkit-scrollbar {
+    display: none;
+}
+
 .gap_1 {
     --space: 0.1rem;
 }
