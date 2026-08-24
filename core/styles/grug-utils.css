@@ -158,8 +158,12 @@
     --space: 0.4rem;
 }
 
-.gap-5 {
+.gap_5 {
     --space: 0.5rem;
+}
+
+.gap-0,.gap_0,.no-gap {
+    --space: 0;
 }
 
 .gap {
