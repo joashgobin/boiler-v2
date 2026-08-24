@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/google/uuid"
+	"uuid"
 )
 
 type FilesInterface interface {
@@ -23,7 +23,7 @@ func (files *FilesModel) UploadImage(c fiber.Ctx, imageFormField string) (string
 	if err != nil {
 		return "", err
 	}
-	filename := strings.Replace(uuid.New().String(), "-", "", -1)
+	filename := strings.Replace(uuid.NewV4().String(), "-", "", -1)
 	fileExt := strings.Split(file.Filename, ".")[1]
 	image := fmt.Sprintf("%s-%v.%s", filename, time.Now().Unix(), fileExt)
 

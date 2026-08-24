@@ -18,20 +18,17 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/js"
+	"uuid"
 )
 
 const MySQLTimestamp = "2006-01-02 15:04:05"
 
 func GetRandomUUID() string {
-	randomUUID, err := uuid.NewRandom()
-	if err != nil {
-		return ""
-	}
+	randomUUID := uuid.NewV4()
 	return randomUUID.String()
 }
 
