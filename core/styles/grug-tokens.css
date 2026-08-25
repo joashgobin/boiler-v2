@@ -70,7 +70,7 @@
 .grad {
     --from-color: transparent;
     --to-color: transparent;
-    --direction:to bottom;
+    --direction: to bottom;
     background-image: linear-gradient(var(--direction), var(--from-color), var(--to-color));
 }
 
@@ -253,6 +253,10 @@ p.trim {
     aspect-ratio: 16/9;
     object-fit: cover;
     width: 100%;
+}
+
+.cover {
+    object-fit: cover;
 }
 
 .no-dec {
