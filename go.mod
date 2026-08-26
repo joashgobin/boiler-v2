@@ -12,7 +12,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.3.2
-	github.com/gofiber/template/html/v3 v3.0.7
+	github.com/gofiber/template/html/v3 v3.0.8
 	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.4.3
