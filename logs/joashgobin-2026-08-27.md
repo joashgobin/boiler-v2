@@ -2,3 +2,4 @@
 
 - Updated grug
 - Updated grug 
+- Updated brotli package
