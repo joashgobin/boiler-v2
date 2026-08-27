@@ -255,6 +255,12 @@ p.trim {
     width: 100%;
 }
 
+.v-rect {
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    width: 100%;
+}
+
 .cover {
     object-fit: cover;
 }
