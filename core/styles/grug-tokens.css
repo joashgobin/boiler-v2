@@ -259,6 +259,10 @@ p.trim {
     object-fit: cover;
 }
 
+.contain {
+    object-fit: contain;
+}
+
 .no-dec {
     text-decoration: none;
 }
