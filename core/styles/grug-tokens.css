@@ -216,7 +216,7 @@ p.trim {
     padding: 0.5rem;
 }
 
-.no-pad {
+.no-pad,.pad-0 {
     padding: 0;
 }
 

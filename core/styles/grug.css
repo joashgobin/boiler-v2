@@ -62,6 +62,7 @@ body {
     font-size: var(--s1);
     font-family: var(--body-font);
     color: hsl(from var(--black) h s l / var(--text-lightness-1));
+    background-color: var(--prim);
 }
 
 h1,
@@ -218,6 +219,13 @@ pre,
 code {
     font-size: var(--s1);
 }
+
+blockquote::before {
+    content: "\"";
+    font-size: 3rem;
+    line-height: 1;
+}
+
 
 .transition-main {
     transition: opacity 0.25s ease-in-out;
