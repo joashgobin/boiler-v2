@@ -20,12 +20,28 @@
     justify-content: flex-start;
 }
 
+.flex.evenly {
+    justify-content: space-evenly;
+}
+
+.flex.around {
+    justify-content: space-around;
+}
+
+.flex.between {
+    justify-content: space-between;
+}
+
 .flex.top {
     align-items: flex-start;
 }
 
 .flex.bottom {
     align-items: flex-end;
+}
+
+.flex.baseline {
+    align-items: baseline;
 }
 
 .flex.column {
