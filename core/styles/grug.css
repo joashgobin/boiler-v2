@@ -11,7 +11,7 @@
     --accent: pink;
     --black: #111111;
     --measure: 75ch;
-    --s0: calc(1.1rem + 0.2vw);
+    --s0: calc(1.0rem + 0.3vw);
     --ratio: 1.20;
     --s1: calc(var(--s0)*var(--ratio));
     --s2: calc(var(--s1)*var(--ratio));
@@ -39,6 +39,10 @@ p,
 small,
 li {
     color: hsl(from var(--text-color) h s l / var(--text-lightness-2));
+}
+
+small {
+    font-size: var(--s0);
 }
 
 p {

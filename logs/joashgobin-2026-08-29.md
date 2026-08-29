@@ -3,3 +3,4 @@
 - Updated packages
 - Updated grug
 - Updated grug
+- Updated grug font variables
