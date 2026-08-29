@@ -216,7 +216,8 @@ p.trim {
     padding: 0.5rem;
 }
 
-.no-pad,.pad-0 {
+.no-pad,
+.pad-0 {
     padding: 0;
 }
 
@@ -458,4 +459,21 @@ p.trim {
 .basis-50 {
     flex-basis: 50%;
     flex-grow: 1;
+}
+
+.text-grad {
+    background: linear-gradient(45deg, var(--from-color, red), var(--to-color, royalblue));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.inline {
+    display: inline;
+}
+
+.inline-block {
+    display: inline-block;
 }
