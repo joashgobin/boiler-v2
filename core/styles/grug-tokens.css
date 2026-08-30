@@ -477,3 +477,35 @@ p.trim {
 .inline-block {
     display: inline-block;
 }
+
+.span-2-col {
+    grid-column: span 2;
+}
+
+.span-3-col {
+    grid-column: span 3;
+}
+
+.span-4-col {
+    grid-column: span 4;
+}
+
+.span-5-col {
+    grid-column: span 5;
+}
+
+.span-2-row {
+    grid-row: span 2;
+}
+
+.span-3-row {
+    grid-row: span 3;
+}
+
+.span-4-row {
+    grid-row: span 4;
+}
+
+.span-5-row {
+    grid-row: span 5;
+}

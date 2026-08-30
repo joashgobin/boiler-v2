@@ -43,6 +43,7 @@ li {
 
 small {
     font-size: var(--s0);
+    text-wrap: balance;
 }
 
 p {
@@ -59,6 +60,7 @@ li {
 
 strong {
     color: hsl(from var(--text-color) h s l / var(--text-lightness-1));
+    text-wrap: balance;
 }
 
 body {
@@ -103,7 +105,7 @@ h5 {
 }
 
 h6 {
-    font-size: var(--s1);
+    font-size: var(--s2);
     font-style: italic;
 }
 
