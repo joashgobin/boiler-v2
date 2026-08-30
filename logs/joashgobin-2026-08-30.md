@@ -2,3 +2,4 @@
 
 - Added more grug tokens
 - Updated blockquote styling
+- Updated shadow color
