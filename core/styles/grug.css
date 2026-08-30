@@ -226,9 +226,19 @@ code {
     font-size: var(--s1);
 }
 
+blockquote {
+    padding-left: 0.5rem;
+}
+
 blockquote::before {
     content: "\"";
-    font-size: 3rem;
+    font-size: var(--s5);
+    line-height: 1;
+}
+
+blockquote::after {
+    content: "\"";
+    font-size: var(--s1);
     line-height: 1;
 }
 

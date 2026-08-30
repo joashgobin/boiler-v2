@@ -509,3 +509,43 @@ p.trim {
 .span-5-row {
     grid-row: span 5;
 }
+
+.maxw-1 {
+    max-width: 5ch;
+}
+
+.maxw-2 {
+    max-width: 10ch;
+}
+
+.maxw-3 {
+    max-width: 15ch;
+}
+
+.maxw-4 {
+    max-width: 20ch;
+}
+
+.maxw-5 {
+    max-width: 25ch;
+}
+
+.minw-1 {
+    min-width: 5ch;
+}
+
+.minw-2 {
+    min-width: 10ch;
+}
+
+.minw-3 {
+    min-width: 15ch;
+}
+
+.minw-4 {
+    min-width: 20ch;
+}
+
+.minw-5 {
+    min-width: 25ch;
+}
