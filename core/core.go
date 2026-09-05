@@ -857,21 +857,24 @@ exec bash
 		},
 		"lazys": func(imgPath string, dimensions ...int) ht.HTML {
 			fullPath := "static/img/" + imgPath
-			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
-			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
-			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			/*
+				avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			*/
+			ii := helpers.ConvertInline(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			var picBuilder strings.Builder
 			picBuilder.WriteString("<picture>")
-			picBuilder.WriteString(`<source srcset="`)
-			picBuilder.WriteString(avifPath)
+			picBuilder.WriteString(`<source srcset="/`)
+			picBuilder.WriteString(ii.AVIF)
 			picBuilder.WriteString(`" type="image/avif">`)
 
-			picBuilder.WriteString(`<source srcset="`)
-			picBuilder.WriteString(webpPath)
+			picBuilder.WriteString(`<source srcset="/`)
+			picBuilder.WriteString(ii.WEBP)
 			picBuilder.WriteString(`" type="image/webp">`)
 
-			picBuilder.WriteString(`<img loading='lazy' decode='async' style='opacity:0' onload='this.style.opacity=1' src="`)
-			picBuilder.WriteString(fallbackPath)
+			picBuilder.WriteString(`<img loading='lazy' decode='async' style='opacity:0' onload='this.style.opacity=1' src="/`)
+			picBuilder.WriteString(ii.Fallback)
 			picBuilder.WriteString(`" class="gen-image" alt="" onerror="this.onerror=null;this.src='/`)
 			picBuilder.WriteString(fullPath)
 			picBuilder.WriteString(`';Array.from(this.parentNode.querySelectorAll('source')).forEach(s => { s.srcset='/`)
