@@ -8,3 +8,4 @@
 - Updated image conversion functions to use one image lookup for multiple formats
 - Remove extra function calls
 - Updated more image functions
+- Convert LRU into generic struct

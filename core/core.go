@@ -496,7 +496,7 @@ exec bash
 	})
 
 	// init LRU
-	lru := helpers.NewLRU()
+	lru := helpers.NewLRU("")
 
 	// init bank model
 	bank := helpers.NewBank(storage, config.AppName)

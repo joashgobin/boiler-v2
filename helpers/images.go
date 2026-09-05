@@ -101,7 +101,7 @@ type InlineImage struct {
 	Fallback string
 }
 
-func ConvertInline(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) InlineImage {
+func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], srcPath string, toDir string, dimensions ...int) InlineImage {
 	// now := time.Now()
 	width := 500
 	intermediateWidth := 1000
@@ -177,7 +177,7 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDi
 	}
 }
 
-func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
+func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU[string], srcPath string, toDir string, dimensions ...int) string {
 	// now := time.Now()
 	width := 500
 	intermediateWidth := 1000
@@ -239,7 +239,7 @@ func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 	return outputPath
 }
 
-func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
+func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU[string], srcPath string, toDir string, dimensions ...int) string {
 	width := 500
 	intermediateWidth := 1000
 	imageWidth, _ := GetImageDimensions(srcPath)
@@ -298,7 +298,7 @@ func ConvertInlineWebp(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 	return outputPath
 }
 
-func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
+func ConvertInlineOriginal(imageChannel *chan *SafeImage, lru *LRU[string], srcPath string, toDir string, dimensions ...int) string {
 	width := 500
 	intermediateWidth := 1000
 	imageWidth, _ := GetImageDimensions(srcPath)
