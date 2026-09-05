@@ -748,18 +748,15 @@ exec bash
 			ii := helpers.ConvertInline(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
 			var picBuilder strings.Builder
 			picBuilder.WriteString("<picture>")
-			picBuilder.WriteString(`<source srcset="`)
-			picBuilder.WriteString("/")
+			picBuilder.WriteString(`<source srcset="/`)
 			picBuilder.WriteString(ii.AVIF)
 			picBuilder.WriteString(`" type="image/avif">`)
 
-			picBuilder.WriteString(`<source srcset="`)
-			picBuilder.WriteString("/")
+			picBuilder.WriteString(`<source srcset="/`)
 			picBuilder.WriteString(ii.WEBP)
 			picBuilder.WriteString(`" type="image/webp">`)
 
-			picBuilder.WriteString(`<img hx-trigger="revealed" src="`)
-			picBuilder.WriteString("/")
+			picBuilder.WriteString(`<img hx-trigger="revealed" src="/`)
 			picBuilder.WriteString(ii.Fallback)
 			picBuilder.WriteString(`" width="" height="" class="" alt="" style="" onerror="this.onerror=null;this.src='/`)
 			picBuilder.WriteString(fullPath)
