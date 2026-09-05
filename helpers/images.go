@@ -96,6 +96,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 }
 
 func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
+	// now := time.Now()
 	width := 500
 	intermediateWidth := 1000
 	imageWidth, _ := GetImageDimensions(srcPath)
@@ -127,8 +128,10 @@ func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, 
 		outputBuilder.WriteString(".avif")
 		outputPath = outputBuilder.String()
 		lru.Set(lruKeyBuilder.String(), outputPath)
+		// fmt.Println("cold:", time.Since(now))
 	} else {
 		outputPath = cachedOutputPath
+		// fmt.Println("hot:", time.Since(now))
 	}
 
 	if !FileExists(outputPath) {

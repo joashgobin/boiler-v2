@@ -33,8 +33,7 @@ func GetRandomUUID() string {
 }
 
 func WasteTime(numSeconds int) {
-	var duration time.Duration
-	duration = time.Duration(numSeconds) * time.Second
+	duration := time.Duration(numSeconds) * time.Second
 	start := time.Now()
 	for time.Since(start) < duration {
 		time.Sleep(time.Duration(rand.Intn(50)) * time.Millisecond)
@@ -168,6 +167,7 @@ func ReplaceSpecial(text string) string {
 }
 
 func GetFileHash(srcPath string) string {
+	// now := time.Now()
 	fileInfo, err := os.Lstat(srcPath)
 	if err != nil {
 		log.Errorf("error getting file hash: %v", err)
@@ -177,6 +177,7 @@ func GetFileHash(srcPath string) string {
 	uniqueString.WriteString(srcPath)
 	uniqueString.WriteString(fileInfo.ModTime().String())
 	uniqueString.WriteString(strconv.FormatInt(fileInfo.Size(), 10))
+	// fmt.Println(time.Since(now))
 	return GetXXH3(uniqueString.String())
 }
 
@@ -275,7 +276,9 @@ func CombineAndFingerprint(finalPath string, fileListPtr *map[string]string, fil
 }
 
 func FileExists(filePath string) bool {
+	// now := time.Now()
 	_, err := os.Lstat(filePath)
+	// fmt.Println(time.Since(now))
 	if err == nil {
 		return true
 	}

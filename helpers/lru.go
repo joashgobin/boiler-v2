@@ -23,7 +23,7 @@ func hashString(s string) uint32 {
 }
 
 func NewLRU() *LRU {
-	capacity := uint32(2048)
+	capacity := uint32(100)
 	cache, err := freelru.NewSharded[string, string](capacity, hashString)
 	if err != nil {
 		return nil
