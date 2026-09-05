@@ -68,6 +68,11 @@
     width: 100%;
 }
 
+.grid.middle>* {
+    justify-self: center;
+    align-self: center;
+}
+
 .grid.left>* {
     justify-self: start;
 }
