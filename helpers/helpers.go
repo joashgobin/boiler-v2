@@ -196,7 +196,7 @@ func GetCachedFileHash(srcPath string, bank *Bank) string {
 	uniqueString.WriteString(fileInfo.ModTime().String())
 	uniqueString.WriteString(strconv.FormatInt(fileInfo.Size(), 10))
 	newHash := GetXXH3(uniqueString.String())
-	bank.Set("file-hash-"+srcPath, newHash, time.Duration(time.Second*30))
+	bank.Set("file-hash-"+srcPath, newHash, time.Second*30)
 	return newHash
 }
 

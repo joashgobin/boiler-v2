@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"time"
 	"unsafe"
 
 	"github.com/elastic/go-freelru"
@@ -15,11 +16,14 @@ func hashString(s string) uint32 {
 	return uint32(wyhash.Sum64(0, unsafe.Slice(unsafe.StringData(s), len(s))))
 }
 
-func NewLRU[T any](exampleValue ...T) *LRU[T] {
+func NewLRU[T any](exampleValue T, lifetime ...time.Duration) *LRU[T] {
 	capacity := uint32(100)
 	cache, err := freelru.NewSharded[string, T](capacity, hashString)
 	if err != nil {
 		return nil
+	}
+	if len(lifetime) > 0 {
+		cache.SetLifetime(lifetime[0])
 	}
 	return &LRU[T]{cache: cache}
 }

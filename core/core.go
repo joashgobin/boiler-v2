@@ -497,6 +497,7 @@ exec bash
 
 	// init LRU
 	lru := helpers.NewLRU("")
+	imageLru := helpers.NewLRU(helpers.InlineImage{}, time.Second*5)
 
 	// init bank model
 	bank := helpers.NewBank(storage, config.AppName)
@@ -745,7 +746,7 @@ exec bash
 				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
 				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			*/
-			ii := helpers.ConvertInline(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+			ii := helpers.ConvertInline(&imageChannel, lru, imageLru, fullPath, "static/gen/img", dimensions...)
 			var picBuilder strings.Builder
 			picBuilder.WriteString("<picture>")
 			picBuilder.WriteString(`<source srcset="/`)
@@ -783,7 +784,7 @@ exec bash
 				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
 				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
 			*/
-			ii := helpers.ConvertInline(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+			ii := helpers.ConvertInline(&imageChannel, lru, imageLru, fullPath, "static/gen/img", dimensions...)
 			var srcBuilder strings.Builder
 			srcBuilder.WriteString(`url('/`)
 			srcBuilder.WriteString(ii.AVIF)
@@ -862,7 +863,7 @@ exec bash
 				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
 			*/
-			ii := helpers.ConvertInline(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			ii := helpers.ConvertInline(&imageChannel, lru, imageLru, fullPath, "static/gen/img", dimensions...)
 			var picBuilder strings.Builder
 			picBuilder.WriteString("<picture>")
 			picBuilder.WriteString(`<source srcset="/`)

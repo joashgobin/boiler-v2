@@ -9,3 +9,4 @@
 - Remove extra function calls
 - Updated more image functions
 - Convert LRU into generic struct
+- Updated lifetimes for lru

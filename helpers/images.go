@@ -101,8 +101,21 @@ type InlineImage struct {
 	Fallback string
 }
 
-func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], srcPath string, toDir string, dimensions ...int) InlineImage {
+func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LRU[InlineImage], srcPath string, toDir string, dimensions ...int) InlineImage {
 	// now := time.Now()
+
+	var imageLruKeyBuilder strings.Builder
+	imageLruKeyBuilder.WriteString(srcPath)
+	imageLruKeyBuilder.WriteString(toDir)
+	if len(dimensions) > 0 {
+		imageLruKeyBuilder.WriteString(strconv.Itoa(dimensions[0]))
+	}
+	currentImage := imageLru.Get(imageLruKeyBuilder.String())
+	if currentImage.Fallback != "" {
+		// fmt.Println("lru inline image:", time.Since(now))
+		return currentImage
+	}
+
 	width := 500
 	intermediateWidth := 1000
 	imageWidth, _ := GetImageDimensions(srcPath)
@@ -170,11 +183,14 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], srcPath stri
 	}
 
 	// fmt.Println(outputs)
-	return InlineImage{
+	// fmt.Println("new inline image:", time.Since(now))
+	newInlineImage := InlineImage{
 		AVIF:     outputs["avif"],
 		WEBP:     outputs["webp"],
 		Fallback: outputs["original"],
 	}
+	imageLru.Set(imageLruKeyBuilder.String(), newInlineImage)
+	return newInlineImage
 }
 
 func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU[string], srcPath string, toDir string, dimensions ...int) string {
