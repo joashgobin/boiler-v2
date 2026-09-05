@@ -106,7 +106,7 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 
 	var imageLruKeyBuilder strings.Builder
 	imageLruKeyBuilder.WriteString(srcPath)
-	imageLruKeyBuilder.WriteString(toDir)
+	// imageLruKeyBuilder.WriteString(toDir)
 	if len(dimensions) > 0 {
 		imageLruKeyBuilder.WriteString(strconv.Itoa(dimensions[0]))
 	}
