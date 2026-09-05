@@ -180,6 +180,25 @@ func GetFileHash(srcPath string) string {
 	return GetXXH3(uniqueString.String())
 }
 
+func GetCachedFileHash(srcPath string, bank *Bank) string {
+	hash := bank.Get("file-hash-"+srcPath, "")
+	if hash != "" {
+		return hash
+	}
+	fileInfo, err := os.Lstat(srcPath)
+	if err != nil {
+		log.Errorf("error getting file hash: %v", err)
+		return ""
+	}
+	var uniqueString strings.Builder
+	uniqueString.WriteString(srcPath)
+	uniqueString.WriteString(fileInfo.ModTime().String())
+	uniqueString.WriteString(strconv.FormatInt(fileInfo.Size(), 10))
+	newHash := GetXXH3(uniqueString.String())
+	bank.Set("file-hash-"+srcPath, newHash, time.Duration(time.Second*30))
+	return newHash
+}
+
 func GenerateFingerprintsForFolder(folderPath string, targetFolder string, ext string, fileListPtr *map[string]string) {
 	err := os.MkdirAll(targetFolder, 0755)
 	if err != nil {
