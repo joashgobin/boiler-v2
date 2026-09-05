@@ -68,7 +68,23 @@
     width: 100%;
 }
 
-.fit-3 {
+.grid.left>* {
+    justify-self: start;
+}
+
+.grid.right>* {
+    justify-self: end;
+}
+
+.grid.top>* {
+    align-self: start;
+}
+
+.grid.bottom>* {
+    align-self: end;
+}
+
+.grid .fit-3 {
     --item-count: 3;
 }
 
