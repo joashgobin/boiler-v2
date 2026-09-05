@@ -95,6 +95,88 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.SrcPath, si.outputPath)
 }
 
+type InlineImage struct {
+	AVIF     string
+	WEBP     string
+	Fallback string
+}
+
+func ConvertInline(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) InlineImage {
+	// now := time.Now()
+	width := 500
+	intermediateWidth := 1000
+	imageWidth, _ := GetImageDimensions(srcPath)
+	if imageWidth > 0 {
+		intermediateWidth = min(1000, imageWidth)
+	}
+
+	if len(dimensions) > 0 {
+		width = dimensions[0]
+	}
+	fromDir := filepath.Dir(srcPath)
+	hashString := GetFileHash(srcPath)
+
+	outputs := make(map[string]string, 3)
+	exts := []string{"avif", "webp", strings.ReplaceAll(filepath.Ext(srcPath), ".", "")}
+	for _, ext := range exts {
+		var lruKeyBuilder strings.Builder
+		lruKeyBuilder.WriteString(hashString)
+		lruKeyBuilder.WriteString("-")
+		lruKeyBuilder.WriteString(strconv.Itoa(width))
+		lruKeyBuilder.WriteString("-")
+		lruKeyBuilder.WriteString(ext)
+
+		var outputPath string
+		cachedOutputPath := lru.Get(lruKeyBuilder.String())
+		if cachedOutputPath == "" {
+			var outputBuilder strings.Builder
+			outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+				filepath.Ext(srcPath)))
+			outputBuilder.WriteString("_")
+			outputBuilder.WriteString(strconv.Itoa(width))
+			outputBuilder.WriteString("x.")
+			outputBuilder.WriteString(hashString)
+			outputBuilder.WriteString(".")
+			outputBuilder.WriteString(ext)
+			outputPath = outputBuilder.String()
+			lru.Set(lruKeyBuilder.String(), outputPath)
+			// fmt.Println("cold:", time.Since(now))
+		} else {
+			outputPath = cachedOutputPath
+			// fmt.Println("hot:", time.Since(now))
+		}
+
+		if ext == "avif" || ext == "webp" {
+			outputs[ext] = outputPath
+		} else {
+			outputs["original"] = outputPath
+		}
+
+		if !FileExists(outputPath) {
+			intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
+				strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+					filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
+
+			si := SafeImage{
+				SrcPath:           srcPath,
+				intermediatePath:  intermediatePath,
+				intermediateWidth: intermediateWidth,
+				outputPath:        outputPath,
+				outputWidth:       width,
+			}
+
+			*imageChannel <- &si
+		}
+	}
+
+	// fmt.Println(outputs)
+	return InlineImage{
+		AVIF:     outputs["avif"],
+		WEBP:     outputs["webp"],
+		Fallback: outputs["original"],
+	}
+}
+
 func ConvertInlineAvif(imageChannel *chan *SafeImage, lru *LRU, srcPath string, toDir string, dimensions ...int) string {
 	// now := time.Now()
 	width := 500

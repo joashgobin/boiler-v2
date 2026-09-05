@@ -740,21 +740,27 @@ exec bash
 		},
 		"pics": func(imgPath string, dimensions ...int) ht.HTML {
 			fullPath := "static/img/" + imgPath
-			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
-			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
-			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			/*
+				avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			*/
+			ii := helpers.ConvertInline(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
 			var picBuilder strings.Builder
 			picBuilder.WriteString("<picture>")
 			picBuilder.WriteString(`<source srcset="`)
-			picBuilder.WriteString(avifPath)
+			picBuilder.WriteString("/")
+			picBuilder.WriteString(ii.AVIF)
 			picBuilder.WriteString(`" type="image/avif">`)
 
 			picBuilder.WriteString(`<source srcset="`)
-			picBuilder.WriteString(webpPath)
+			picBuilder.WriteString("/")
+			picBuilder.WriteString(ii.WEBP)
 			picBuilder.WriteString(`" type="image/webp">`)
 
 			picBuilder.WriteString(`<img hx-trigger="revealed" src="`)
-			picBuilder.WriteString(fallbackPath)
+			picBuilder.WriteString("/")
+			picBuilder.WriteString(ii.Fallback)
 			picBuilder.WriteString(`" width="" height="" class="" alt="" style="" onerror="this.onerror=null;this.src='/`)
 			picBuilder.WriteString(fullPath)
 			picBuilder.WriteString(`';Array.from(this.parentNode.querySelectorAll('source')).forEach(s => { s.srcset='/`)
@@ -775,38 +781,41 @@ exec bash
 		},
 		"bgs": func(imgPath string, dimensions ...int) ht.HTMLAttr {
 			fullPath := "static/img/" + imgPath
-			avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
-			webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
-			fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+			/*
+				avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+			*/
+			ii := helpers.ConvertInline(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
 			var srcBuilder strings.Builder
-			srcBuilder.WriteString(`url('`)
-			srcBuilder.WriteString(avifPath)
+			srcBuilder.WriteString(`url('/`)
+			srcBuilder.WriteString(ii.AVIF)
 			srcBuilder.WriteString(`') type('image/avif'),`)
 
-			srcBuilder.WriteString(`url('`)
-			srcBuilder.WriteString(webpPath)
+			srcBuilder.WriteString(`url('/`)
+			srcBuilder.WriteString(ii.WEBP)
 			srcBuilder.WriteString(`') type('image/webp'),`)
 
 			ext := filepath.Ext(imgPath)
 			switch ext {
 			case ".png":
-				srcBuilder.WriteString(`url('`)
-				srcBuilder.WriteString(fallbackPath)
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(ii.Fallback)
 				srcBuilder.WriteString(`') type('image/png'),`)
 
 				srcBuilder.WriteString(`url('/`)
 				srcBuilder.WriteString(fullPath)
 				srcBuilder.WriteString(`') type('image/png')`)
 			default:
-				srcBuilder.WriteString(`url('`)
-				srcBuilder.WriteString(fallbackPath)
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(ii.Fallback)
 				srcBuilder.WriteString(`') type('image/jpeg'),`)
 
 				srcBuilder.WriteString(`url('/`)
 				srcBuilder.WriteString(fullPath)
 				srcBuilder.WriteString(`') type('image/jpeg')`)
 			}
-			return ht.HTMLAttr(`style="background-image:url('` + fallbackPath + `'),url('/` + fullPath + `');background-image:image-set(` + srcBuilder.String() + `)"`)
+			return ht.HTMLAttr(`style="background-image:url('/` + ii.Fallback + `'),url('/` + fullPath + `');background-image:image-set(` + srcBuilder.String() + `)"`)
 		},
 		"preload": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
