@@ -84,7 +84,7 @@
     align-self: end;
 }
 
-.grid .fit-3 {
+.fit-3 {
     --item-count: 3;
 }
 
