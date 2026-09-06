@@ -5,6 +5,7 @@ import (
 	"unsafe"
 
 	"github.com/elastic/go-freelru"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/orisano/wyhash"
 )
 
@@ -17,7 +18,7 @@ func hashString(s string) uint32 {
 }
 
 func NewLRU[T any](exampleValue T, lifetime ...time.Duration) *LRU[T] {
-	capacity := uint32(100)
+	capacity := uint32(128)
 	cache, err := freelru.NewSharded[string, T](capacity, hashString)
 	if err != nil {
 		return nil
