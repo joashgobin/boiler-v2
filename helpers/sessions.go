@@ -55,6 +55,11 @@ func (flash *FlashModel) KeepCached(c fiber.Ctx, maxAge int) {
 	c.Set("Cache-Control", fmt.Sprintf("private,max-age=%d", maxAge))
 }
 
+// RegisterType registers a new data type for use in session
+func (flash *FlashModel) RegisterType(value any) {
+	flash.store.RegisterType(value)
+}
+
 // Get returns the value for a key if exists in the current session otherwise the default value specified
 func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue T) T {
 	sess, err := flash.store.Get(c)

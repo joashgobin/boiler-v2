@@ -2,3 +2,4 @@
 
 - Set default lru capacity to 128
 - Tweaks
+- Added register type function for flash model
