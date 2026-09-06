@@ -5,7 +5,6 @@ import (
 	"unsafe"
 
 	"github.com/elastic/go-freelru"
-	"github.com/gofiber/fiber/v3/log"
 	"github.com/orisano/wyhash"
 )
 
