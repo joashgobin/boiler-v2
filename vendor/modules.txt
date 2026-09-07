@@ -10,10 +10,6 @@ github.com/BurntSushi/toml/internal
 ## explicit; go 1.25.0
 github.com/a-h/templ
 github.com/a-h/templ/safehtml
-# github.com/andybalholm/brotli v1.2.3
-## explicit; go 1.22
-github.com/andybalholm/brotli
-github.com/andybalholm/brotli/matchfinder
 # github.com/aws/aws-sdk-go-v2 v1.46.0
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/aws
@@ -201,7 +197,7 @@ github.com/gofiber/template/html/v3
 # github.com/gofiber/template/v2 v2.1.1
 ## explicit; go 1.25.0
 github.com/gofiber/template/v2
-# github.com/gofiber/utils/v2 v2.5.0
+# github.com/gofiber/utils/v2 v2.5.1
 ## explicit; go 1.25.0
 github.com/gofiber/utils/v2
 github.com/gofiber/utils/v2/bytes
@@ -240,6 +236,11 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.24
 ## explicit; go 1.20
 github.com/mattn/go-isatty
+# github.com/molecule-man/go-brrr v1.0.1
+## explicit; go 1.22.0
+github.com/molecule-man/go-brrr
+github.com/molecule-man/go-brrr/internal/core
+github.com/molecule-man/go-brrr/internal/encoder
 # github.com/orisano/wyhash v1.1.0
 ## explicit; go 1.12
 github.com/orisano/wyhash
@@ -310,7 +311,7 @@ github.com/valkey-io/valkey-go/internal/util
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v1.73.0
+# github.com/valyala/fasthttp v1.74.0
 ## explicit; go 1.25.0
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttpadaptor
