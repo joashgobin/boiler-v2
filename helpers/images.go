@@ -134,9 +134,9 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 	for _, ext := range exts {
 		var lruKeyBuilder strings.Builder
 		lruKeyBuilder.WriteString(hashString)
-		lruKeyBuilder.WriteString("-")
+		// lruKeyBuilder.WriteString("-")
 		lruKeyBuilder.WriteString(strconv.Itoa(width))
-		lruKeyBuilder.WriteString("-")
+		// lruKeyBuilder.WriteString("-")
 		lruKeyBuilder.WriteString(ext)
 
 		var outputPath string
