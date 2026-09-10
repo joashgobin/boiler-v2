@@ -17,37 +17,43 @@
 
 package encoder
 
-import "github.com/molecule-man/go-brrr/internal/core"
+import (
+	"unsafe"
+
+	"github.com/molecule-man/go-brrr/internal/core"
+)
 
 // h5b6u16 is the h5b6 hasher with uint16 bucket slots, dispatched only when
 // the encoder expects the input to fit in 64 KiB. Configuration constants
 // (bucket bits, block bits, hash type length, distance-cache layout) match
 // h5b6 verbatim — only the storage width and the auxiliary state differ.
 type h5b6u16 struct {
-	num     [h5b6BucketSize]uint16                 // entry count per bucket
-	buckets [h5b6BucketSize * h5b6BlockSize]uint16 // position ring buffers
+	num     [h5bBucketSize]uint16                 // entry count per bucket
+	buckets [h5bBucketSize * h5b6BlockSize]uint16 // position ring buffers
 	hasherCommon
 }
 
 func (h *h5b6u16) common() *hasherCommon { return &h.hasherCommon }
 
-// hash computes a 15-bit bucket index from 4 bytes at data[i:i+4].
-func (h *h5b6u16) hash(data []byte, i uint) uint32 {
-	return (loadU32LE(data, i) * hashMul32) >> h5b6HashShift
+// bucketAt returns a fixed-size ring pointer so scan loops need no bounds check.
+func (h *h5b6u16) bucketAt(key uint32) *[h5b6BlockSize]uint16 {
+	return (*[h5b6BlockSize]uint16)(unsafe.Add(unsafe.Pointer(&h.buckets), uintptr(key)<<(h5b6BlockBits+1)))
 }
 
-// reset zeroes the entry counts before use. The partial path is identical
-// to h5b6's: at small input sizes touched-bucket clearing beats a full
-// memclr of the 64 KiB num[] array.
+func (h *h5b6u16) hash(data []byte, i uint) uint32 {
+	return (loadU32LE(data, i) * hashMul32) >> h5bHashShift
+}
+
+// reset clears touched counts for small one-shot inputs to avoid a 64 KiB memset.
 func (h *h5b6u16) reset(oneShot bool, inputSize uint, data []byte) {
-	partialPrepareThreshold := h5b6BucketSize >> 6
+	partialPrepareThreshold := h5bBucketSize >> 6
 	if oneShot && inputSize <= uint(partialPrepareThreshold) {
 		for i := range inputSize {
 			key := h.hash(data, i)
 			h.num[key] = 0
 		}
 	} else {
-		h.num = [h5b6BucketSize]uint16{}
+		h.num = [h5bBucketSize]uint16{}
 	}
 	h.ready = true
 }
@@ -80,7 +86,7 @@ func (h *h5b6u16) storeRangeNoWrap(data []byte, start, end uint) {
 // stitchToPreviousBlock seeds the hash table with the last 3 positions of
 // the previous block so that cross-block matches can be found.
 func (h *h5b6u16) stitchToPreviousBlock(numBytes, position uint, ringBuffer []byte, ringBufferMask uint) {
-	if numBytes >= h5b6HashTypeLength-1 && position >= 3 {
+	if numBytes >= h5bHashTypeLength-1 && position >= 3 {
 		h.store(ringBuffer, ringBufferMask, position-3)
 		h.store(ringBuffer, ringBufferMask, position-2)
 		h.store(ringBuffer, ringBufferMask, position-1)
@@ -103,8 +109,8 @@ func (h *h5b6u16) createBackwardReferences(s *encodeState, bytes, wrappedPos uin
 	posEnd := position + uint(bytes)
 
 	storeEnd := position
-	if uint(bytes) >= h5b6HashTypeLength {
-		storeEnd = posEnd - h5b6HashTypeLength + 1
+	if uint(bytes) >= h5bHashTypeLength {
+		storeEnd = posEnd - h5bHashTypeLength + 1
 	}
 
 	const randomHeuristicsWindowSize = 64
@@ -126,7 +132,7 @@ func (h *h5b6u16) createBackwardReferences(s *encodeState, bytes, wrappedPos uin
 	distCache[8] = d0 - 3
 	distCache[9] = d0 + 3
 
-	for position+h5b6HashTypeLength < posEnd {
+	for position+h5bHashTypeLength < posEnd {
 		maxLength := posEnd - position
 		maxDistance := min(position, maxBackwardLimit)
 
@@ -166,7 +172,7 @@ func (h *h5b6u16) createBackwardReferences(s *encodeState, bytes, wrappedPos uin
 					sr = sr2
 					delayedBackwardReferencesInRow++
 					if delayedBackwardReferencesInRow < 4 &&
-						position+h5b6HashTypeLength < posEnd {
+						position+h5bHashTypeLength < posEnd {
 						maxLength--
 						continue
 					}
@@ -228,14 +234,14 @@ func (h *h5b6u16) createBackwardReferences(s *encodeState, bytes, wrappedPos uin
 
 			if position > applyRandomHeuristics {
 				if position > applyRandomHeuristics+4*randomHeuristicsWindowSize {
-					posJump := min(position+16, posEnd-max(h5b6HashTypeLength-1, 4))
+					posJump := min(position+16, posEnd-max(h5bHashTypeLength-1, 4))
 					for position < posJump {
 						h.storeNoWrap(data, position)
 						insertLength += 4
 						position += 4
 					}
 				} else {
-					posJump := min(position+8, posEnd-(h5b6HashTypeLength-1))
+					posJump := min(position+8, posEnd-(h5bHashTypeLength-1))
 					for position < posJump {
 						h.storeNoWrap(data, position)
 						insertLength += 2
@@ -266,7 +272,7 @@ func (h *h5b6u16) findLongestMatch(
 	bestScore := out.score
 	bestLen := out.len
 	key := h.hash(data, cur)
-	bucket := h.buckets[uint(key)<<h5b6BlockBits:]
+	bucket := h.bucketAt(key)
 	n := h.num[key]
 
 	out.len = 0
@@ -522,7 +528,7 @@ func (h *h5b6u16) findLongestMatch(
 	}
 
 	// Store current position in the bucket.
-	h.buckets[uint(h.num[key]&h5b6BlockMask)+uint(key)<<h5b6BlockBits] = uint16(cur)
+	bucket[h.num[key]&h5b6BlockMask] = uint16(cur)
 	h.num[key]++
 
 	// Phase 3: static dictionary fallback when no hash match was found.

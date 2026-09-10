@@ -31,6 +31,9 @@ var codeLengthPrefixValue = [16]byte{
 	0, 4, 3, 2, 0, 4, 3, 1, 0, 4, 3, 2, 0, 4, 3, 5,
 }
 
+// ErrExcessiveInput reports bytes that follow finalized brotli stream.
+var ErrExcessiveInput = errors.New("brotli: excessive input")
+
 // Sentinel errors returned by Decompress.
 var errPadding = errors.New("brotli: non-zero padding bits")
 
@@ -67,6 +70,8 @@ func putDecRingBuf(buf []byte) {
 }
 
 // Decompress decodes the brotli-compressed data and returns the original bytes.
+//
+// It returns [ErrExcessiveInput] if bytes follow the stream.
 func Decompress(data []byte) ([]byte, error) {
 	s := decodeStatePool.Get().(*decodeState)
 	s.initForReuse()
@@ -76,6 +81,10 @@ func Decompress(data []byte) ([]byte, error) {
 	for {
 		switch s.decompressStream(&output) {
 		case decoderResultSuccess:
+			if s.excessiveInput() {
+				decodeStatePool.Put(s)
+				return nil, ErrExcessiveInput
+			}
 			result := s.flushOutput(output)
 			decodeStatePool.Put(s)
 			return result, nil
@@ -933,10 +942,8 @@ func (s *decodeState) decodeContextMap(contextMapSize uint, contextMap *[]byte, 
 					s.err = decompressError("context map repeat overflow")
 					return decoderResultError
 				}
-				for range int(reps) {
-					(*contextMap)[h.contextIndex] = 0
-					h.contextIndex++
-				}
+				clear((*contextMap)[h.contextIndex : h.contextIndex+uint(reps)])
+				h.contextIndex += uint(reps)
 			}
 			h.substateContextMap = contextMapTransform
 			fallthrough
@@ -2054,6 +2061,11 @@ func (s *decodeState) takeDistanceFromRingBuffer() {
 			s.distanceCode = 0x7FFFFFFF
 		}
 	}
+}
+
+func (s *decodeState) excessiveInput() bool {
+	s.br.unload()
+	return s.br.availIn() > 0
 }
 
 // decompressError formats a decode-stage error.

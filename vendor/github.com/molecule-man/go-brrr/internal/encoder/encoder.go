@@ -257,7 +257,7 @@ func (c *encoderCore) maybePromoteHasher() {
 		if h.ready {
 			n.num = h.num
 			for i := range &h.buckets {
-				n.buckets[i] = uint32(h.buckets[i])
+				n.buckets[i/h5b6BlockSize][i%h5b6BlockSize] = uint32(h.buckets[i])
 			}
 			n.everWrapped = false
 			n.ready = true
@@ -307,7 +307,7 @@ func (c *encoderCore) prepareMetaBlock(isLast, forceFlush bool) (metablockSize u
 	// Grow command buffer if needed.
 	needed := int(s.numCommands) + int(bytes)/2 + 1
 	if needed > cap(s.commands) {
-		newCap := needed + int(bytes)/4 + 16
+		newCap := max(needed+int(bytes)/4+16, 2*cap(s.commands))
 		newCmds := make([]command, len(s.commands), newCap)
 		copy(newCmds, s.commands)
 		s.commands = newCmds
@@ -906,19 +906,19 @@ func (e *encoderSplit) reset(quality, lgwin int, sizeHint uint) {
 	// Pre-allocate Q10 buffers to avoid first-use allocations.
 	if quality >= 10 {
 		if e.hasher == nil {
-			e.hasher = &h10{lgwin: lgwin, quality: quality, bufs: &e.q10}
+			h := poolH10.Get().(*h10)
+			h.lgwin = lgwin
+			h.quality = quality
+			h.bufs = &e.q10
+			e.hasher = h
 			e.resetHasher()
 		}
 		blockSize := 1 << e.lgblock
 		e.q10.preallocQ10(blockSize)
 
-		// Pre-allocate h10 forest.
-		if h, ok := e.hasher.(*h10); ok {
-			numNodes := uint(1) << lgwin
-			if cap(h.forest) < int(2*numNodes) {
-				h.forest = make([]uint32, 2*numNodes)
-			}
-		}
+		// The h10 forest is sized in h10.reset, which knows the real input
+		// size and whether the encode is one-shot. Pre-allocating here would
+		// force the full window even for a small input.
 
 		// Pre-allocate metaBlockSplit context maps.
 		const (
