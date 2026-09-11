@@ -22,7 +22,10 @@ func (rb RedirectBuilder) Back() error {
 }
 
 // Redirect to a particular URL
-func (rb RedirectBuilder) To(route string) error {
+func (rb RedirectBuilder) To(route string, args ...any) error {
+	if len(args) > 0 {
+		return rb.context.Redirect().WithInput().With("message", rb.message).To(fmt.Sprintf(route, args...))
+	}
 	return rb.context.Redirect().WithInput().With("message", rb.message).To(route)
 }
 
