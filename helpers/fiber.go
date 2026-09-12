@@ -90,6 +90,27 @@ func CollectFiberFormData(c fiber.Ctx, fields *[]string, multiples *[]string) st
 	return snippets
 }
 
+func GetFormValues(c fiber.Ctx) map[string]string {
+	body := string(c.Body())
+	pairs := strings.Split(body, "&")
+	data := make(map[string]string, 1)
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		if kv[0] == "csrf" {
+			continue
+		}
+		value, err := url.QueryUnescape(kv[1])
+		key, err2 := url.QueryUnescape(kv[0])
+		if err == nil && err2 == nil {
+			data[key] = value
+		}
+	}
+	return data
+}
+
 func MapFromFormBody(c fiber.Ctx, excludeEmpty bool) map[string]string {
 	body := string(c.Body())
 
