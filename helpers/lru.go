@@ -43,3 +43,7 @@ func (lru *LRU[T]) Get(key string) T {
 	}
 	return defaultValue
 }
+
+func (lru *LRU[T]) Clear() {
+	lru.cache.Purge()
+}
