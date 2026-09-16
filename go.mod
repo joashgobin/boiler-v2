@@ -12,7 +12,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/gofiber/storage/valkey v0.4.0
-	github.com/gofiber/template/html/v3 v3.0.8
+	github.com/gofiber/template/html/v3 v3.0.9
 	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.4.3
@@ -46,7 +46,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gofiber/schema v1.8.7 // indirect
-	github.com/gofiber/template/v2 v2.1.1 // indirect
+	github.com/gofiber/template/v2 v2.1.2 // indirect
 	github.com/gofiber/utils/v2 v2.5.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
