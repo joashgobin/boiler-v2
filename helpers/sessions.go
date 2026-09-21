@@ -93,7 +93,7 @@ func castTo[T any](value any, exampleValue T) (T, bool) {
 
 // GetMany returns the values for specified keys, otherwise returns the defaults
 func (flash *FlashModel) GetMany(c fiber.Ctx, defaults map[string]any) map[string]any {
-	start := time.Now()
+	// start := time.Now()
 	values := make(map[string]any, len(defaults))
 	sess, err := flash.store.Get(c)
 	defer sess.Release()
