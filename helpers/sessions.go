@@ -65,20 +65,55 @@ func (flash *FlashModel) RegisterType(value any) {
 
 // Get returns the value for a key if exists in the current session otherwise the default value specified
 func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue T) T {
+	// start:=time.Now()
 	sess, err := flash.store.Get(c)
 	defer sess.Release()
 	if err != nil {
+		// fmt.Println("• flash get default:",time.Since(start))
 		return defaultValue
 	}
 	value := sess.Get(key)
 	if value == nil {
+		// fmt.Println("• flash get default:",time.Since(start))
 		return defaultValue
 	}
 	castedValue, ok := value.(T)
 	if !ok {
+		// fmt.Println("• flash get default:",time.Since(start))
 		return defaultValue
 	}
+	// fmt.Println("• flash get value:",time.Since(start))
 	return castedValue
+}
+
+func castTo[T any](value any, exampleValue T) (T, bool) {
+	castedValue, ok := value.(T)
+	return castedValue, ok
+}
+
+// GetMany returns the values for specified keys, otherwise returns the defaults
+func (flash *FlashModel) GetMany(c fiber.Ctx, defaults map[string]any) map[string]any {
+	start := time.Now()
+	values := make(map[string]any, len(defaults))
+	sess, err := flash.store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		// fmt.Println("• flash get many default:",time.Since(start))
+		return defaults
+	}
+	for key, def := range defaults {
+		value := sess.Get(key)
+		if value == nil {
+			continue
+		}
+		castedValue, ok := castTo(value, def)
+		if !ok {
+			continue
+		}
+		values[key] = castedValue
+	}
+	// fmt.Println("• flash get many values:",time.Since(start))
+	return values
 }
 
 // Set sets/updates value for key
