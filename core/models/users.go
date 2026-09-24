@@ -342,17 +342,18 @@ func RequireRole(role string, store *session.Store, flash *helpers.FlashModel) f
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
+
 		user, ok := sess.Get("user").(User)
 
 		// redirect if user value is not set in session
 		if !ok {
-			return c.Redirect().With("warning", "You need to be logged in").To("/login")
+			return c.Redirect().With("next", c.OriginalURL()).With("warning", "You need to be logged in").To("/login")
 		}
 
 		// redirect if user roles are not defined in session
 		roles := user.Roles
 		if roles == "" {
-			return c.Redirect().With("warning", "You need to be logged in").To("/login")
+			return c.Redirect().With("next", c.OriginalURL()).With("warning", "You need to be logged in").To("/login")
 		}
 
 		// redirect if user session does not specify the required role
@@ -360,7 +361,7 @@ func RequireRole(role string, store *session.Store, flash *helpers.FlashModel) f
 			var roleWarning strings.Builder
 			roleWarning.WriteString("You need to be logged in as ")
 			roleWarning.WriteString(role)
-			return c.Redirect().With("warning", roleWarning.String()).To("/")
+			return c.Redirect().With("next", c.OriginalURL()).With("warning", roleWarning.String()).To("/")
 		}
 		return c.Next()
 	}
