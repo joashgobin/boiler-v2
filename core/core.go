@@ -1211,14 +1211,21 @@ exec bash
 
 	// create csrf error handler
 	csrfErrorHandler := func(c fiber.Ctx, err error) error {
+		// csrf := c.FormValue("csrf")
+		// fmt.Println("my csrf token:", csrf)
 		log.Errorf("csrf error: %v request: %v from IP: %v", err, c.OriginalURL(), c.IP())
 		switch c.Accepts("html", "json") {
 		case "json":
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "403 Forbidden",
+				"error": fmt.Sprintf("CSRF Error: %v. Please refresh.", err),
 			})
 		default:
-			return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v. Please try again.", err)).Back()
+			referer := c.Get("Referer")
+			// fmt.Println("my referer:", referer)
+			if referer == "" {
+				return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v", err)).To("/")
+			}
+			return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v. Please try again.", err)).Back("/")
 		}
 	}
 

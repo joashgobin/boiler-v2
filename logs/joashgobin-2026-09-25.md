@@ -4,3 +4,4 @@
 - Tweak
 - Updated csrf config
 - Revert
+- Updated csrf middlewate
