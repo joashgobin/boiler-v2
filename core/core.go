@@ -1224,12 +1224,11 @@ exec bash
 
 	// init fiber csrf middleware
 	csrfMiddleware := csrf.New(csrf.Config{
-		CookieName:     "__Host-csrf_",
-		CookieSecure:   true,
-		CookieHTTPOnly: false,
-		CookieSameSite: "Lax",
-		// CookieSessionOnly: false,
-		CookieSessionOnly: true,
+		CookieName:        "__Host-csrf_",
+		CookieSecure:      true,
+		CookieHTTPOnly:    false,
+		CookieSameSite:    "Lax",
+		CookieSessionOnly: false,
 		Extractor: extractors.Chain(
 			extractors.FromHeader("X-CSRF-Token"),
 			// extractors.FromQuery("csrf"),
