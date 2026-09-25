@@ -1231,6 +1231,7 @@ exec bash
 		CookieSessionOnly: false,
 		Extractor: extractors.Chain(
 			extractors.FromHeader("X-CSRF-Token"),
+			// extractors.FromQuery("csrf"),
 			extractors.FromForm("csrf"),
 		),
 		Session:        sessionStore,
