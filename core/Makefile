@@ -44,7 +44,7 @@ deploy/first: deploy/folder deploy/static deploy/db deploy/app
 deploy/app: build
 	@-figlet "Deploy app"
 	@echo "• stopping service prior to binary transfer"
-	@ssh -t ${username}@${production_host_ip} "sudo systemctl stop ${project_name}.service"
+	@-ssh -t ${username}@${production_host_ip} "sudo systemctl stop ${project_name}.service"
 	@echo "• transferring binary to VPS"
 	@echo "${YELLOW}"
 	@rsync -cP ./bin/linux_amd64/web ${username}@${production_host_ip}:~/${project_name}/
