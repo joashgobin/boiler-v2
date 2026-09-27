@@ -320,60 +320,70 @@ p.trim {
 .darken-0 {
     background-color: transparent;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-10 {
     background-color: hsl(from var(--bg-color) h s l / 0.1);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-20 {
     background-color: hsl(from var(--bg-color) h s l / 0.2);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-30 {
     background-color: hsl(from var(--bg-color) h s l / 0.3);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-40 {
     background-color: hsl(from var(--bg-color) h s l / 0.4);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-50 {
     background-color: hsl(from var(--bg-color) h s l / 0.5);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-60 {
     background-color: hsl(from var(--bg-color) h s l / 0.6);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-70 {
     background-color: hsl(from var(--bg-color) h s l / 0.7);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-80 {
     background-color: hsl(from var(--bg-color) h s l / 0.8);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .darken-90 {
     background-color: hsl(from var(--bg-color) h s l / 0.9);
     background-blend-mode: darken;
     background-size: cover;
+    background-position: center;
 }
 
 .floor {
