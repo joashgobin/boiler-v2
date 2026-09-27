@@ -348,15 +348,15 @@ func RequireRole(role string, store *session.Store, flash *helpers.FlashModel) f
 
 		// redirect if user value is not set in session
 		if !ok {
-			originalURL := url.QueryEscape(c.OriginalURL())
-			return c.Redirect().With("warning", "You need to be logged in").To("/login?next=" + originalURL)
+			flash.Set(c, "next-page", c.OriginalURL())
+			return c.Redirect().With("warning", "You need to be logged in").To("/login")
 		}
 
 		// redirect if user roles are not defined in session
 		roles := user.Roles
 		if roles == "" {
-			originalURL := url.QueryEscape(c.OriginalURL())
-			return c.Redirect().With("warning", "You need to be logged in").To("/login?next=" + originalURL)
+			flash.Set(c, "next-page", c.OriginalURL())
+			return c.Redirect().With("warning", "You need to be logged in").To("/login")
 		}
 
 		// redirect if user session does not specify the required role
@@ -364,8 +364,8 @@ func RequireRole(role string, store *session.Store, flash *helpers.FlashModel) f
 			var roleWarning strings.Builder
 			roleWarning.WriteString("You need to be logged in as ")
 			roleWarning.WriteString(role)
-			originalURL := url.QueryEscape(c.OriginalURL())
-			return c.Redirect().With("warning", roleWarning.String()).To("/login?next=" + originalURL)
+			flash.Set(c, "next-page", c.OriginalURL())
+			return c.Redirect().With("warning", roleWarning.String()).To("/login")
 		}
 		return c.Next()
 	}
