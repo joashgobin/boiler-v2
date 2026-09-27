@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"time"
