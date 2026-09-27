@@ -40,7 +40,7 @@ func (rb RedirectBuilder) Route(routeName string) error {
 // Redirect to a checkpoint or its fallback
 func (rb RedirectBuilder) Checkpoint(checkpointName string) error {
 	checkpoint := rb.flash.getCheckpoint(rb.context, checkpointName)
-	return rb.context.Redirect().WithInput().With("message", rb.message).To(checkpoint)
+	return rb.context.Redirect().WithInput().With("message", rb.message).With("checkpoint", "Returning to: "+checkpointName).To(checkpoint)
 }
 
 type FlashModel struct {
@@ -49,7 +49,7 @@ type FlashModel struct {
 }
 
 func NewFlashModel(newStore *session.Store) *FlashModel {
-	return &FlashModel{store: newStore}
+	return &FlashModel{store: newStore, checkpointFallbacks: make(map[string]string)}
 }
 
 // Get checkpoint stored in user session otherwise return fallback
@@ -65,7 +65,7 @@ func (flash *FlashModel) getCheckpoint(c fiber.Ctx, checkpointName string) strin
 		}
 		return finalReturn
 	}
-	value := sess.Get(key)
+	value := sess.Get(checkpointName)
 	if value == nil {
 		if exists {
 			return fallback
