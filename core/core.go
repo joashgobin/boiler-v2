@@ -748,7 +748,7 @@ exec bash
 			*/
 			ii := helpers.ConvertInline(&imageChannel, lru, imageLru, fullPath, "static/gen/img", dimensions...)
 			var picBuilder strings.Builder
-			picBuilder.WriteString(`<picture class="">`)
+			picBuilder.WriteString(`<picture>`)
 			picBuilder.WriteString(`<source srcset="/`)
 			picBuilder.WriteString(ii.AVIF)
 			picBuilder.WriteString(`" type="image/avif">`)
