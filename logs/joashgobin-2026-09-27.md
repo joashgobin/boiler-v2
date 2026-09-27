@@ -11,3 +11,4 @@
 - Fix
 - Tweaks
 - Fix 
+- Moved flash require and redirect into base

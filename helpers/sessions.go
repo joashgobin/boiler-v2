@@ -238,21 +238,8 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 	}
 }
 
-// Require is a middleware that ensures that a route has certain keys in its form values
-func (flash *FlashModel) Require(keys ...string) fiber.Handler {
-	// log.Infof("required keys: %v", keys)
-	return func(c fiber.Ctx) error {
-		warning, err := EnsureFiberFormFields(c, keys)
-		if err != nil {
-			// flash.Push(c, warning)
-			return c.Redirect().WithInput().With("warning", warning).Back(c.Get("Referer"))
-		}
-		return c.Next()
-	}
-}
-
-// Redirect redirects the user to another page with the specified message
-func (flash *FlashModel) Redirect(c fiber.Ctx, message string, args ...any) RedirectBuilder {
+// NewRedirectBuilder returns a redirect builder with dependencies configured
+func NewRedirectBuilder(flash *FlashModel, c fiber.Ctx, message string, args ...any) RedirectBuilder {
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}

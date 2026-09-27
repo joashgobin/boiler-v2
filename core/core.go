@@ -192,6 +192,22 @@ func (base *Base) RenderCached(c fiber.Ctx, templatePath string, input fiber.Map
 	return c.SendString(htmlOutput)
 }
 
+// Redirect is used to direct the user to another route
+func (base *Base) Redirect(c fiber.Ctx, message string, args ...any) helpers.RedirectBuilder {
+	return helpers.NewRedirectBuilder(base.Flash, c, message, args...)
+}
+
+// Require is a middleware that ensures that a route has certain keys in its form values
+func (base *Base) Require(keys ...string) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		warning, err := helpers.EnsureFiberFormFields(c, keys)
+		if err != nil {
+			return c.Redirect().WithInput().With("warning", warning).Back(c.Get("Referer"))
+		}
+		return c.Next()
+	}
+}
+
 func (base Base) Serve(app *fiber.App) {
 	app.Get("/sitemap.xml", func(c fiber.Ctx) error {
 		return base.SiteMap.Get(c)
