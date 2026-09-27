@@ -242,6 +242,9 @@ blockquote::after {
     line-height: 1;
 }
 
+picture {
+    line-height: 1;
+}
 
 .transition-main {
     transition: opacity 0.25s ease-in-out;
