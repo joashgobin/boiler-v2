@@ -41,7 +41,7 @@ func (rb RedirectBuilder) Route(routeName string) error {
 func (rb RedirectBuilder) Checkpoint(checkpointName string) error {
 	checkpoint := rb.flash.getCheckpoint(rb.context, checkpointName)
 	// fmt.Println("checkpoint:", checkpoint)
-	return rb.context.Redirect().WithInput().With("message", rb.message).With("checkpoint", "Returning to: "+strings.ReplaceAll(checkpointName,"-"," ")).To(checkpoint)
+	return rb.context.Redirect().WithInput().With("message", rb.message).With("checkpoint", "Returning to: "+strings.ReplaceAll(checkpointName, "-", " ")).To(checkpoint)
 }
 
 type FlashModel struct {
