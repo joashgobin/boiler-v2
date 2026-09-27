@@ -4,3 +4,4 @@
 - Updated grug
 - Add class to picture element
 - Revert
+- Updated flash redirect builder

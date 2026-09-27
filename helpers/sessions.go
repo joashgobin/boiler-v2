@@ -14,6 +14,7 @@ import (
 type RedirectBuilder struct {
 	context fiber.Ctx
 	message string
+	flash   *FlashModel
 }
 
 // Redirect back to the previous route
@@ -36,12 +37,51 @@ func (rb RedirectBuilder) Route(routeName string) error {
 	return rb.context.Redirect().WithInput().With("message", rb.message).Route(routeName)
 }
 
+// Redirect to a checkpoint or its fallback
+func (rb RedirectBuilder) Checkpoint(checkpointName string) error {
+	checkpoint := rb.flash.getCheckpoint(rb.context, checkpointName)
+	return rb.context.Redirect().WithInput().With("message", rb.message).To(checkpoint)
+}
+
 type FlashModel struct {
-	store *session.Store
+	store               *session.Store
+	checkpointFallbacks map[string]string
 }
 
 func NewFlashModel(newStore *session.Store) *FlashModel {
 	return &FlashModel{store: newStore}
+}
+
+// Get checkpoint stored in user session otherwise return fallback
+func (flash *FlashModel) getCheckpoint(c fiber.Ctx, checkpointName string) string {
+	finalReturn := "/"
+	fallback, exists := flash.checkpointFallbacks[checkpointName]
+
+	sess, err := flash.store.Get(c)
+	defer sess.Release()
+	if err != nil {
+		if exists {
+			return fallback
+		}
+		return finalReturn
+	}
+	value := sess.Get(key)
+	if value == nil {
+		if exists {
+			return fallback
+		}
+		return finalReturn
+	}
+
+	if exists {
+		return fallback
+	}
+	return finalReturn
+}
+
+// Create checkpoint along with its fallback URL
+func (flash *FlashModel) CreateCheckpoint(checkpointName string, fallbackURL string) {
+	flash.checkpointFallbacks[checkpointName] = fallbackURL
 }
 
 // Prefetch indicates to the browser a set of url enpoints to prefetch upon visiting the current handler
@@ -212,5 +252,5 @@ func (flash *FlashModel) Redirect(c fiber.Ctx, message string, args ...any) Redi
 	if len(args) > 0 {
 		message = fmt.Sprintf(message, args...)
 	}
-	return RedirectBuilder{context: c, message: message}
+	return RedirectBuilder{context: c, message: message, flash: flash}
 }
