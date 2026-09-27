@@ -2,3 +2,4 @@
 
 - Updated grug
 - Updated grug
+- Add class to picture element
