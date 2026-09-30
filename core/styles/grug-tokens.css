@@ -74,6 +74,18 @@
     background-image: linear-gradient(var(--direction), var(--from-color), var(--to-color));
 }
 
+.full-grad {
+    --from-color: transparent;
+    --to-color: transparent;
+    --direction: to bottom;
+    --grad-percent: 50%;
+    background-image: linear-gradient(var(--direction), var(--from-color) var(--grad-percent), var(--to-color));
+}
+
+.to-right {
+    --direction: to right;
+}
+
 .tb {
     --to-color: var(--black);
 }
@@ -119,8 +131,12 @@
     right: 0;
 }
 
-:has(.curtain) {
+*:has(.curtain) {
     position: relative;
+}
+
+*:has(.curtain)>div:not(.curtain) {
+    z-index: 10;
 }
 
 .t-2 {
@@ -206,6 +222,11 @@ p.trim {
     padding: 0.2rem;
 }
 
+.pad_3 {
+    --padding: 0.3rem;
+    padding: 0.3rem;
+}
+
 .pad_4 {
     --padding: 0.4rem;
     padding: 0.4rem;
@@ -216,8 +237,9 @@ p.trim {
     padding: 0.5rem;
 }
 
-.no-pad,
-.pad-0 {
+.pad-0,
+.pad_0,
+.no-pad {
     padding: 0;
 }
 
@@ -558,4 +580,12 @@ p.trim {
 
 .minw-5 {
     min-width: 25ch;
+}
+
+.upper {
+    text-transform: uppercase;
+}
+
+.lower {
+    text-transform: lowercase;
 }

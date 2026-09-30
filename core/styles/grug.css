@@ -122,6 +122,9 @@ h6 {
     font-style: italic;
 }
 
+header {
+    z-index: 1000;
+}
 
 header.fixed {
     margin: 0;
@@ -130,7 +133,6 @@ header.fixed {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
 }
 
 header nav ul li {
