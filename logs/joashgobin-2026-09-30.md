@@ -3,3 +3,4 @@
 - Updated grug
 - Updated packages
 - Updated grug
+- Updated ol styling

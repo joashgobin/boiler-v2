@@ -64,7 +64,8 @@ p {
     text-wrap: balance;
 }
 
-ul {
+ul,
+ol {
     padding-left: 1rem;
 }
 
