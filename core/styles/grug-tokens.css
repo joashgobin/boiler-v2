@@ -589,3 +589,7 @@ p.trim {
 .lower {
     text-transform: lowercase;
 }
+
+.underline {
+    text-decoration: underline;
+}
