@@ -26,15 +26,15 @@ func (files *FilesModel) UploadImage(c fiber.Ctx, imageFormField string) (string
 	if err != nil {
 		return "", err
 	}
-	filename := strings.Replace(uuid.NewV4().String(), "-", "", -1)
+	filename := strings.ReplaceAll(uuid.NewV4().String(), "-", "")
 	fileExt := strings.Split(file.Filename, ".")[1]
-	image := fmt.Sprintf("%s-%v.%s", filename, time.Now().Unix(), fileExt)
+	imagePath := fmt.Sprintf("%s-%v.%s", filename, time.Now().Unix(), fileExt)
 
-	err = c.SaveFile(file, fmt.Sprintf("./uploads/%s", image))
+	err = c.SaveFile(file, fmt.Sprintf("./uploads/%s", imagePath))
 	if err != nil {
 		return "", err
 	}
-	return image, nil
+	return imagePath, nil
 }
 
 func SaveStructToFile[T any](item T, fileName string) error {
