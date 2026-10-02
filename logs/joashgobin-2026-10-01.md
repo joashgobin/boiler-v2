@@ -4,3 +4,4 @@
 - Tweak
 - Tweak
 - Rename variable
+- Added function for generating images for uploaded content

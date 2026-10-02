@@ -755,6 +755,44 @@ exec bash
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, "uploads/"+imgPath, "uploads/gen", dimensions...)
 			return ht.HTML(outputPath)
 		},
+		"picu": func(imgPath string, dimensions ...int) ht.HTML {
+			fullPath := "uploads/" + imgPath
+			/*
+				avifPath := "/" + helpers.ConvertInlineAvif(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+				webpPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, fullPath, "static/gen/img", dimensions...)
+				fallbackPath := "/" + helpers.ConvertInlineOriginal(&imageChannel, lru, "static/img/"+imgPath, "static/gen/img", dimensions...)
+			*/
+			ii := helpers.ConvertInline(&imageChannel, lru, imageLru, fullPath, "uploads/gen", dimensions...)
+			var picBuilder strings.Builder
+			picBuilder.WriteString(`<picture>`)
+			picBuilder.WriteString(`<source srcset="/`)
+			picBuilder.WriteString(ii.AVIF)
+			picBuilder.WriteString(`" type="image/avif">`)
+
+			picBuilder.WriteString(`<source srcset="/`)
+			picBuilder.WriteString(ii.WEBP)
+			picBuilder.WriteString(`" type="image/webp">`)
+
+			picBuilder.WriteString(`<img hx-trigger="revealed" src="/`)
+			picBuilder.WriteString(ii.Fallback)
+			picBuilder.WriteString(`" width="" height="" class="" alt="" style="" onerror="this.onerror=null;this.src='/`)
+			picBuilder.WriteString(fullPath)
+			picBuilder.WriteString(`';Array.from(this.parentNode.querySelectorAll('source')).forEach(s => { s.srcset='/`)
+			picBuilder.WriteString(fullPath)
+			picBuilder.WriteString(`'; s.type='`)
+
+			ext := filepath.Ext(imgPath)
+			switch ext {
+			case ".png":
+				picBuilder.WriteString(`image/png`)
+			default:
+				picBuilder.WriteString(`image/jpeg`)
+			}
+
+			picBuilder.WriteString(`'; });">`)
+			picBuilder.WriteString("</picture>")
+			return ht.HTML(picBuilder.String())
+		},
 		"pics": func(imgPath string, dimensions ...int) ht.HTML {
 			fullPath := "static/img/" + imgPath
 			/*
