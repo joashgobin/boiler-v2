@@ -46,53 +46,23 @@ func GetTempName(name string) string {
 
 func (si *SafeImage) ProcessImage(start time.Time) {
 	si.startTime = time.Now()
-	lockPath := si.outputPath + "." + start.Format(time.RFC3339) + ".safe.lock"
-	if FileExists(lockPath) {
-		// log.Error("lock file already exists...aborting...")
-		return
-	}
-	err := TouchFile(lockPath)
-	if err != nil {
-		log.Errorf("error creating safe image lock file: %v", err)
-	}
 
-	// log.Infof("processing image: %s -> %s -> %s", si.srcPath, si.intermediatePath, si.outputPath)
-	// use intermediate if present
 	if !FileExists(si.intermediatePath) {
+		log.Infof("creating intermediate image: %s", si.intermediatePath)
 		vipsThumbnail(si.SrcPath, si.intermediatePath, si.intermediateWidth)
 	}
 
 	if FileExists(si.outputPath) {
-		err = DeleteFile(lockPath)
-		if err != nil {
-			log.Errorf("error deleting safe image lock file: %v", err)
-		}
 		return
 	}
 
 	if si.intermediateWidth == si.outputWidth {
-		err = DeleteFile(lockPath)
-		if err != nil {
-			log.Errorf("error deleting safe image lock file: %v", err)
-		}
 		return
 	}
 
-	// ext := strings.TrimPrefix(filepath.Ext(si.outputPath), ".")
-	// tempOutputPath := filepath.Dir(si.outputPath) + "/__temp__" + ext + "__" + filepath.Base(si.outputPath)
-	// fmt.Println(tempOutputPath)
+	log.Infof("creating final image: %s", si.outputPath)
 	vipsThumbnail(si.intermediatePath, si.outputPath, si.outputWidth)
 
-	err = DeleteFile(lockPath)
-	if err != nil {
-		log.Errorf("error deleting safe image lock file: %v", err)
-	}
-	/*
-		err = os.Rename(tempOutputPath, si.outputPath)
-		if err != nil {
-			log.Errorf("error renaming temp safe image: %v", err)
-		}
-	*/
 	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.SrcPath, si.outputPath)
 }
 
