@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"net/url"
 	"os/exec"
 	"strconv"
 
@@ -101,6 +102,10 @@ type InlineImage struct {
 	Fallback string
 }
 
+func escapeSrcPath(srcPath string) string {
+	return filepath.Dir(srcPath) + "/" + url.PathEscape(filepath.Base(srcPath))
+}
+
 func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LRU[InlineImage], srcPath string, toDir string, dimensions ...int) InlineImage {
 	// now := time.Now()
 
@@ -143,7 +148,9 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 		cachedOutputPath := lru.Get(lruKeyBuilder.String())
 		if cachedOutputPath == "" {
 			var outputBuilder strings.Builder
-			outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+			outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(
+				escapeSrcPath(srcPath),
+				fromDir, toDir, -1),
 				filepath.Ext(srcPath)))
 			outputBuilder.WriteString("_")
 			outputBuilder.WriteString(strconv.Itoa(width))
@@ -167,7 +174,9 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 
 		if !FileExists(outputPath) {
 			intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
-				strings.TrimSuffix(strings.Replace(srcPath, fromDir, toDir, -1),
+				strings.TrimSuffix(strings.Replace(
+					escapeSrcPath(srcPath),
+					fromDir, toDir, -1),
 					filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
 
 			si := SafeImage{
