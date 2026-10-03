@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
 	"github.com/tdewolff/parse/v2/strconv"
 )
@@ -212,6 +213,9 @@ var binaryLeftPrecMap = map[js.TokenType]js.OpPrec{
 	js.AndToken:        js.OpAnd,
 	js.OrToken:         js.OpOr,
 	js.NullishToken:    js.OpBitOr, // or OpCoalesce
+	js.AndEqToken:      js.OpLHS,
+	js.OrEqToken:       js.OpLHS,
+	js.NullishEqToken:  js.OpLHS,
 	js.CommaToken:      js.OpExpr,
 }
 
@@ -254,6 +258,9 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 	js.AndToken:        js.OpAnd,   // changes order in AST but not in execution
 	js.OrToken:         js.OpOr,    // changes order in AST but not in execution
 	js.NullishToken:    js.OpBitOr, // or OpCoalesce
+	js.AndEqToken:      js.OpAssign,
+	js.OrEqToken:       js.OpAssign,
+	js.NullishEqToken:  js.OpAssign,
 	js.CommaToken:      js.OpAssign,
 }
 
@@ -1201,9 +1208,9 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 				b[i] = c // was overwritten above
 			}
 		} else if c == '<' && 9 <= len(b)-1-i {
-			if b[i+1] == '\\' && 10 <= len(b)-1-i && bytes.Equal(b[i+2:i+10], []byte("/script>")) {
+			if b[i+1] == '\\' && 10 <= len(b)-1-i && parse.EqualFold(b[i+2:i+10], []byte("/script>")) {
 				i += 9
-			} else if bytes.Equal(b[i+1:i+9], []byte("/script>")) {
+			} else if parse.EqualFold(b[i+1:i+9], []byte("/script>")) {
 				i++
 				if j < start {
 					// avoid append
