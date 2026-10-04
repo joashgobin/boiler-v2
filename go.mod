@@ -17,7 +17,7 @@ require (
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/spf13/viper v1.21.0
-	github.com/tdewolff/minify/v2 v2.24.18
+	github.com/tdewolff/minify/v2 v2.24.19
 	github.com/wneessen/go-mail v0.8.1
 	github.com/yeqown/go-qrcode/v2 v2.3.0
 	github.com/yeqown/go-qrcode/writer/standard v1.4.0
