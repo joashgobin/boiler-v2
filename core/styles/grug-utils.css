@@ -66,6 +66,8 @@
     gap: var(--space);
     align-content: center;
     width: 100%;
+    max-width: min(100vw, 100%);
+    min-width: 0;
 }
 
 .grid.middle>* {

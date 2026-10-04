@@ -177,7 +177,10 @@ section {
 
 section>div {
     width: 100%;
+    /*
     max-width: var(--measure);
+    */
+    max-width: min(100vw, var(--measure));
     z-index: 5;
 }
 
