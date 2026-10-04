@@ -593,3 +593,7 @@ p.trim {
 .underline {
     text-decoration: underline;
 }
+
+.text-box {
+    text-box: trim-both cap alphabetic;
+}
