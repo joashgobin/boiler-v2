@@ -48,7 +48,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 	si.startTime = time.Now()
 
 	if !FileExists(si.intermediatePath) {
-		log.Infof("creating intermediate image: %s", si.intermediatePath)
+		// log.Infof("creating intermediate image: %s", si.intermediatePath)
 		vipsThumbnail(si.SrcPath, si.intermediatePath, si.intermediateWidth)
 	}
 
@@ -60,7 +60,7 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 		return
 	}
 
-	log.Infof("creating final image: %s", si.outputPath)
+	// log.Infof("creating final image: %s", si.outputPath)
 	vipsThumbnail(si.intermediatePath, si.outputPath, si.outputWidth)
 
 	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.SrcPath, si.outputPath)
@@ -379,102 +379,49 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	if len(dimensions) > 1 {
 		dimStr = fmt.Sprintf("%dx%d", dimensions[0], dimensions[1])
 	}
-
 	inputCopyPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath)
-	lockPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath) + ".lock"
-	finalImageLockPath := outputFolderPath + "_convert_" + ext + "_" + dimStr + "_" + outputName + ".lock"
 
-	// check if lock files are causing conflict
-	if FileExists(inputCopyPath) {
-		if GetFileSize(inputCopyPath) == 0 {
-			err := DeleteFile(inputCopyPath)
-			if err != nil {
-				err = fmt.Errorf("vips clear input copy error: %v", err)
-				log.Error(err)
-			}
-			err = DeleteFile(lockPath)
-			if err != nil {
-				err = fmt.Errorf("vips clear input copy lock file error: %v", err)
-				log.Error(err)
-			}
-			err = DeleteFile(finalImageLockPath)
-			if err != nil {
-				err = fmt.Errorf("vips clear final image lock file error: %v", err)
-				log.Error(err)
-			}
-			vipsThumbnail(inputPath, outputPath, dimensions...)
-		}
+	copyingLockPath := outputFolderPath + "_copying_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath) + ".lock"
+	convertingLockPath := outputFolderPath + "_converting_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath) + ".lock"
+
+	// if converting lock file exists
+	if FileExists(convertingLockPath) {
+		// output image might be corrupted
+		DeleteFile(outputPath)
+		// delete converting lock
+		DeleteFile(convertingLockPath)
+		goto StartConverting
 	}
 
-	if !FileExists(lockPath) {
-		// create lock file to indicate that input file is being copied
-		err := TouchFile(lockPath)
-		if err != nil {
-			err = fmt.Errorf("vips input copy lock file create error: %v", err)
-			log.Error(err)
-			return err
-		}
-		// copy input file to output directory
-		err = CopyFile(inputPath, inputCopyPath)
-		if err != nil {
-			err = fmt.Errorf("vips copy input error: %v", err)
-			log.Error(err)
-			return err
-		}
-		// delete lock file after successful input file copying
-		err = DeleteFile(lockPath)
-		if err != nil {
-			err = fmt.Errorf("vips input copy lock file delete error: %v", err)
-			log.Error(err)
-			return err
-		}
+	// if copying lock file exists
+	if FileExists(copyingLockPath) {
+		// input copy might be corrupted
+		DeleteFile(inputCopyPath)
+		// output image might be corrupted
+		DeleteFile(outputPath)
+		// delete copying lock
+		DeleteFile(copyingLockPath)
+		goto StartCopying
 	}
 
-	if FileExists(inputCopyPath) {
-		// create lock file to indicate that input file is being copied
-		err := TouchFile(finalImageLockPath)
-		if err != nil {
-			err = fmt.Errorf("vips final image lock file create error: %v", err)
-			log.Error(err)
-			return err
-		}
+StartCopying:
+	// create copying lock file
+	TouchFile(copyingLockPath)
+	// copy input file to output directory
+	CopyFile(inputPath, inputCopyPath)
+	// delete copying lock
+	DeleteFile(copyingLockPath)
 
-		// convert input copy in output directory
-		cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
-		_, err = cmd.Output()
-		if err != nil {
-			err = fmt.Errorf("vips thumbnail conversion error: %v", err)
-			log.Error(err)
-			return err
-		}
-
-		// delete input copy
-		err = DeleteFile(inputCopyPath)
-		if err != nil {
-			err = fmt.Errorf("vips input copy delete error: %v", err)
-			log.Error(err)
-			return err
-		}
-
-		// delete lock file after successful conversion
-		err = DeleteFile(finalImageLockPath)
-		if err != nil {
-			err = fmt.Errorf("vips final image lock file delete error: %v", err)
-			log.Error(err)
-			return err
-		}
-
-		/*
-			// delete input copy lock file after successful conversion
-			err = DeleteFile(lockPath)
-			if err != nil {
-				err = fmt.Errorf("vips lock file delete error: %v", err)
-				log.Error(err)
-				return err
-			}
-		*/
-	}
-
+StartConverting:
+	// create converting lock file
+	TouchFile(convertingLockPath)
+	// convert input copy in output directory
+	cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
+	cmd.Output()
+	// delete input copy
+	DeleteFile(inputCopyPath)
+	// delete converting lock
+	DeleteFile(convertingLockPath)
 	return nil
 }
 
@@ -494,11 +441,7 @@ func ConvertPNGToJPG(inputPath, outputPath string) {
 		return
 	}
 
-	err = vipsThumbnail(inputPath, outputPath, config.Width, config.Height)
-	if err != nil {
-		log.Errorf("error converting png to jpeg: %v", err)
-		return
-	}
+	vipsThumbnail(inputPath, outputPath, config.Width, config.Height)
 }
 
 func ConvertJPGToPNG(inputPath, outputPath string) {
