@@ -151,7 +151,7 @@ header form :is(button, input) {
     background-color: transparent;
     color: inherit;
     border: none;
-    font-size: var(--s0);
+    font-size: inherit;
     font-family: var(--body-font);
     text-decoration: underline;
     text-underline-offset: 3px;
