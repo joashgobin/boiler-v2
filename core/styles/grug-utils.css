@@ -57,11 +57,10 @@
 }
 
 .grid {
-    --padding: 0.5rem;
     --space: 0.5rem;
     --item-count: 2;
-    --minimum: calc((var(--measure)*0.75 - (2*var(--padding) + (var(--item-count) - 1)*var(--space)))/(var(--item-count)));
-    padding: var(--padding);
+    --minimum: calc((var(--measure)*0.75 - (2*var(--padding, 0.1rem) + (var(--item-count, 2) - 1)*var(--space, 0.5rem)))/(var(--item-count, 2)));
+    padding: var(--padding, 0);
     display: grid;
     gap: var(--space);
     align-content: center;
