@@ -39,6 +39,8 @@ func GetEmbedFiles(fs *embed.FS, path string) ([]string, error) {
 }
 
 func ExtractClassNames(fs *embed.FS, filePath string, classes *[]string) error {
+	// fmt.Println("extracting class names:", filePath)
+
 	// Read file content
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
@@ -46,21 +48,27 @@ func ExtractClassNames(fs *embed.FS, filePath string, classes *[]string) error {
 	}
 
 	// HTML class attribute regex pattern
-	re := regexp.MustCompile(`class="([^"]+)"|class='([^']+)'`)
+	// re := regexp.MustCompile(`class="([^"]+)"|class='([^']+)'`)
+	re := regexp.MustCompile(`class="([^"]*?)"|class='([^']*?)'|class\s+"([^"]*?)"`)
 
 	// Find all matches
 	matches := re.FindAllStringSubmatch(string(data), -1)
 
 	// Process matches and split by spaces
 	for _, match := range matches {
+		// fmt.Println("match:", match)
 		// Handle both double quotes and single quotes
-		classList := match[1]
-		if classList == "" {
-			classList = match[2]
-		}
+		/*
+			for idx, part := range match {
+				fmt.Printf("part %d:%s\n", idx, part)
+			}
+		*/
+
+		classList := strings.Join([]string{match[1], match[2], match[3]}, " ")
 
 		// Split by spaces and add individual classes
 		for className := range strings.SplitSeq(classList, " ") {
+			// fmt.Println("class list:", classList)
 			if className != "" { // Skip empty entries
 				if !slices.Contains(*classes, className) {
 					*classes = append(*classes, className)
@@ -84,13 +92,13 @@ func SaveCSSClasses(fs *embed.FS, targetFile string, cssFiles ...string) error {
 		return err
 	}
 	for _, file := range viewFiles {
-		// fmt.Println(file)
+		// fmt.Println("view file:", file)
 		err = ExtractClassNames(fs, file, &classes)
 		if err != nil {
 			return err
 		}
 	}
-	// fmt.Println(classes)
+	// fmt.Println("classes:", classes)
 	var accruedString strings.Builder
 	for _, file := range cssFiles {
 		// fmt.Println("optimizing:", file)

@@ -7,3 +7,4 @@
 - Updated grug
 - Add optimization for grug
 - Decommission mango.css
+- Updated css class extraction
