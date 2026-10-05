@@ -5,3 +5,4 @@
 - Fix grid padding
 - Updated packages
 - Updated grug
+- Add optimization for grug

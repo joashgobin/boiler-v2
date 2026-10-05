@@ -531,6 +531,12 @@ exec bash
 		log.Errorf("failed to crunch CSS: %v", err)
 	}
 
+	err = helpers.SaveCSSClasses(config.Templates, "static/gen/grug-opt.css",
+		"static/styles/grug-tokens.css", "static/styles/grug-utils.css", "static/styles/grug-blocks.css")
+	if err != nil {
+		log.Errorf("failed to crunch CSS: %v", err)
+	}
+
 	// save components into shelf
 	cmpLog := map[string]ht.HTML{}
 	err = helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
@@ -544,8 +550,11 @@ exec bash
 		"static/styles/mango.css", "static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
 	helpers.CombineAndFingerprint("static/gen/mango-simplified.css", &fingerprints,
 		"static/styles/mango.css", "static/gen/mango-opt.css")
+
 	helpers.CombineAndFingerprint("static/gen/grug.css", &fingerprints,
 		"static/styles/grug.css", "static/styles/grug-utils.css", "static/styles/grug-tokens.css", "static/styles/grug-blocks.css")
+	helpers.CombineAndFingerprint("static/gen/grug-simplified.css", &fingerprints,
+		"static/styles/grug.css", "static/gen/grug-opt.css")
 
 	showElapsed("app resource optimization time", start)
 
