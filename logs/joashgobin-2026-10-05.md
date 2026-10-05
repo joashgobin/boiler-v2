@@ -2,3 +2,4 @@
 
 - Updated css generation
 - Updated fasthttp
+- Updated text box class

@@ -19,6 +19,7 @@
     padding-left: 0;
     padding-right: 0;
     padding-top: 0;
+    padding-bottom: 1rem;
 }
 
 .card.no-pad>* {
