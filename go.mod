@@ -66,7 +66,7 @@ require (
 	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/valkey-io/valkey-go v1.0.78 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.74.0 // indirect
+	github.com/valyala/fasthttp v1.75.0 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
