@@ -527,14 +527,14 @@ exec bash
 	// optimize css files for used class names
 	/*
 		err = helpers.SaveCSSClasses(config.Templates, "static/gen/mango-opt.css",
-			"static/styles/mango-tokens.css", "static/styles/mango-utils.css", "static/styles/mango-blocks.css")
+			"static/styles/mango-utils.css", "static/styles/mango-tokens.css", "static/styles/mango-blocks.css")
 		if err != nil {
 			log.Errorf("failed to crunch CSS: %v", err)
 		}
 	*/
 
 	err = helpers.SaveCSSClasses(config.Templates, "static/gen/grug-opt.css",
-		"static/styles/grug-tokens.css", "static/styles/grug-utils.css", "static/styles/grug-blocks.css")
+		"static/styles/grug-blocks.css", "static/styles/grug-utils.css", "static/styles/grug-tokens.css")
 	if err != nil {
 		log.Errorf("failed to crunch CSS: %v", err)
 	}
@@ -556,7 +556,7 @@ exec bash
 	*/
 
 	helpers.CombineAndFingerprint("static/gen/grug.css", &fingerprints,
-		"static/styles/grug.css", "static/styles/grug-utils.css", "static/styles/grug-tokens.css", "static/styles/grug-blocks.css")
+		"static/styles/grug.css", "static/styles/grug-blocks.css", "static/styles/grug-utils.css", "static/styles/grug-tokens.css")
 	helpers.CombineAndFingerprint("static/gen/grug-simplified.css", &fingerprints,
 		"static/styles/grug.css", "static/gen/grug-opt.css")
 
