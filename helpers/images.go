@@ -72,8 +72,9 @@ type InlineImage struct {
 	Fallback string
 }
 
-func escapeSrcPath(srcPath string) string {
-	return filepath.Dir(srcPath) + "/" + url.PathEscape(filepath.Base(srcPath))
+func filePathURL(srcPath string) string {
+	u := url.URL{Path: filepath.ToSlash(srcPath)}
+	return u.String()
 }
 
 func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LRU[InlineImage], srcPath string, toDir string, dimensions ...int) InlineImage {
@@ -119,7 +120,7 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 		if cachedOutputPath == "" {
 			var outputBuilder strings.Builder
 			outputBuilder.WriteString(strings.TrimSuffix(strings.Replace(
-				escapeSrcPath(srcPath),
+				srcPath,
 				fromDir, toDir, -1),
 				filepath.Ext(srcPath)))
 			outputBuilder.WriteString("_")
@@ -137,15 +138,15 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 		}
 
 		if ext == "avif" || ext == "webp" {
-			outputs[ext] = outputPath
+			outputs[ext] = filePathURL(outputPath)
 		} else {
-			outputs["original"] = outputPath
+			outputs["original"] = filePathURL(outputPath)
 		}
 
 		if !FileExists(outputPath) {
 			intermediatePath := fmt.Sprintf("%s_%dx.%s%s",
 				strings.TrimSuffix(strings.Replace(
-					escapeSrcPath(srcPath),
+					srcPath,
 					fromDir, toDir, -1),
 					filepath.Ext(srcPath)), intermediateWidth, hashString, filepath.Ext(srcPath))
 
