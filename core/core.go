@@ -329,6 +329,7 @@ func imageWorker(workerID int, start time.Time, imageJobs <-chan *helpers.SafeIm
 	for si := range imageJobs {
 		imageLock := lockPool.GetLock(si.SrcPath)
 		imageLock.Lock()
+		// log.Infof("worker %d: %s", workerID, si.SrcPath)
 		si.ProcessImage(start)
 		imageLock.Unlock()
 	}
@@ -564,7 +565,7 @@ exec bash
 	muPool := NewKeyedMutexPool()
 
 	go func() {
-		for i := range runtime.NumCPU() {
+		for i := range max(runtime.NumCPU()-1, 1) {
 			go imageWorker(i, start, imageChannel, muPool)
 		}
 	}()

@@ -5,3 +5,4 @@
 - Add mango css blocks to support older websites
 - Updated packages
 - Updated packages
+- Updated image processing

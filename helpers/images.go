@@ -45,6 +45,7 @@ func GetTempName(name string) string {
 }
 
 func (si *SafeImage) ProcessImage(start time.Time) {
+	// log.Infof("processing: %s", si.SrcPath)
 	si.startTime = time.Now()
 
 	if !FileExists(si.intermediatePath) {
@@ -56,14 +57,16 @@ func (si *SafeImage) ProcessImage(start time.Time) {
 		return
 	}
 
-	if si.intermediateWidth == si.outputWidth {
-		return
-	}
+	/*
+		if si.intermediateWidth == si.outputWidth {
+			return
+		}
+	*/
 
 	// log.Infof("creating final image: %s", si.outputPath)
 	vipsThumbnail(si.intermediatePath, si.outputPath, si.outputWidth)
 
-	log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.SrcPath, si.outputPath)
+	// log.Infof("(%v) converted image (%s): %s", time.Since(si.startTime), si.SrcPath, si.outputPath)
 }
 
 type InlineImage struct {
@@ -381,48 +384,40 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 		dimStr = fmt.Sprintf("%dx%d", dimensions[0], dimensions[1])
 	}
 	inputCopyPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath)
+	log.Infof("vips: %s -> %s (dim: %s)", inputPath, outputPath, dimStr)
 
-	copyingLockPath := outputFolderPath + "_copying_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath) + ".lock"
-	convertingLockPath := outputFolderPath + "_converting_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath) + ".lock"
+	lockPath := outputFolderPath + "_lock_" + ext + "_" + dimStr + "_" + filepath.Base(outputPath) + ".lock"
 
-	// if converting lock file exists
-	if FileExists(convertingLockPath) {
-		// output image might be corrupted
+	if FileExists(inputCopyPath) {
+		log.Infof("retrying based on input copy path: %s", lockPath)
 		DeleteFile(outputPath)
-		// delete converting lock
-		DeleteFile(convertingLockPath)
-		goto StartConverting
-	}
-
-	// if copying lock file exists
-	if FileExists(copyingLockPath) {
-		// input copy might be corrupted
 		DeleteFile(inputCopyPath)
-		// output image might be corrupted
-		DeleteFile(outputPath)
-		// delete copying lock
-		DeleteFile(copyingLockPath)
-		goto StartCopying
+		DeleteFile(lockPath)
 	}
 
-StartCopying:
+	if FileExists(lockPath) {
+		log.Infof("retrying based on lock path: %s", lockPath)
+		DeleteFile(outputPath)
+		DeleteFile(inputCopyPath)
+		DeleteFile(lockPath)
+	}
+
 	// create copying lock file
-	TouchFile(copyingLockPath)
+	TouchFile(lockPath)
+
 	// copy input file to output directory
 	CopyFile(inputPath, inputCopyPath)
-	// delete copying lock
-	DeleteFile(copyingLockPath)
 
-StartConverting:
-	// create converting lock file
-	TouchFile(convertingLockPath)
 	// convert input copy in output directory
 	cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
 	cmd.Output()
+
 	// delete input copy
 	DeleteFile(inputCopyPath)
+
 	// delete converting lock
-	DeleteFile(convertingLockPath)
+	DeleteFile(lockPath)
+
 	return nil
 }
 
