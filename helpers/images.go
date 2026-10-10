@@ -384,6 +384,8 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 		dimStr = fmt.Sprintf("%dx%d", dimensions[0], dimensions[1])
 	}
 	inputCopyPath := outputFolderPath + "_copy_" + ext + "_" + dimStr + "_" + filepath.Base(inputPath)
+	outputTempPath := outputFolderPath + "_tmp_" + outputName
+	outputTempName := "_tmp_" + outputName
 	log.Infof("vips: %s -> %s (dim: %s)", inputPath, outputPath, dimStr)
 
 	lockPath := outputFolderPath + "_lock_" + ext + "_" + dimStr + "_" + filepath.Base(outputPath) + ".lock"
@@ -391,6 +393,7 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	if FileExists(inputCopyPath) {
 		log.Infof("retrying based on input copy path: %s", lockPath)
 		DeleteFile(outputPath)
+		DeleteFile(outputTempPath)
 		DeleteFile(inputCopyPath)
 		DeleteFile(lockPath)
 	}
@@ -398,6 +401,7 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	if FileExists(lockPath) {
 		log.Infof("retrying based on lock path: %s", lockPath)
 		DeleteFile(outputPath)
+		DeleteFile(outputTempPath)
 		DeleteFile(inputCopyPath)
 		DeleteFile(lockPath)
 	}
@@ -409,8 +413,15 @@ func vipsThumbnail(inputPath, outputPath string, dimensions ...int) error {
 	CopyFile(inputPath, inputCopyPath)
 
 	// convert input copy in output directory
-	cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputName+endArgs)
+	cmd := exec.Command("vipsthumbnail", "--vips-concurrency=1", inputCopyPath, "--size", dimStr, "-o", outputTempName+endArgs)
 	cmd.Output()
+
+	// rename temp to original
+	// fmt.Printf("renaming %s to %s\n", outputTempPath, outputPath)
+	err := os.Rename(outputTempPath, outputPath)
+	if err != nil {
+		log.Errorf("vips rename error: %v", err)
+	}
 
 	// delete input copy
 	DeleteFile(inputCopyPath)
