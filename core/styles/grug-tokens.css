@@ -601,3 +601,15 @@ p.trim {
 .text-box * {
     text-box: trim-both cap alphabetic;
 }
+
+.clip {
+    overflow: hidden;
+}
+
+.clip-x {
+    overflow-x: hidden;
+}
+
+.clip-y {
+    overflow-y: hidden;
+}
