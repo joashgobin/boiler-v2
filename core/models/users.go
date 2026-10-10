@@ -118,6 +118,9 @@ CREATE TABLE IF NOT EXISTS users (
 }
 
 func (m *UserModel) Create(name, email, password string) error {
+	if exists, err := m.Exists(email); exists {
+		return fmt.Errorf("create user error: user already exists: %v", err)
+	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
