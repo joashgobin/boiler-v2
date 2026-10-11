@@ -111,6 +111,15 @@ func GetFormValues(c fiber.Ctx) map[string]string {
 	return data
 }
 
+func FormValuesToStruct[T any](c fiber.Ctx, exampleStruct T) T {
+	value := new(T)
+	defaultValue := new(T)
+	if err := c.Bind().Body(value); err != nil {
+		return *defaultValue
+	}
+	return *value
+}
+
 func MapFromFormBody(c fiber.Ctx, excludeEmpty bool) map[string]string {
 	body := string(c.Body())
 

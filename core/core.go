@@ -1219,17 +1219,18 @@ exec bash
 
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
-		AppName:           config.AppName,
-		Views:             engine,
-		ViewsLayout:       "views/layouts/main",
-		PassLocalsToViews: true,
-		CaseSensitive:     true,
-		ReadTimeout:       finalReadTimeout,
-		WriteTimeout:      finalWriteTimeout,
-		IdleTimeout:       20 * time.Second,
-		ReduceMemoryUsage: config.ReduceMemoryUsage,
-		ReadBufferSize:    finalReadBufferSize,
-		BodyLimit:         finalBodyLimit,
+		EnableSplittingOnParsers: true,
+		AppName:                  config.AppName,
+		Views:                    engine,
+		ViewsLayout:              "views/layouts/main",
+		PassLocalsToViews:        true,
+		CaseSensitive:            true,
+		ReadTimeout:              finalReadTimeout,
+		WriteTimeout:             finalWriteTimeout,
+		IdleTimeout:              20 * time.Second,
+		ReduceMemoryUsage:        config.ReduceMemoryUsage,
+		ReadBufferSize:           finalReadBufferSize,
+		BodyLimit:                finalBodyLimit,
 	})
 
 	// init fiber logger format
