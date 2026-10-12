@@ -160,18 +160,27 @@ github.com/go-sql-driver/mysql
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/gofiber/fiber/v3 v3.5.0
-## explicit; go 1.25.0
+# github.com/gofiber/fiber/v3 v3.6.0
+## explicit; go 1.26.0
 github.com/gofiber/fiber/v3
 github.com/gofiber/fiber/v3/binder
 github.com/gofiber/fiber/v3/extractors
+github.com/gofiber/fiber/v3/internal/appconfig
+github.com/gofiber/fiber/v3/internal/byterange
 github.com/gofiber/fiber/v3/internal/contextvalue
+github.com/gofiber/fiber/v3/internal/cookie
+github.com/gofiber/fiber/v3/internal/ctxlocal
+github.com/gofiber/fiber/v3/internal/etag
 github.com/gofiber/fiber/v3/internal/fieldname
+github.com/gofiber/fiber/v3/internal/headerlist
 github.com/gofiber/fiber/v3/internal/headerlookup
 github.com/gofiber/fiber/v3/internal/logtemplate
 github.com/gofiber/fiber/v3/internal/mediatype
 github.com/gofiber/fiber/v3/internal/memory
 github.com/gofiber/fiber/v3/internal/nilerror
+github.com/gofiber/fiber/v3/internal/origin
+github.com/gofiber/fiber/v3/internal/paramdelim
+github.com/gofiber/fiber/v3/internal/quotedstring
 github.com/gofiber/fiber/v3/internal/redact
 github.com/gofiber/fiber/v3/internal/schemehost
 github.com/gofiber/fiber/v3/internal/storage/memory

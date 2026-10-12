@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
-	"strings"
 	"sync"
 	"time"
 
@@ -15,10 +14,34 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/gofiber/fiber/v3/internal/headerlookup"
+	originpkg "github.com/gofiber/fiber/v3/internal/origin"
 	"github.com/gofiber/fiber/v3/internal/redact"
 	"github.com/gofiber/fiber/v3/internal/schemehost"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 )
+
+// varyCookie is hoisted so the "..." argument list is not a slice the compiler
+// has to heap-allocate on every response; see the note on cors.varyOrigin.
+// Because it is shared by every response, it only ever reaches Vary through
+// vary below.
+var varyCookie = []string{fiber.HeaderCookie}
+
+// vary adds fields to the Vary response header. varyCookie is package-level so
+// the call does not allocate, which also means a custom Ctx that rewrote its
+// variadic argument in place would corrupt it for every later response and
+// race with the requests running alongside. DefaultCtx only reads what Vary is
+// given, so it gets the shared slice; anything else gets a copy of its own.
+func vary(c fiber.Ctx, fields []string) {
+	if dc, ok := c.(*fiber.DefaultCtx); ok {
+		dc.Vary(fields...)
+		return
+	}
+	c.Vary(slices.Clone(fields)...)
+}
+
+// csrfSchemes is the scheme policy for CSRF: only http and https, since a
+// non-web scheme has no business authorizing a state-changing request.
+const csrfSchemes = originpkg.WebSchemesOnly
 
 var (
 	ErrTokenNotFound    = errors.New("csrf: token not found")
@@ -78,29 +101,7 @@ func New(config ...Config) fiber.Handler {
 		storageManager = newStorageManager(cfg.Storage, redactKeys)
 	}
 
-	// Pre-parse trusted origins
-	trustedOrigins := []string{}
-	trustedSubOrigins := []subdomain{}
-
-	for _, origin := range cfg.TrustedOrigins {
-		trimmedOrigin := utils.TrimSpace(origin)
-		if i := strings.Index(trimmedOrigin, "://*."); i != -1 {
-			withoutWildcard := trimmedOrigin[:i+len("://")] + trimmedOrigin[i+len("://*."):]
-			isValid, normalizedOrigin := normalizeOrigin(withoutWildcard)
-			if !isValid {
-				panic("[CSRF] Invalid origin format in configuration:" + maskValue(origin))
-			}
-			schemeSep := strings.Index(normalizedOrigin, "://") + len("://")
-			sd := subdomain{prefix: normalizedOrigin[:schemeSep], suffix: normalizedOrigin[schemeSep:]}
-			trustedSubOrigins = append(trustedSubOrigins, sd)
-		} else {
-			isValid, normalizedOrigin := normalizeOrigin(trimmedOrigin)
-			if !isValid {
-				panic("[CSRF] Invalid origin format in configuration:" + maskValue(origin))
-			}
-			trustedOrigins = append(trustedOrigins, normalizedOrigin)
-		}
-	}
+	trusted := parseTrustedOrigins(cfg.TrustedOrigins, maskValue)
 
 	// Create the handler outside of the returned function
 	handler := &Handler{
@@ -147,12 +148,12 @@ func New(config ...Config) fiber.Handler {
 			}
 
 			// Enforce an origin check for unsafe requests.
-			err := originMatchesHost(c, trustedOrigins, trustedSubOrigins)
+			err := originMatchesHost(c, trusted)
 
 			// If there's no origin, enforce a referer check for HTTPS connections.
 			if errors.Is(err, errOriginNotFound) {
 				if c.Scheme() == schemeHTTPS {
-					err = refererMatchesHost(c, trustedOrigins, trustedSubOrigins)
+					err = refererMatchesHost(c, trusted)
 				} else {
 					// If it's not HTTPS, clear the error to allow the request to proceed.
 					err = nil
@@ -222,7 +223,7 @@ func New(config ...Config) fiber.Handler {
 		updateCSRFCookie(c, &cfg, token)
 
 		// Tell the browser that a new header value is generated
-		c.Vary(fiber.HeaderCookie)
+		vary(c, varyCookie)
 
 		// Store the token in the context
 		fiber.StoreInContext(c, tokenKey, token)
@@ -372,10 +373,38 @@ func validateSecFetchSite(c fiber.Ctx) error {
 	}
 }
 
+// trustedOrigins is a parsed TrustedOrigins list.
+type trustedOrigins struct {
+	exact      []string
+	subdomains []originpkg.Subdomain
+}
+
+// parseTrustedOrigins panics on an entry that is not a valid origin.
+func parseTrustedOrigins(origins []string, mask func(string) string) trustedOrigins {
+	var trusted trustedOrigins
+	for _, origin := range origins {
+		pattern, ok := originpkg.ParsePattern(utils.TrimSpace(origin), csrfSchemes)
+		if !ok {
+			panic("[CSRF] Invalid origin format in configuration:" + mask(origin))
+		}
+		if pattern.Wildcard {
+			trusted.subdomains = append(trusted.subdomains, pattern.Subdomain)
+		} else {
+			trusted.exact = append(trusted.exact, pattern.Origin)
+		}
+	}
+	return trusted
+}
+
+// contains expects origin in normalized form, as the parsed entries are.
+func (t trustedOrigins) contains(origin string) bool {
+	return slices.Contains(t.exact, origin) || originpkg.MatchAny(t.subdomains, origin, csrfSchemes)
+}
+
 // originMatchesHost checks that the origin header matches the host header
 // returns an error if the origin header is not present or is invalid
 // returns nil if the origin header is valid
-func originMatchesHost(c fiber.Ctx, trustedOrigins []string, trustedSubOrigins []subdomain) error {
+func originMatchesHost(c fiber.Ctx, trusted trustedOrigins) error {
 	origin, ok := headerlookup.Value(c, fiber.HeaderOrigin)
 	if !ok {
 		// Not errOriginNotFound: an absent Origin is skipped on a plaintext
@@ -399,12 +428,7 @@ func originMatchesHost(c fiber.Ctx, trustedOrigins []string, trustedSubOrigins [
 	}
 
 	// The trusted-origin fallbacks compare against pre-lowered config values.
-	origin = utilsstrings.ToLower(origin)
-	if slices.Contains(trustedOrigins, origin) {
-		return nil
-	}
-
-	if matchSubdomainOrigin(trustedSubOrigins, origin) {
+	if trusted.contains(utilsstrings.ToLower(origin)) {
 		return nil
 	}
 
@@ -414,7 +438,7 @@ func originMatchesHost(c fiber.Ctx, trustedOrigins []string, trustedSubOrigins [
 // refererMatchesHost checks that the referer header matches the host header
 // returns an error if the referer header is not present or is invalid
 // returns nil if the referer header is valid
-func refererMatchesHost(c fiber.Ctx, trustedOrigins []string, trustedSubOrigins []subdomain) error {
+func refererMatchesHost(c fiber.Ctx, trusted trustedOrigins) error {
 	referer, ok := headerlookup.Value(c, fiber.HeaderReferer)
 	if !ok {
 		return ErrRefererInvalid
@@ -439,11 +463,7 @@ func refererMatchesHost(c fiber.Ctx, trustedOrigins []string, trustedSubOrigins 
 	// url.Parse already lowercases the scheme; the host may need it.
 	refererOrigin := refererURL.Scheme + "://" + utilsstrings.ToLower(refererURL.Host)
 
-	if slices.Contains(trustedOrigins, refererOrigin) {
-		return nil
-	}
-
-	if matchSubdomainOrigin(trustedSubOrigins, refererOrigin) {
+	if trusted.contains(refererOrigin) {
 		return nil
 	}
 
