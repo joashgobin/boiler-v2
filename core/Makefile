@@ -119,7 +119,7 @@ up:
 nginx:
 	@-figlet "Set up nginx"
 	sudo cp remote/<ip>.nginx /etc/nginx/sites-enabled/
-	sudo certbot --nginx -d <ip>
+	sudo certbot --nginx -d <ip> -d www.<ip>
 	sudo /etc/init.d/nginx reload
 
 ## prof: profile app using pprof tool
