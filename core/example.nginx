@@ -1,5 +1,5 @@
-limit_req_zone $binary_remote_addr zone=<appName>:10m rate=20r/s;
-limit_req_zone $binary_remote_addr zone=<appName>_static:10m rate=50r/s;
+limit_req_zone $binary_remote_addr zone=<appName>_<ipHash>:10m rate=20r/s;
+limit_req_zone $binary_remote_addr zone=<appName>_<ipHash>_static:10m rate=50r/s;
 
 server {
     server_name <ip> www.<ip>;
@@ -18,7 +18,7 @@ server {
     brotli_types *;
 
     location / {
-        limit_req zone=<appName> burst=20 nodelay;
+        limit_req zone=<appName>_<ipHash> burst=20 nodelay;
         limit_req_status 429;
 
         proxy_pass http://localhost:<port>;
@@ -29,7 +29,7 @@ server {
     }
 
     location /static/ {
-        limit_req zone=<appName>_static burst=50 nodelay;
+        limit_req zone=<appName>_<ipHash>_static burst=50 nodelay;
         limit_req_status 429;
 
         alias /home/<user>/<appName>/static/;

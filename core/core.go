@@ -398,6 +398,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 			"user":    config.User,
 			"appName": config.AppName,
 			"ip":      config.IP,
+			"ipHash":  helpers.GetXXH3(config.IP),
 			"port":    config.Port,
 		})
 		helpers.FileSubstitute(filepath.Dir(coreDir)+"/example.service", fmt.Sprintf("remote/%s.service", config.AppName), map[string]string{
