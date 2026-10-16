@@ -23,7 +23,7 @@ var compressSet = map[string]bool{
 }
 
 func GenerateBrotli(dirPath string) error {
-	log.Printf("compressing files in %s...", dirPath)
+	// log.Printf("compressing files in %s...", dirPath)
 
 	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
