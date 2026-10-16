@@ -2,3 +2,4 @@
 
 - Updated packages
 - Updated default nginx config
+- Change static asset cache policy
