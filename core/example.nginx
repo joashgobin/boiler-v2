@@ -7,15 +7,51 @@ server {
     gzip on;
     gzip_min_length 1100;
     gzip_buffers 4 32k;
-    gzip_types text/plain application/x-javascript text/xml text/css;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        text/xml
+        text/markdown
+        text/csv
+        application/json
+        application/javascript
+        application/ecmascript
+        application/xml
+        application/rss+xml
+        application/atom+xml
+        application/rdf+xml
+        application/wasm
+        application/vnd.ms-fontobject
+        font/ttf
+        font/otf
+        font/woff
+        font/woff2;
     gzip_vary on;
-
-
 
     brotli on;
     brotli_static on;
     brotli_comp_level 11; # Recommended compression level
-    brotli_types *;
+    brotli_types
+        text/plain
+        text/css
+        text/javascript
+        text/xml
+        text/markdown
+        text/csv
+        application/json
+        application/javascript
+        application/ecmascript
+        application/xml
+        application/rss+xml
+        application/atom+xml
+        application/rdf+xml
+        application/wasm
+        application/vnd.ms-fontobject
+        font/ttf
+        font/otf
+        font/woff
+        font/woff2;
 
     location / {
         limit_req zone=<appName>_<ipHash> burst=20 nodelay;
