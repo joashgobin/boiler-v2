@@ -6,3 +6,4 @@
 - Brotlify assets in static/gen folder
 - Remove comment
 - Fix
+- Updated brotli generation

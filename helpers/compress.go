@@ -22,7 +22,7 @@ var compressSet = map[string]bool{
 	".webmanifest": true,
 }
 
-func GenerateBrotli(dirPath string) error {
+func GenerateBrotli(dirPath string, alwaysRecompress ...string) error {
 	// log.Printf("compressing files in %s...", dirPath)
 
 	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
@@ -40,10 +40,19 @@ func GenerateBrotli(dirPath string) error {
 		}
 
 		destPath := path + ".br"
+
 		if FileExists(destPath) {
+			for _, exception := range alwaysRecompress {
+				// if path does not contain exception
+				if strings.Contains(path, exception) {
+					goto Compress
+				}
+			}
 			// log.Infof("skipping: %s", info.Name())
 			return nil
 		}
+
+	Compress:
 
 		log.Infof("compressing: %s", info.Name())
 
