@@ -560,7 +560,7 @@ exec bash
 
 	// compress files using brotli
 	helpers.GenerateBrotli("static/gen/")
-	helpers.GenerateBrotli("static/script/")
+	helpers.GenerateBrotli("static/script/", "init-swup.js")
 
 	showElapsed("app resource optimization time", start)
 
