@@ -5,3 +5,4 @@
 - Change static asset cache policy
 - Brotlify assets in static/gen folder
 - Remove comment
+- Fix

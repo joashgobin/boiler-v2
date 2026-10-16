@@ -3,11 +3,11 @@ package helpers
 import (
 	"bytes"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/gofiber/fiber/v3/log"
 	brrr "github.com/molecule-man/go-brrr"
 )
 
@@ -41,11 +41,11 @@ func GenerateBrotli(dirPath string) error {
 
 		destPath := path + ".br"
 		if FileExists(destPath) {
-			// log.Printf("skipping: %s", info.Name())
+			// log.Infof("skipping: %s", info.Name())
 			return nil
 		}
 
-		log.Printf("compressing: %s", info.Name())
+		log.Infof("compressing: %s", info.Name())
 
 		srcData, err := os.ReadFile(path)
 		if err != nil {
