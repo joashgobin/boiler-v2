@@ -558,6 +558,9 @@ exec bash
 	helpers.CombineAndFingerprint("static/gen/grug-simplified.css", &fingerprints,
 		"static/styles/grug.css", "static/gen/grug-opt.css")
 
+	// compress files using brotli
+	helpers.GenerateBrotli("static/gen/")
+
 	showElapsed("app resource optimization time", start)
 
 	imageChannel := make(chan *helpers.SafeImage, 10)

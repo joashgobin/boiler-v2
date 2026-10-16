@@ -3,3 +3,4 @@
 - Updated packages
 - Updated default nginx config
 - Change static asset cache policy
+- Brotlify assets in static/gen folder
