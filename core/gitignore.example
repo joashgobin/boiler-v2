@@ -10,3 +10,5 @@ views/cmp/
 <appName>.log
 *_templ.go
 *:Zone.Identifier
+*.fiber.gz
+*.br

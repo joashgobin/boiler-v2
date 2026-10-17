@@ -382,13 +382,13 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 
 	if !fiber.IsChild() {
 		// create Makefile, gitignore and service files for deployment on remote machine
-		helpers.FileSubstitute(filepath.Dir(coreDir)+"/Makefile", "Makefile.example", map[string]string{
+		helpers.FileSubstitute(filepath.Dir(coreDir)+"/Makefile", "Makefile", map[string]string{
 			"user":    config.User,
 			"appName": config.AppName,
 			"ip":      config.IP,
 			"port":    config.Port,
 		})
-		helpers.FileSubstitute(filepath.Dir(coreDir)+"/gitignore.example", ".gitignore.example", map[string]string{
+		helpers.FileSubstitute(filepath.Dir(coreDir)+"/gitignore.example", ".gitignore", map[string]string{
 			"user":    config.User,
 			"appName": config.AppName,
 			"ip":      config.IP,
@@ -406,7 +406,7 @@ func NewApp(config AppConfig) (*fiber.App, Base) {
 			"appName": config.AppName,
 			"ip":      config.IP,
 		})
-		helpers.FileSubstitute(filepath.Dir(coreDir)+"/air/.air.toml", ".air.toml.example", map[string]string{
+		helpers.FileSubstitute(filepath.Dir(coreDir)+"/air/.air.toml", ".air.toml", map[string]string{
 			"port": config.Port,
 		})
 
