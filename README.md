@@ -109,11 +109,8 @@ Run the program:
 go run main.go
 ```
 
-We now need to create the database for our app. Rename the Makefile and run the database migration:
+We now need to create the database for our app so we must run the database migration:
 ```sh
-cp Makefile.example Makefile
-cp .gitignore.example .gitignore
-cp .air.toml.example .air.toml
 sudo make up
 ```
 
