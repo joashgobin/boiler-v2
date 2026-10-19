@@ -1224,6 +1224,7 @@ exec bash
 
 	// create new fiber prefork app
 	app := fiber.New(fiber.Config{
+		UnescapePath:             true,
 		EnableSplittingOnParsers: true,
 		AppName:                  config.AppName,
 		Views:                    engine,
