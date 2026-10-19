@@ -321,7 +321,7 @@ github.com/valkey-io/valkey-go/internal/util
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v1.75.0
+# github.com/valyala/fasthttp v1.76.0
 ## explicit; go 1.26.0
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttpadaptor
