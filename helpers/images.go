@@ -75,7 +75,7 @@ type InlineImage struct {
 	Fallback string
 }
 
-func filePathURL(srcPath string) string {
+func FilePathURL(srcPath string) string {
 	u := url.URL{Path: filepath.ToSlash(srcPath)}
 	return u.String()
 }
@@ -141,9 +141,9 @@ func ConvertInline(imageChannel *chan *SafeImage, lru *LRU[string], imageLru *LR
 		}
 
 		if ext == "avif" || ext == "webp" {
-			outputs[ext] = filePathURL(outputPath)
+			outputs[ext] = FilePathURL(outputPath)
 		} else {
-			outputs["original"] = filePathURL(outputPath)
+			outputs["original"] = FilePathURL(outputPath)
 		}
 
 		if !FileExists(outputPath) {
