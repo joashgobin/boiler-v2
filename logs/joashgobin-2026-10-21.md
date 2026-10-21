@@ -2,3 +2,4 @@
 
 - Updated schema
 - Trigger hx reveal on md faq details elements
+- Updated to go 1.27.3
