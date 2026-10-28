@@ -14,6 +14,8 @@ import (
 var compressSet = map[string]bool{
 	".css":         true,
 	".js":          true,
+	".woff":        true,
+	".woff2":       true,
 	".mjs":         true,
 	".svg":         true,
 	".ttf":         true,
