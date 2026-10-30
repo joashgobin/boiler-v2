@@ -1403,14 +1403,16 @@ exec bash
 
 	app.Use(helpers.IncludeSessionLocals(sessionStore))
 
-	faviconFiles := []string{"favicon.ico", "android-chrome-192x192.png", "android-chrome-512x512.png", "apple-touch-icon.png", "site.webmanifest"}
-	for _, file := range faviconFiles {
-		app.Get("/"+file, func(c fiber.Ctx) error {
-			c.Set("Cache-Control", "public, max-age=31536000, immutable")
-			safePath := filepath.Join("./static/gen/img/", filepath.Base(file))
-			return c.SendFile(safePath)
-		})
-	}
+	/*
+		faviconFiles := []string{"favicon.ico", "android-chrome-192x192.png", "android-chrome-512x512.png", "apple-touch-icon.png", "site.webmanifest"}
+		for _, file := range faviconFiles {
+			app.Get("/"+file, func(c fiber.Ctx) error {
+				c.Set("Cache-Control", "public, max-age=31536000, immutable")
+				safePath := filepath.Join("./static/gen/img/", filepath.Base(file))
+				return c.SendFile(safePath)
+			})
+		}
+	*/
 
 	environment := "dev"
 	if config.IsProduction {
