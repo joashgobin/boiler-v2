@@ -2,3 +2,4 @@
 
 - Tweaks
 - Tweaks
+- Updated nginx config

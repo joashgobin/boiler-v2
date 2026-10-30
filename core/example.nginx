@@ -75,6 +75,10 @@ server {
         add_header Cache-Control "public, no-transform";
     }
 
+    location ~ ^/(favicon\.ico|apple-touch-icon.*\.png|android-chrome.*\.png|site\.webmanifest|safari-pinned-tab\.svg)$ {
+        root /home/<user>/<appName>/static/gen/img/;
+    }
+
     location ~ \.map$ {
         return 404;
     }
