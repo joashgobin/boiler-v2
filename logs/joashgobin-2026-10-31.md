@@ -4,3 +4,4 @@
 - Added lru rendering function
 - Tweaks
 - Tweaks
+- Added middleware for route caching  using lru

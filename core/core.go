@@ -124,6 +124,24 @@ func (base *Base) URL() string {
 	}
 }
 
+func (base *Base) URLCache(lru *helpers.LRU[string]) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		key := c.OriginalURL()
+		// fmt.Println("cache route:", key)
+		htmlContent := lru.Get(key)
+		if len(htmlContent) > 0 {
+			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			// fmt.Println("using cache:", key)
+			return c.SendString(htmlContent)
+		}
+
+		err := c.Next()
+		lru.Set(key, string(c.Res().Body()))
+		// fmt.Println("loading fresh:", key)
+		return err
+	}
+}
+
 func (base *Base) RenderTempl(c fiber.Ctx, cmp templ.Component, input ...fiber.Map) error {
 	c.Set("Content-Type", "text/html")
 	return cmp.Render(c.RequestCtx(), c.Response().BodyWriter())
