@@ -124,7 +124,7 @@ func (base *Base) URL() string {
 	}
 }
 
-func (base *Base) URLCache(lru *helpers.LRU[string]) fiber.Handler {
+func (base *Base) CacheURL(lru *helpers.LRU[string]) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		key := c.OriginalURL()
 		// fmt.Println("cache route:", key)
