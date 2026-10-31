@@ -165,14 +165,12 @@ func (base *Base) GetTemplateString(htmlString string) string {
 	return htmlOutput
 }
 
-func (base *Base) RenderFromLRU(lru *helpers.FullLRU[string, string], key string, c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) error {
-	templateContent := lru.Get(key)
-	if len(templateContent) > 0 {
-		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-		// log.Infof("(lru) using cache for %s", templatePath)
-		return c.SendString(templateContent)
-	}
+func (base *Base) SendHTML(c fiber.Ctx, htmlContent string) error {
+	c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+	return c.SendString(htmlContent)
+}
 
+func (base *Base) Render(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) (string, error) {
 	layoutFile := "views/layouts/main"
 	if len(layouts) > 0 {
 		layoutFile = layouts[0]
@@ -181,14 +179,11 @@ func (base *Base) RenderFromLRU(lru *helpers.FullLRU[string, string], key string
 	defer PutBuffer(buf)
 	err := base.Engine.Render(buf, templatePath, input, layoutFile)
 	if err != nil {
-		return c.Status(500).SendString(err.Error())
+		return "", c.Status(500).SendString(err.Error())
 	}
 	htmlOutput := buf.String()
 	c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-
-	lru.Set(key, htmlOutput)
-	// log.Infof("(lru) rendering %s", templatePath)
-	return c.SendString(htmlOutput)
+	return htmlOutput, c.SendString(htmlOutput)
 }
 
 func (base *Base) RenderCached(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) error {
