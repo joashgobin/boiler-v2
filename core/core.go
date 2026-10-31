@@ -170,7 +170,7 @@ func (base *Base) SendHTML(c fiber.Ctx, htmlContent string) error {
 	return c.SendString(htmlContent)
 }
 
-func (base *Base) Render(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) (string, error) {
+func (base *Base) Render(c fiber.Ctx, templatePath string, input fiber.Map, layouts ...string) (renderedHTML string, fiberReturn error) {
 	layoutFile := "views/layouts/main"
 	if len(layouts) > 0 {
 		layoutFile = layouts[0]
