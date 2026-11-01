@@ -128,17 +128,15 @@ func (base *Base) URL() string {
 func (base *Base) CacheURL(lru *helpers.LRU[string]) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		key := c.OriginalURL()
-		// fmt.Println("cache route:", key)
 		htmlContent := lru.Get(key)
+
 		if len(htmlContent) > 0 {
 			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-			// fmt.Println("using cache:", key)
 			return c.SendString(htmlContent)
 		}
 
 		err := c.Next()
 		lru.Set(key, string(c.Res().Body()))
-		// fmt.Println("loading fresh:", key)
 		return err
 	}
 }
