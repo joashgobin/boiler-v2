@@ -6,3 +6,4 @@
 - Tweaks
 - Prevent html elements from being in user name
 - Updated email parsing
+- Updated compression login

@@ -587,8 +587,8 @@ exec bash
 		"static/styles/grug.css", "static/gen/grug-opt.css")
 
 	// compress files using brotli
-	helpers.GenerateBrotli("static/gen/")
-	helpers.GenerateBrotli("static/script/", "init-swup.js")
+	helpers.GenerateBrotli("static/gen/", []string{}, []string{"site.webmanifest"})
+	helpers.GenerateBrotli("static/script/", []string{"init-swup.js"}, []string{})
 
 	showElapsed("app resource optimization time", start)
 
@@ -606,7 +606,7 @@ exec bash
 	if !fiber.IsChild() {
 		// generate favicon
 		helpers.ConvertJPGToPNG("static/img/fav.jpg", "static/img/fav.png")
-		helpers.GenerateFavicon("static/img/fav.png", "static/gen/img/")
+		helpers.GenerateFavicon("static/img/fav.png", "static/gen/img/", config.SiteInfo)
 
 		// convert images to Webp
 		// helpers.ConvertInlineWebpFolder(&imageChannel, lru,"static/img/", ".jpg", ".png","jpeg")
@@ -1133,7 +1133,7 @@ exec bash
 		<link rel="apple-touch-icon" sizes="180x180" href="/static/gen/img/apple-touch-icon.png?v=(())">
 		<link rel="icon" type="image/png" sizes="32x32" href="/static/gen/img/favicon-32x32.png?v=(())">
 		<link rel="icon" type="image/png" sizes="16x16" href="/static/gen/img/favicon-16x16.png?v=(())">
-		<link rel="manifest" href="/static/gen/img/site.webmanifest?v=(())">
+		<link rel="manifest" href="/static/gen/img/site.webmanifest?version=(())fin">
 			`
 			return ht.HTML(strings.ReplaceAll(links, "(())", helpers.GetFileHash("static/img/fav.png")))
 		},

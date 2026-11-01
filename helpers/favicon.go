@@ -121,13 +121,13 @@ func generateFaviconImages(targetImgPath, outputDir string) {
 	generateImage(targetImgPath, hash, filepath.Join(outputDir, "favicon.png"), 48, 48)
 }
 
-func GenerateFavicon(targetImgPath, outputDir string) {
+func GenerateFavicon(targetImgPath, outputDir string, siteInfo *map[string]string) {
+	generateWebManifest(filepath.Join(outputDir, "site.webmanifest"), (*siteInfo)["title"], (*siteInfo)["theme-color"], "standalone")
 	if FileExists(targetImgPath) {
 		if !fiber.IsChild() {
 			tileColor := "red"
 			generateFaviconImages(targetImgPath, outputDir)
 			generateBrowserConfigXML(filepath.Join(outputDir, "browserconfig.xml"), tileColor)
-			generateWebManifest(filepath.Join(outputDir, "site.webmanifest"), "", "", "")
 		}
 	} else {
 		if !fiber.IsChild() {
