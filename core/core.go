@@ -1133,7 +1133,7 @@ exec bash
 		<link rel="apple-touch-icon" sizes="180x180" href="/static/gen/img/apple-touch-icon.png?v=(())">
 		<link rel="icon" type="image/png" sizes="32x32" href="/static/gen/img/favicon-32x32.png?v=(())">
 		<link rel="icon" type="image/png" sizes="16x16" href="/static/gen/img/favicon-16x16.png?v=(())">
-		<link rel="manifest" href="/static/gen/img/site.webmanifest?version=(())fin">
+		<link rel="manifest" href="/static/gen/img/site.webmanifest?version=(())-final">
 			`
 			return ht.HTML(strings.ReplaceAll(links, "(())", helpers.GetFileHash("static/img/fav.png")))
 		},
