@@ -16,7 +16,7 @@ import (
 	"github.com/tdewolff/minify/v2/js"
 )
 
-func SaveComponents(fs *embed.FS, lru *LRU[string], cmpLog *map[string]template.HTML) error {
+func SaveComponents(fs *embed.FS, lru *LRU[string], cmpLog *map[string]template.HTML, funcMaps ...map[string]any) error {
 	if fs == nil {
 		return fmt.Errorf("files not embedded")
 	}
@@ -25,15 +25,18 @@ func SaveComponents(fs *embed.FS, lru *LRU[string], cmpLog *map[string]template.
 		return err
 	}
 	for _, file := range viewFiles {
-		// fmt.Printf("saving components from %s\n", file)
-		if !strings.Contains(file, "/cmp/") {
-			ExtractComponents(fs, file, lru, cmpLog)
+		for _, fm := range funcMaps {
+			if len(fm) > 0 {
+				if !strings.Contains(file, "/cmp/") {
+					extractComponents(fs, file, lru, cmpLog, fm)
+				}
+			}
 		}
 	}
 	return nil
 }
 
-func ExtractComponents(fs *embed.FS, filePath string, lru *LRU[string], cmpLog *map[string]template.HTML) error {
+func extractComponents(fs *embed.FS, filePath string, lru *LRU[string], cmpLog *map[string]template.HTML, funcMap map[string]any) error {
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
@@ -54,11 +57,27 @@ func ExtractComponents(fs *embed.FS, filePath string, lru *LRU[string], cmpLog *
 			snippet.WriteString(`<div hx-get="/cmp/`)
 			snippet.WriteString(hash)
 			snippet.WriteString(`" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
-
 			(*cmpLog)[v[1]] = template.HTML(snippet.String())
-			minifiedHTML, err := m.String("text/html", strings.TrimSpace(v[2]))
+
+			// generate HTML code for cmp
+			// log.Infof("key: %v", v[1])
+			// fmt.Println("starting HTML:", v[2])
+			tmpl, err := template.New("webpage").Funcs(funcMap).Parse(v[2])
 			if err != nil {
-				log.Errorf("extract component error: %v", err)
+				log.Errorf("extract components template parse error: %v", err)
+				continue
+			}
+			var buf bytes.Buffer
+
+			err = tmpl.Execute(&buf, nil)
+			if err != nil {
+				log.Errorf("extract components template execute error: %v", err)
+				continue
+			}
+
+			minifiedHTML, err := m.String("text/html", buf.String())
+			if err != nil {
+				log.Errorf("extract components minify error: %v", err)
 				continue
 			}
 			lru.Set(hash, minifiedHTML)
@@ -135,14 +154,14 @@ func SaveInline(fs *embed.FS, inlineLog *map[string]template.HTML, funcMaps ...m
 		// fmt.Printf("saving inline from %s\n", file)
 		for _, fm := range funcMaps {
 			if len(fm) > 0 {
-				ExtractInline(fs, file, inlineLog, fm)
+				extractInline(fs, file, inlineLog, fm)
 			}
 		}
 	}
 	return nil
 }
 
-func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template.HTML, funcMap map[string]any) error {
+func extractInline(fs *embed.FS, filePath string, inlineLog *map[string]template.HTML, funcMap map[string]any) error {
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
@@ -158,9 +177,7 @@ func ExtractInline(fs *embed.FS, filePath string, inlineLog *map[string]template
 	// cmpMap := make(map[string]string, len(results))
 	for _, v := range results {
 		if len(v) > 2 {
-			// fmt.Println("inline:", v[1])
 			tmpl, err := template.New("webpage").Funcs(funcMap).Parse(v[2])
-			// log.Infof("get template string time: %v", time.Since(now).Microseconds())
 			if err != nil {
 				continue
 			}

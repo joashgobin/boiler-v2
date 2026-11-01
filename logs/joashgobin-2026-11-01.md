@@ -9,3 +9,4 @@
 - Updated compression login
 - Tweak
 - Generate favicon before running optimizations
+- Tweaks to cmp rendering

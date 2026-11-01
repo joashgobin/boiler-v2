@@ -92,6 +92,7 @@ type AppConfig struct {
 	SessionAbsoluteTimeout time.Duration
 	Templates              *embed.FS
 	SiteInfo               *map[string]string
+	SkipMiddleware         bool
 }
 
 // 64 Kb pool buffer max size
@@ -579,11 +580,8 @@ exec bash
 	// save components into shelf
 	cmpLog := map[string]ht.HTML{}
 	cmpLru := helpers.NewLRU("")
-	helpers.SaveComponents(config.Templates, cmpLru, &cmpLog)
 	inlineLog := map[string]ht.HTML{}
-
 	fileSnippetLog := map[string]string{}
-	helpers.SaveFileSnippets(config.Templates, &fileSnippetLog)
 
 	// combine stylesheet files into a single file and fingerprint
 	helpers.CombineAndFingerprint("static/gen/mango-final.css", &fingerprints,
@@ -1238,6 +1236,9 @@ exec bash
 		return nil, Base{}
 	}
 
+	helpers.SaveComponents(config.Templates, cmpLru, &cmpLog, startingFunctions, config.FuncMap)
+	helpers.SaveFileSnippets(config.Templates, &fileSnippetLog)
+
 	showElapsed("template engine load time", start)
 
 	// fiber specific configuration
@@ -1281,7 +1282,6 @@ exec bash
 	log.SetOutput(iw)
 
 	// init fiber session middleware
-	// sessEx = extractors.FromCookie("__Host-session_id_")
 	sessEx := extractors.FromCookie("__Host-session_id_local_" + config.AppName + "_")
 	if config.IsProduction {
 		sessEx = extractors.FromCookie("__Host-session_id_" + config.AppName + "_")
@@ -1308,54 +1308,56 @@ exec bash
 	sessionStore.RegisterType(models.User{})
 	sessionStore.RegisterType(map[string]string{})
 
-	// create csrf error handler
-	csrfErrorHandler := func(c fiber.Ctx, err error) error {
-		// csrf := c.FormValue("csrf")
-		// fmt.Println("my csrf token:", csrf)
-		log.Errorf("csrf error: %v request: %v from IP: %v", err, c.OriginalURL(), c.IP())
-		switch c.Accepts("html", "json") {
-		case "json":
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": fmt.Sprintf("CSRF Error: %v. Please refresh.", err),
-			})
-		default:
-			referer := c.Get("Referer")
-			// fmt.Println("my referer:", referer)
-			if referer == "" {
-				return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v", err)).To("/")
+	if !config.SkipMiddleware {
+		// create csrf error handler
+		csrfErrorHandler := func(c fiber.Ctx, err error) error {
+			// csrf := c.FormValue("csrf")
+			// fmt.Println("my csrf token:", csrf)
+			log.Errorf("csrf error: %v request: %v from IP: %v", err, c.OriginalURL(), c.IP())
+			switch c.Accepts("html", "json") {
+			case "json":
+				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+					"error": fmt.Sprintf("CSRF Error: %v. Please refresh.", err),
+				})
+			default:
+				referer := c.Get("Referer")
+				// fmt.Println("my referer:", referer)
+				if referer == "" {
+					return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v", err)).To("/")
+				}
+				return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v. Please try again.", err)).Back("/")
 			}
-			return c.Redirect().With("csrf", fmt.Sprintf("CSRF Error: %v. Please try again.", err)).Back("/")
 		}
+
+		// init fiber csrf middleware
+		csrfMiddleware := csrf.New(csrf.Config{
+			CookieName:        "__Host-csrf_",
+			CookieSecure:      true,
+			CookieHTTPOnly:    false,
+			CookieSameSite:    "Lax",
+			CookieSessionOnly: false,
+			Extractor: extractors.Chain(
+				extractors.FromHeader("X-CSRF-Token"),
+				// extractors.FromQuery("csrf"),
+				extractors.FromForm("csrf"),
+			),
+			Session:        sessionStore,
+			ErrorHandler:   csrfErrorHandler,
+			Storage:        storage,
+			SingleUseToken: true,
+			TrustedOrigins: []string{
+				"http://127.0.0.1",
+				"http://127.0.0.1:" + config.Port,
+				"http://127.0.0.1:8081",
+				"http://localhost",
+				"http://localhost:" + config.Port,
+				"http://localhost:8081",
+				"https://" + config.IP,
+			},
+		})
+
+		app.Use(csrfMiddleware)
 	}
-
-	// init fiber csrf middleware
-	csrfMiddleware := csrf.New(csrf.Config{
-		CookieName:        "__Host-csrf_",
-		CookieSecure:      true,
-		CookieHTTPOnly:    false,
-		CookieSameSite:    "Lax",
-		CookieSessionOnly: false,
-		Extractor: extractors.Chain(
-			extractors.FromHeader("X-CSRF-Token"),
-			// extractors.FromQuery("csrf"),
-			extractors.FromForm("csrf"),
-		),
-		Session:        sessionStore,
-		ErrorHandler:   csrfErrorHandler,
-		Storage:        storage,
-		SingleUseToken: true,
-		TrustedOrigins: []string{
-			"http://127.0.0.1",
-			"http://127.0.0.1:" + config.Port,
-			"http://127.0.0.1:8081",
-			"http://localhost",
-			"http://localhost:" + config.Port,
-			"http://localhost:8081",
-			"https://" + config.IP,
-		},
-	})
-
-	app.Use(csrfMiddleware)
 
 	if !config.IsProduction {
 		// init static file serving
@@ -1419,18 +1421,21 @@ exec bash
 	if config.IsProduction {
 		app.Use(recover.New())
 	}
-	app.Use(idempotency.New(idempotency.Config{
-		Storage: storage,
-	}))
 
-	app.Use(pprof.New(pprof.Config{
-		Prefix: "/profiler",
-		Next: func(c fiber.Ctx) bool {
-			return c.IP() != "127.0.0.1"
-		},
-	}))
+	if !config.SkipMiddleware {
+		app.Use(idempotency.New(idempotency.Config{
+			Storage: storage,
+		}))
 
-	app.Use(helpers.IncludeSessionLocals(sessionStore))
+		app.Use(pprof.New(pprof.Config{
+			Prefix: "/profiler",
+			Next: func(c fiber.Ctx) bool {
+				return c.IP() != "127.0.0.1"
+			},
+		}))
+
+		app.Use(helpers.IncludeSessionLocals(sessionStore))
+	}
 
 	/*
 		faviconFiles := []string{"favicon.ico", "android-chrome-192x192.png", "android-chrome-512x512.png", "apple-touch-icon.png", "site.webmanifest"}
