@@ -72,6 +72,7 @@ type Base struct {
 	isPrefork bool
 	domain    string
 	port      string
+	cmpLru    *helpers.LRU[string]
 }
 
 type AppConfig struct {
@@ -263,23 +264,10 @@ func (base Base) Serve(app *fiber.App) {
 
 	app.Get("/cmp/:hash", func(c fiber.Ctx) error {
 		hash := c.Params("hash")
-		templateKey := "cmp-" + hash
-
-		templateContent := base.Bank.GetString(templateKey)
-		if len(templateContent) > 0 {
-			// log.Infof("using cache for %s", templateKey)
-			base.Flash.KeepCached(c, 60*60*24*365)
-			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-			return c.SendString(templateContent)
-		}
-		// log.Infof("rendering %s", templateKey)
-		htmlContent := base.GetTemplateString(base.Shelf.Get(templateKey))
-		if htmlContent != "" {
-			base.Bank.SetString(templateKey, htmlContent, 10*time.Minute)
-			base.Flash.KeepCached(c, 60*60*24*365)
-		}
+		templateContent := base.cmpLru.Get(hash)
+		base.Flash.KeepCached(c, 60*60*24*365)
 		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-		return c.SendString(htmlContent)
+		return c.SendString(templateContent)
 	})
 
 	app.Hooks().OnPostShutdown(func(_ error) error {
@@ -580,7 +568,8 @@ exec bash
 
 	// save components into shelf
 	cmpLog := map[string]ht.HTML{}
-	helpers.SaveComponents(config.Templates, shelf, bank, &cmpLog)
+	cmpLru := helpers.NewLRU("")
+	helpers.SaveComponents(config.Templates, cmpLru, &cmpLog)
 	inlineLog := map[string]ht.HTML{}
 
 	fileSnippetLog := map[string]string{}
@@ -1420,6 +1409,7 @@ exec bash
 		isPrefork: config.EnablePrefork,
 		domain:    config.IP,
 		port:      config.Port,
+		cmpLru:    cmpLru,
 	}
 
 	app.Use(etag.New(etag.Config{

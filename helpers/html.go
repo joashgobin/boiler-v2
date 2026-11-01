@@ -16,7 +16,7 @@ import (
 	"github.com/tdewolff/minify/v2/js"
 )
 
-func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank *Bank, cmpLog *map[string]template.HTML) error {
+func SaveComponents(fs *embed.FS, lru *LRU[string], cmpLog *map[string]template.HTML) error {
 	if fs == nil {
 		return fmt.Errorf("files not embedded")
 	}
@@ -27,13 +27,13 @@ func SaveComponents(fs *embed.FS, shelf ShelfInterface, bank *Bank, cmpLog *map[
 	for _, file := range viewFiles {
 		// fmt.Printf("saving components from %s\n", file)
 		if !strings.Contains(file, "/cmp/") {
-			ExtractComponents(fs, file, shelf, bank, cmpLog)
+			ExtractComponents(fs, file, lru, cmpLog)
 		}
 	}
 	return nil
 }
 
-func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank *Bank, cmpLog *map[string]template.HTML) error {
+func ExtractComponents(fs *embed.FS, filePath string, lru *LRU[string], cmpLog *map[string]template.HTML) error {
 	data, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %v", err)
@@ -46,26 +46,22 @@ func ExtractComponents(fs *embed.FS, filePath string, shelf ShelfInterface, bank
 
 	re := regexp.MustCompile(fmt.Sprintf(`{{\s*cmp\s+"(.*?)"\s+%s((.|\n|\r\n)*?)%s\s*}}`, "`", "`"))
 	results := re.FindAllStringSubmatch(string(data), -1)
-	// cmpMap := make(map[string]string, len(results))
 	for _, v := range results {
 		if len(v) > 2 {
-			// fmt.Println(v[1], v[2])
 			hash := GetXXH3(v[2])
-			key := "cmp-" + hash
-			// cmpMap[key] = v[2]
 
 			var snippet strings.Builder
 			snippet.WriteString(`<div hx-get="/cmp/`)
 			snippet.WriteString(hash)
 			snippet.WriteString(`" hx-trigger="load" hx-target="this" hx-swap="outerHTML"></div>`)
+
 			(*cmpLog)[v[1]] = template.HTML(snippet.String())
-			bank.Delete(key)
 			minifiedHTML, err := m.String("text/html", strings.TrimSpace(v[2]))
 			if err != nil {
 				log.Errorf("extract component error: %v", err)
 				continue
 			}
-			shelf.Set(key, minifiedHTML)
+			lru.Set(hash, minifiedHTML)
 		}
 	}
 	return nil
