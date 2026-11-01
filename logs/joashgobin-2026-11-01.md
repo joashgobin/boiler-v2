@@ -8,3 +8,4 @@
 - Updated email parsing
 - Updated compression login
 - Tweak
+- Generate favicon before running optimizations

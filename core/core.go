@@ -550,6 +550,16 @@ exec bash
 	fingerprints := make(map[string]string, 50)
 	optimizations := make(map[string]string, 50)
 
+	if !fiber.IsChild() {
+		// generate favicon
+		helpers.ConvertJPGToPNG("static/img/fav.jpg", "static/img/fav.png")
+		helpers.GenerateFavicon("static/img/fav.png", "static/gen/img/", config.SiteInfo)
+
+		// convert images to Webp
+		// helpers.ConvertInlineWebpFolder(&imageChannel, lru,"static/img/", ".jpg", ".png","jpeg")
+	}
+	showElapsed("app favicon generation time", start)
+
 	// generate new minified style file with fingerprint in file name
 	helpers.GenerateFingerprintsForFolder("static", "static/gen", ".css", &fingerprints)
 
@@ -602,16 +612,6 @@ exec bash
 			go imageWorker(i, start, imageChannel, muPool)
 		}
 	}()
-
-	if !fiber.IsChild() {
-		// generate favicon
-		helpers.ConvertJPGToPNG("static/img/fav.jpg", "static/img/fav.png")
-		helpers.GenerateFavicon("static/img/fav.png", "static/gen/img/", config.SiteInfo)
-
-		// convert images to Webp
-		// helpers.ConvertInlineWebpFolder(&imageChannel, lru,"static/img/", ".jpg", ".png","jpeg")
-	}
-	showElapsed("app favicon generation time", start)
 
 	// create template engine
 	engine := html.New("./views", ".html")
