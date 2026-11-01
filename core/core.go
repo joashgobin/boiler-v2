@@ -131,12 +131,14 @@ func (base *Base) CacheURL(lru *helpers.LRU[string]) fiber.Handler {
 		htmlContent := lru.Get(key)
 
 		if len(htmlContent) > 0 {
+			// fmt.Println("sending cache")
 			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return c.SendString(htmlContent)
 		}
 
 		err := c.Next()
 		lru.Set(key, string(c.Res().Body()))
+		// fmt.Println("filling cache")
 		return err
 	}
 }
