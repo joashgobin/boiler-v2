@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"html"
 	"os"
 	"strings"
 	"time"
@@ -129,7 +130,7 @@ func (m *UserModel) Create(name, email, password string) error {
 	INSERT INTO users (name, email, roles, hashed_password, created)
     VALUES(?, ?, ?, ?, UTC_TIMESTAMP())
 	`
-	_, err = m.db.Exec(stmt, name, email, "|user|", string(hashedPassword))
+	_, err = m.db.Exec(stmt, html.EscapeString(name), email, "|user|", string(hashedPassword))
 	if err != nil {
 		if mySQLError, ok := errors.AsType[*mysql.MySQLError](err); ok {
 			if mySQLError.Number == 1062 && strings.Contains(mySQLError.Message, "users_uc_email") {

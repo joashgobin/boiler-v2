@@ -4,3 +4,4 @@
 - Updated packages
 - Remove comments
 - Tweaks
+- Prevent html elements from being in user name
