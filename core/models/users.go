@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"net/mail"
 	"os"
 	"strings"
 	"time"
@@ -118,7 +119,12 @@ CREATE TABLE IF NOT EXISTS users (
 	`, "<appName>", appName), db)
 }
 
-func (m *UserModel) Create(name, email, password string) error {
+func (m *UserModel) Create(name, potentialEmail, password string) error {
+	em, err := mail.ParseAddress(potentialEmail)
+	if err != nil {
+		return fmt.Errorf("create user error: parse email: %v", err)
+	}
+	email := em.Address
 	if exists, err := m.Exists(email); exists {
 		return fmt.Errorf("create user error: user already exists: %v", err)
 	}
