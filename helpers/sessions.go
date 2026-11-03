@@ -25,11 +25,12 @@ func (rb RedirectBuilder) Back() error {
 // Redirect to a particular URL
 func (rb RedirectBuilder) To(route string, args ...any) error {
 	if len(args) > 0 {
-		// log.Infof("redirecting to %s",route)
-		return rb.context.Redirect().WithInput().With("message", rb.message).To(fmt.Sprintf(route, args...))
+		finalRoute := fmt.Sprintf(route, args...)
+		// log.Infof("redirecting to %s", finalRoute)
+		return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusSeeOther).To(finalRoute)
 	}
-	// log.Infof("redirecting to %s",route)
-	return rb.context.Redirect().WithInput().With("message", rb.message).To(route)
+	// log.Infof("redirecting to %s", route)
+	return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusSeeOther).To(route)
 }
 
 // Redirect to a named route
