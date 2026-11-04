@@ -27,10 +27,10 @@ func (rb RedirectBuilder) To(route string, args ...any) error {
 	if len(args) > 0 {
 		finalRoute := fmt.Sprintf(route, args...)
 		// log.Infof("redirecting to %s", finalRoute)
-		return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusSeeOther).To(finalRoute)
+		return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusFound).To(finalRoute)
 	}
 	// log.Infof("redirecting to %s", route)
-	return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusSeeOther).To(route)
+	return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusFound).To(route)
 }
 
 // Redirect to a named route
