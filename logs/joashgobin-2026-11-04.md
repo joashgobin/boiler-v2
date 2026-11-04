@@ -2,3 +2,4 @@
 
 - Updated vp inc and base font size
 - Testing redirects
+- Updated packages
