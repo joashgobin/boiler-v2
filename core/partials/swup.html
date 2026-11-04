@@ -1,5 +1,6 @@
 <script src="/static/script/swup.js"></script>
 <script src="/static/script/swup-forms-plugin.js"></script>
+<script src="/static/script/swup-scroll-plugin.js"></script>
 {{if not prod}}
 <script src="/static/script/swup-debug-plugin.js"></script>
 {{end}}
@@ -44,16 +45,21 @@
         containers: ['#swup', 'header', 'footer'],
         cache: false,
         {{if prod}}
-        plugins: [new SwupFormsPlugin()]
+        plugins: [new SwupFormsPlugin(), new SwupScrollPlugin()]
         {{else}}
-        plugins: [new SwupFormsPlugin(), new SwupDebugPlugin()]
+        plugins: [new SwupFormsPlugin(), new SwupScrollPlugin(), new SwupDebugPlugin()]
         {{end}}
     });
 
     swup.hooks.on('page:view', (visit) => {
         initScroll();
         htmx.process(document.body);
+        // window.location.hash = "swup";
         {{js "static/script/init-swup.js"}}
+    });
+
+    swup.hooks.on('visit:start', (visit) => {
+  console.log('Starting visit to:', visit.to);
     });
 
     document.addEventListener('DOMContentLoaded', () => {

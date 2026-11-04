@@ -24,13 +24,14 @@ func (rb RedirectBuilder) Back() error {
 
 // Redirect to a particular URL
 func (rb RedirectBuilder) To(route string, args ...any) error {
+	rb.context.Set("X-Redirect-Anchor","hi")
 	if len(args) > 0 {
 		finalRoute := fmt.Sprintf(route, args...)
 		// log.Infof("redirecting to %s", finalRoute)
-		return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusFound).To(finalRoute)
+		return rb.context.Redirect().WithInput().With("message", rb.message).To(finalRoute)
 	}
 	// log.Infof("redirecting to %s", route)
-	return rb.context.Redirect().WithInput().With("message", rb.message).Status(fiber.StatusFound).To(route)
+	return rb.context.Redirect().WithInput().With("message", rb.message).To(route)
 }
 
 // Redirect to a named route
