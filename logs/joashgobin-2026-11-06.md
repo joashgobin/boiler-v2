@@ -2,3 +2,4 @@
 
 - Remove swup scroll plugin
 - Updated packages
+- Read value from locals if present

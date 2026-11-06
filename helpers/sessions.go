@@ -24,7 +24,7 @@ func (rb RedirectBuilder) Back() error {
 
 // Redirect to a particular URL
 func (rb RedirectBuilder) To(route string, args ...any) error {
-	rb.context.Set("X-Redirect-Anchor","hi")
+	rb.context.Set("X-Redirect-Anchor", "hi")
 	if len(args) > 0 {
 		finalRoute := fmt.Sprintf(route, args...)
 		// log.Infof("redirecting to %s", finalRoute)
@@ -113,24 +113,25 @@ func (flash *FlashModel) RegisterType(value any) {
 
 // Get returns the value for a key if exists in the current session otherwise the default value specified
 func (flash *FlashModel) Get[T any](c fiber.Ctx, key string, defaultValue T) T {
-	// start:=time.Now()
+	// check for value in locals
+	if localsCast, ok := c.Locals(key).(T); ok {
+		return localsCast
+	}
+
+	// access value through session store
 	sess, err := flash.store.Get(c)
 	defer sess.Release()
 	if err != nil {
-		// fmt.Println("• flash get default:",time.Since(start))
 		return defaultValue
 	}
 	value := sess.Get(key)
 	if value == nil {
-		// fmt.Println("• flash get default:",time.Since(start))
 		return defaultValue
 	}
 	castedValue, ok := value.(T)
 	if !ok {
-		// fmt.Println("• flash get default:",time.Since(start))
 		return defaultValue
 	}
-	// fmt.Println("• flash get value:",time.Since(start))
 	return castedValue
 }
 
