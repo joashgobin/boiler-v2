@@ -258,6 +258,12 @@ func (base Base) Serve(app *fiber.App) {
 		return base.QR.Send(c, base.URL())
 	})
 
+	app.Get("/robots.txt", func(c fiber.Ctx) error {
+		c.Set("Content-Type", "text/plain")
+		robotsTxt := "User-agent: *\nDisallow:\n"
+		return c.SendString(robotsTxt)
+	})
+
 	app.Get("/image", func(c fiber.Ctx) error {
 		finalPath := c.Query("path")
 		return c.SendString("<img alt='" + finalPath + "' style='opacity:0' onload='this.style.opacity=1' class='gen-image' src='" + finalPath + "' width=100%>")
