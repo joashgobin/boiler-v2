@@ -1,6 +1,5 @@
 <script src="/static/script/swup.js"></script>
 <script src="/static/script/swup-forms-plugin.js"></script>
-<script src="/static/script/swup-scroll-plugin.js"></script>
 {{if not prod}}
 <script src="/static/script/swup-debug-plugin.js"></script>
 {{end}}
@@ -45,9 +44,9 @@
         containers: ['#swup', 'header', 'footer'],
         cache: false,
         {{if prod}}
-        plugins: [new SwupFormsPlugin(), new SwupScrollPlugin()]
+        plugins: [new SwupFormsPlugin()]
         {{else}}
-        plugins: [new SwupFormsPlugin(), new SwupScrollPlugin(), new SwupDebugPlugin()]
+        plugins: [new SwupFormsPlugin(), new SwupDebugPlugin()]
         {{end}}
     });
 
