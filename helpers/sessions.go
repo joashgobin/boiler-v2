@@ -233,7 +233,7 @@ func IncludeSessionLocals(store *session.Store) fiber.Handler {
 		// save session once if any changes were made
 		if updatedSession {
 			if err := sess.Save(); err != nil {
-				log.Infof("error updating session info: %v", err)
+				log.Errorf("error updating session info: %v", err)
 			}
 		}
 

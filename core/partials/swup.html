@@ -50,29 +50,30 @@
         {{end}}
     });
 
-    swup.hooks.on('page:view', (visit) => {
-        initScroll();
-        htmx.process(document.body);
-        // console.log(visit.from.hash,"->",visit.to.hash);
-        {{js "static/script/init-swup.js"}}
-    });
-
     swup.hooks.on('visit:start', (visit) => {
         val = visit.to.hash;
-        // console.log("Starting hash:",visit.to.hash);
         visit.meta.targetHash = val;
     });
 
-    swup.hooks.on('visit:end', (visit) => {
+    swup.hooks.on('page:view', (visit) => {
         window.location.hash = visit.meta.targetHash;
-        // console.log("Ending hash:",visit.from.hash);
     });
 
     /*
-    swup.hooks.on('content:replace', (visit) => {
-  console.log("Doc:",visit.to.document?);
-});
+    swup.hooks.on('visit:end', (visit) => {
+        console.log("document:",visit.to.response);
+    });
+
+    swup.hooks.on('fetch:request', (visit,args) => {
+        console.log("args:",args);
+    });
     */
+
+    swup.hooks.on('page:view', (visit) => {
+        initScroll();
+        htmx.process(document.body);
+        {{js "static/script/init-swup.js"}}
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         initScroll();
