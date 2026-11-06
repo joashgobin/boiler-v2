@@ -260,7 +260,7 @@ func (base Base) Serve(app *fiber.App) {
 
 	app.Get("/robots.txt", func(c fiber.Ctx) error {
 		c.Set("Content-Type", "text/plain")
-		robotsTxt := "User-agent: *\nDisallow:\n"
+		robotsTxt := "User-agent: *\nDisallow:\nAllow: /\n"
 		return c.SendString(robotsTxt)
 	})
 

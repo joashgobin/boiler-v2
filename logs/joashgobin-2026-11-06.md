@@ -5,3 +5,4 @@
 - Read value from locals if present
 - Testing other redirect strategies for swup js
 - Added endpoint for robots.txt
+- Fix
