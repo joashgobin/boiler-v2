@@ -22,7 +22,11 @@ import (
 type UserModelInterface interface {
 	Create(name, email, password string) error
 	UpdatePassword(email, password string) error
-	authenticate(email, password string) (User, error)
+	// get user from database if email and password are valid
+	Authenticate(email, password string) (User, error)
+	// store user in Fiber session
+	LoginAsUser(c fiber.Ctx, user User) error
+	// authenticate user and store in Fiber session
 	LoginAs(c fiber.Ctx, email, password string) (User, error)
 	emailAuthenticate(email string) (User, error)
 	EmailLoginAs(c fiber.Ctx, email string) (User, error)
@@ -56,6 +60,10 @@ func NewUserModel(newDB *sql.DB, newStore *session.Store) *UserModel {
 }
 
 var _ UserModelInterface = (*UserModel)(nil)
+
+func (u User) HasRole(role string) bool {
+	return strings.Contains(u.Roles, "|"+role+"|")
+}
 
 func (m *UserModel) GetAll(limit int) []User {
 	var users []User
@@ -250,7 +258,7 @@ func (m *UserModel) emailAuthenticate(email string) (User, error) {
 	return user, nil
 }
 
-func (m *UserModel) authenticate(email, password string) (User, error) {
+func (m *UserModel) Authenticate(email, password string) (User, error) {
 	var user User
 	stmt := "SELECT id, name, roles, hashed_password FROM users WHERE email = ?"
 	err := m.db.QueryRow(stmt, email).Scan(&user.ID, &user.Name, &user.Roles, &user.HashedPassword)
@@ -301,7 +309,7 @@ func (m *UserModel) EmailLoginAs(c fiber.Ctx, email string) (User, error) {
 }
 
 func (m *UserModel) LoginAs(c fiber.Ctx, email, password string) (User, error) {
-	user, err := m.authenticate(email, password)
+	user, err := m.Authenticate(email, password)
 	if err != nil {
 		return User{}, fmt.Errorf("credentials error: %v", err)
 	}
@@ -323,6 +331,26 @@ func (m *UserModel) LoginAs(c fiber.Ctx, email, password string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (m *UserModel) LoginAsUser(c fiber.Ctx, user User) error {
+	sess, err := m.store.Get(c)
+	if err != nil {
+		return fmt.Errorf("get session error: %v", err)
+	}
+	defer sess.Release()
+	if err := sess.Reset(); err != nil {
+		return fmt.Errorf("reset session error: %v", err)
+	}
+
+	sess.Set("user", user)
+	// sess.SetIdleTimeout(m.sessionIdleTimeout)
+
+	if err := sess.Save(); err != nil {
+		return fmt.Errorf("save session error: %v", err)
+	}
+
+	return nil
 }
 
 func (m *UserModel) Logout(c fiber.Ctx) error {

@@ -126,6 +126,10 @@ func (base *Base) URL() string {
 	}
 }
 
+func (base *Base) IsProd() bool {
+	return base.isProd
+}
+
 func (base *Base) CacheURL(lru *helpers.LRU[string]) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		key := c.OriginalURL()

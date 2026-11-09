@@ -3,3 +3,4 @@
 - Updated fasthttp
 - Updated packages
 - Updated packages
+- Fix user login for magic links

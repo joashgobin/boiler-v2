@@ -6,7 +6,6 @@ import (
 	"embed"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/wneessen/go-mail"
 
@@ -130,10 +129,6 @@ type Mail struct {
 type MailInterface interface {
 	Send(opts ...cfg.MailOption) error
 	GetAll(filter string) []Mail
-	GetMagicLink(email, purpose, urlPrefix string) string
-	GetMagicLinks() []MagicLink
-	IsMagicLinkValid(link string) bool
-	SetMagicLinkResult(value, result string) string
 }
 
 var _ MailInterface = (*MailModel)(nil)
@@ -159,101 +154,6 @@ func (m *MailModel) GetAll(filter string) []Mail {
 		mail = append(mail, newMail)
 	}
 	return mail
-}
-
-func (m *MailModel) GetMagicLinks() []MagicLink {
-	var links []MagicLink
-	query := `
-	SELECT id,email,purpose,value,result,used
-	FROM magiclinks
-	`
-	rows, err := m.DB.Query(query)
-	if err != nil {
-		log.Errorf("magic links query error: %v", err)
-		return nil
-	}
-	for rows.Next() {
-		var link MagicLink
-		err := rows.Scan(&link.ID, &link.Email, &link.Purpose, &link.Value, &link.Result, &link.Used)
-		if err != nil {
-			log.Errorf("magic links row scan error: %v", err)
-			return nil
-		}
-		links = append(links, link)
-	}
-	return links
-}
-
-func (m *MailModel) SetMagicLinkResult(value, result string) string {
-	updateQuery := `
-	UPDATE magiclinks SET result = ? WHERE value = ?
-	`
-	stmt, err := m.DB.Prepare(updateQuery)
-	if err != nil {
-		log.Errorf("prepare statement error: %v", err)
-		return ""
-	}
-	res, err := stmt.Exec(result, value)
-	if err != nil {
-		log.Errorf("execute error: %v", err)
-		return ""
-	}
-	_, err = res.RowsAffected()
-	if err != nil {
-		log.Errorf("rows affected error: %v", err)
-		return ""
-	}
-
-	var userEmail string
-	err = m.DB.QueryRow(`
-	SELECT email FROM magiclinks WHERE value = ?
-	`, value).Scan(&userEmail)
-	if err != nil {
-		return ""
-	}
-	return userEmail
-}
-
-func (m *MailModel) IsMagicLinkValid(link string) bool {
-	// log.Infof("verifying magic link: %s", link)
-	updateQuery := `
-	UPDATE magiclinks SET used = ? WHERE value = ?
-	`
-	stmt, err := m.DB.Prepare(updateQuery)
-	if err != nil {
-		log.Errorf("prepare statement error: %v", err)
-		return false
-	}
-	defer stmt.Close()
-
-	result, err := stmt.Exec(true, link)
-	if err != nil {
-		log.Errorf("execute error: %v", err)
-		return false
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Errorf("rows affected error: %v", err)
-		return false
-	}
-	if rowsAffected == 0 {
-		return false
-	}
-	return true
-}
-
-func (m *MailModel) GetMagicLink(email, purpose, urlPrefix string) string {
-	value := purpose + "_" + helpers.GetHash(email+purpose+time.Now().Format(time.RFC3339)) + "-" + helpers.GetRandomUUID()
-	query := `
-	INSERT INTO magiclinks(email,purpose,value,used,result) VALUES (?,?,?,?,?)
-	`
-	_, err := m.DB.Exec(query, email, purpose, value, false, "")
-	if err != nil {
-		log.Errorf("magic link generation error: %v", err)
-		return urlPrefix
-	}
-
-	return urlPrefix + value
 }
 
 func SendEmail(config cfg.MailConfig) {
