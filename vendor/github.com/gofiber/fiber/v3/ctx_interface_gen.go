@@ -133,7 +133,9 @@ type Ctx interface {
 	// Endpoint returns the route that will handle this request, without advancing the
 	// handler chain, so global middleware can read its Path or Name before calling
 	// Next. Returns nil when no endpoint will run: 404, 405, and while the error
-	// handler replays the chain for a request rejected at the protocol level.
+	// handler replays the chain for a request rejected at the protocol level. A
+	// route registered through Domain is reported only for a hostname its pattern
+	// matches, as its handlers decline every other one.
 	//
 	// It looks ahead, where the neighboring accessors look back: Route reports the
 	// route currently executing, which inside middleware is the middleware itself,
@@ -250,6 +252,10 @@ type Ctx interface {
 	// that never returns — the context is intentionally never reclaimed, because the
 	// handler still owns it.
 	//
+	// It may be called more than once per request, also concurrently, as nested
+	// timeout middlewares do: the context is then reclaimed once every handlerDone is
+	// closed. Each call must come from a goroutine that still owns the context.
+	//
 	// This method calls Abandon internally, so callers do not need to call Abandon
 	// separately. Calling Abandon before ScheduleReclaim is still safe (idempotent).
 	ScheduleReclaim(handlerDone <-chan struct{}, cancel context.CancelFunc)
@@ -306,8 +312,10 @@ type Ctx interface {
 	// Returned value is only valid within the handler. Do not store any references.
 	// Make copies or use the Immutable setting instead.
 	BodyRaw() []byte
-	//nolint:nonamedreturns // gocritic unnamedResult prefers naming decoded body, decode count, and error
-	tryDecodeBodyInOrder(originalBody *[]byte, encodings []string) (body []byte, decodesRealized uint8, err error)
+	// tryDecodeBodyInOrder undoes the codings last-applied first and never replaces the request body.
+	tryDecodeBodyInOrder(encodings []string) ([]byte, error)
+	// decodeContentCoding undoes one content coding of src's body within BodyLimit.
+	decodeContentCoding(src *fasthttp.Request, encoding string) ([]byte, error)
 	// BodyStream returns the request body as a stream, non-nil only when
 	// Config.StreamRequestBody is enabled and the body is not already buffered.
 	// Reading it consumes the body, so a later Body call will not see it.
@@ -400,6 +408,7 @@ type Ctx interface {
 	// Freshness only applies to GET and HEAD requests; for any other method false is
 	// returned, as RFC 9110 defines 304 Not Modified only for those methods and
 	// requires If-Modified-Since to be ignored otherwise.
+	// The response status must be 2xx or 304; redirects and errors are never fresh.
 	// When a client sends the Cache-Control: no-cache request header to indicate an end-to-end
 	// reload request, this module will return false to make handling these requests transparent.
 	// https://github.com/jshttp/fresh/blob/master/index.js#L33
@@ -435,6 +444,7 @@ type Ctx interface {
 	// Example: URL: https://example.com:8080 -> Host: example.com:8080
 	// Make copies or use the Immutable setting instead.
 	// Please use Config.TrustProxy to prevent header spoofing if your app is behind a proxy.
+	// Behind a trusted proxy it is the first non-empty X-Forwarded-Host element when there is one, trimmed but neither validated nor case-folded.
 	Host() string
 	// Hostname contains the hostname derived from the X-Forwarded-Host or Host HTTP header using the c.Host() method.
 	// Returned value is only valid within the handler. Do not store any references.
@@ -458,13 +468,14 @@ type Ctx interface {
 	// header spoofing if your app is behind a proxy.
 	IP() string
 	// extractIPsFromHeader will return a slice of IPs it found given a header name in the order they appear.
+	// Empty elements are ignored after trimming optional whitespace.
 	// When IP validation is enabled, any invalid IPs will be omitted.
 	extractIPsFromHeader(header string) []string
 	// extractIPFromHeader returns the client IP from the given proxy header by walking the
 	// X-Forwarded-For chain from right to left and stripping trusted proxy IPs. When trusted
-	// proxies are configured, the rightmost non-trusted IP is returned; otherwise the first
-	// valid IP (left-to-right) is returned. When IP validation is disabled, the raw header
-	// value is returned as-is.
+	// proxies are configured, the rightmost non-trusted IP is returned, and an entry that is not
+	// an IP ends the walk; otherwise the first valid IP (left-to-right) is returned. When IP
+	// validation is disabled, the raw header value is returned as-is.
 	extractIPFromHeader(header string) string
 	// hasTrustedProxyConfig returns true if any trusted proxy configuration is set.
 	hasTrustedProxyConfig() bool
@@ -595,6 +606,8 @@ type Ctx interface {
 	// IsFromUnixSocket returns true if the request arrived over a Unix domain socket.
 	IsFromUnixSocket() bool
 	getBody() []byte
+	// bufferBodyStream applies BodyLimit to a streamed body and answers a larger one 413 while no response body was written, as the server would.
+	bufferBodyStream() error
 	// Append the specified value to the HTTP response header field.
 	// If the header is not already set, it creates the header with the specified value.
 	// Empty values are skipped: a sender must not generate empty list elements
@@ -688,6 +701,8 @@ type Ctx interface {
 	// This method also sets the content header to application/xml; charset=utf-8.
 	XML(data any) error
 	// Links joins the links followed by the property to populate the response's Link HTTP header field.
+	// Like Express, it adds to a Link header that is already set, such as the preload links
+	// SendEarlyHints writes, instead of replacing it.
 	Links(link ...string)
 	// Location sets the response Location HTTP header to the specified path parameter.
 	Location(path string)
@@ -698,6 +713,7 @@ type Ctx interface {
 	GetRouteURL(routeName string, params Map) (string, error)
 	// Render a template with data and sends a text/html response.
 	// We support the following engines: https://github.com/gofiber/template
+	// Render does not modify bind, so a Map may be reused across requests.
 	Render(name string, bind any, layouts ...string) error
 	// ResetBody discards the response body, keeping the status and headers.
 	// Use it before replacing a partially written body — an error page over a

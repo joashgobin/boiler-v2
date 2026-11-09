@@ -90,6 +90,17 @@ go get -u github.com/gofiber/fiber/v3
 
 This command fetches the Fiber package and adds it to your project's dependencies, allowing you to start building your web applications with Fiber.
 
+## 🚚 Migrate
+
+Coming from Fiber `v2`? The [Fiber CLI](https://github.com/gofiber/cli) can migrate your project to `v3` for you. Install it, then run the `migrate` command in your project's directory:
+
+```bash
+go install github.com/gofiber/cli/fiber@latest
+fiber migrate --to v3
+```
+
+Review the changes and run your tests afterwards. Run `fiber migrate --help` to see all options, and see the [migration guide](https://docs.gofiber.io/whats_new#-migration-guide) for what changed in `v3`.
+
 ## ⚡️ Quickstart
 
 Getting started with Fiber is easy. Here's a basic example to create a simple web server that responds with "Hello, World 👋!" on the root path. This example demonstrates initializing a new Fiber app, setting up a route, and starting the server.
@@ -848,7 +859,7 @@ Fiber is an open-source project that runs on donations to pay the bills, e.g., o
 <table>
 <tr><td valign="top"><strong>🔥 Fiber Guardian</strong></td><td><a href="https://www.coderabbit.ai/?utm_source=cr_org&amp;utm_medium=github" title="@coderabbitai"><img src="https://github.com/coderabbitai.png" width="50" alt="@coderabbitai" /></a></td></tr>
 <tr><td valign="top"><strong>☕ Fiber Supporter</strong></td><td><a href="https://ndole.studio" title="@NdoleStudio"><img src="https://github.com/NdoleStudio.png" width="34" alt="@NdoleStudio" /></a></td></tr>
-<tr><td valign="top"><strong>🪴 Fiber Friend</strong></td><td><a href="https://github.com/simonheisstpeter" title="@simonheisstpeter"><img src="https://github.com/simonheisstpeter.png" width="32" alt="@simonheisstpeter" /></a></td></tr>
+<tr><td valign="top"><strong>🪴 Fiber Friend</strong></td><td><a href="https://www.kamaslau.com" title="@kamaslau"><img src="https://github.com/kamaslau.png" width="32" alt="@kamaslau" /></a>&nbsp;<a href="https://github.com/simonheisstpeter" title="@simonheisstpeter"><img src="https://github.com/simonheisstpeter.png" width="32" alt="@simonheisstpeter" /></a></td></tr>
 </table>
 
 ### 🎁 One-time Sponsors

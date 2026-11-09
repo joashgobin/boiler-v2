@@ -20,9 +20,10 @@
 //     takes CR, LF, VT and FF. [TrimOWS] takes only SP and HTAB, the OWS of
 //     RFC 9110 Section 5.6.3, for a caller that validates what is left.
 //
-// Empty elements are skipped throughout: "a,,b" yields "a" and "b". A list is
+// The iterators and [First] skip empty elements: "a,,b" yields "a" and "b". A list is
 // permitted to carry them (RFC 9110 Section 5.6.1 allows the empty element for
-// legacy reasons) and no caller here has ever wanted one.
+// legacy reasons). [Next] and [Prev] expose raw elements, including empty ones,
+// for callers with their own whitespace, validation and traversal policies.
 package headerlist
 
 import (
@@ -30,6 +31,46 @@ import (
 
 	"github.com/gofiber/utils/v2"
 )
+
+// Next returns the raw comma-separated element starting at start and the next
+// start position. The element aliases list; whitespace and empty elements are
+// preserved. Every comma separates, including commas inside quotes.
+//
+// start must be between zero and len(list), inclusive. The returned position
+// exceeds len(list) after the final element, allowing callers to stop early
+// without allocating a slice of all elements.
+func Next(list string, start int) (element string, next int) { //nolint:nonamedreturns // names distinguish the element from the next position
+	// A loop, not utils.CutByte: its generic body does not inline, and a call per element made comma-padded lists 4x slower.
+	end := start
+	for end < len(list) && list[end] != ',' {
+		end++
+	}
+	return list[start:end], end + 1
+}
+
+// First returns the first non-empty element of list, trimmed as [All] trims it,
+// or "" when list has none.
+func First(list string) string {
+	for start := 0; start <= len(list); {
+		var element string
+		element, start = Next(list, start)
+		if element = utils.TrimSpace(element); element != "" {
+			return element
+		}
+	}
+	return ""
+}
+
+// Prev is the reverse of Next. It returns the raw element ending just before
+// end and the next end position. end must be between zero and len(list),
+// inclusive. The returned position is negative after the first element.
+func Prev(list string, end int) (element string, prev int) { //nolint:nonamedreturns // names distinguish the element from the previous position
+	start := end
+	for start > 0 && list[start-1] != ',' {
+		start--
+	}
+	return list[start:end], start - 1
+}
 
 // All yields each non-empty element of a comma-separated list value, with
 // leading and trailing whitespace removed.
@@ -102,39 +143,55 @@ func AllQuoted(list string) iter.Seq[string] {
 // elements. Entity tags have no quoted-pair and keep using [AllQuoted].
 func AllQuotedPairs(list string) iter.Seq[string] {
 	return func(yield func(string) bool) {
-		start, pos := 0, 0
-		inQuotes := false
-		for {
-			i := utils.IndexAny3(list[pos:], '"', ',', '\\')
-			if i == -1 {
-				break
+		data := utils.UnsafeBytes(list)
+		for start := 0; start <= len(data); {
+			raw, next := NextQuoted(data, start)
+			start = next
+			if element := utils.TrimSpace(utils.UnsafeString(raw)); element != "" && !yield(element) {
+				return
 			}
-			i += pos
-			pos = i + 1
-
-			switch {
-			case list[i] == '\\':
-				if inQuotes && pos < len(list) {
-					pos++ // the escaped byte ends neither the string nor the element
-				}
-				continue
-			case list[i] == '"':
-				inQuotes = !inQuotes
-				continue
-			case inQuotes:
-				continue
-			}
-			if element := utils.TrimSpace(list[start:i]); element != "" {
-				if !yield(element) {
-					return
-				}
-			}
-			start = i + 1
-		}
-		if element := utils.TrimSpace(list[start:]); element != "" {
-			yield(element)
 		}
 	}
+}
+
+// NextQuoted is [Next] for byte lists whose elements may carry a quoted-string with
+// quoted-pairs (RFC 9110 Section 5.6.4), the walk under [AllQuotedPairs]: a
+// comma inside quotes does not separate, and inside quotes a backslash escapes
+// the next byte. A quoted string left open swallows the rest of the list.
+//
+// Like [Next], the element is raw and aliases list, whitespace and empty
+// elements are preserved, start must be between zero and len(list), inclusive,
+// and the returned position exceeds len(list) after the final element.
+func NextQuoted(list []byte, start int) (element []byte, next int) { //nolint:nonamedreturns // names distinguish the element from the next position
+	end := start
+	for end < len(list) {
+		// Outside quotes, backslashes are ordinary bytes.
+		i := utils.IndexAny2(list[end:], '"', ',')
+		if i == -1 {
+			return list[start:], len(list) + 1
+		}
+		end += i
+		if list[end] == ',' {
+			break
+		}
+		end++ // opening quote
+		for end < len(list) {
+			// Inside quotes, commas are ordinary bytes, and a
+			// backslash escapes exactly the next byte.
+			i = utils.IndexAny2(list[end:], '"', '\\')
+			if i == -1 {
+				return list[start:], len(list) + 1
+			}
+			end += i + 1
+			if list[end-1] == '"' {
+				break
+			}
+			if end < len(list) {
+				end++
+			}
+		}
+	}
+	return list[start:end], end + 1
 }
 
 // AllLines yields the elements of every field line in order, so that a header
@@ -280,6 +337,9 @@ func appendJoinedLine(dst, line []byte) []byte {
 //nolint:revive // multiple tracks ownership of combined, not a caller-selected mode.
 func JoinNext(combined, line []byte, multiple bool) ([]byte, bool) {
 	if combined == nil {
+		if line == nil {
+			return []byte{}, false
+		}
 		return line, false
 	}
 	if !multiple {

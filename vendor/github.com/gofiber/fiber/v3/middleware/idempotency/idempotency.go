@@ -1,13 +1,19 @@
 package idempotency
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"slices"
+
+	"github.com/gofiber/fiber/v3/internal/redact"
 
 	"github.com/gofiber/utils/v2"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/internal/ctxlocal"
+	"github.com/gofiber/fiber/v3/internal/errorreplay"
+	"github.com/gofiber/fiber/v3/internal/sizedstream"
 	"github.com/gofiber/fiber/v3/log"
 )
 
@@ -23,7 +29,38 @@ const (
 	localsKeyWasPutToCache
 )
 
-const redactedKey = "[redacted]"
+// maxStoredStream is the longest stream of known length read into memory to store it.
+const maxStoredStream = 1 << 20
+
+// storagePrefix keeps responses apart from other middleware sharing the Storage,
+// as the client chooses the key.
+const storagePrefix = "idempotency:"
+
+// isCookieHeader reports whether name is a header that sets a cookie: Set-Cookie
+// or its obsolete RFC 2965 spelling.
+func isCookieHeader(name string) bool {
+	return utils.EqualFold(name, fiber.HeaderSetCookie) || utils.EqualFold(name, fiber.HeaderSetCookie2)
+}
+
+// scopedKey returns the key a response is stored under when Config.KeyScope is
+// set: storagePrefix and a digest of the scope and the key together, the digest
+// alone being the key it is locked under. The length of the scope goes in front
+// of it, so no two pairs share the bytes that are hashed and a key cannot spell
+// out another scope, and the digest has the same length whatever either is,
+// which a storage that limits the length of its keys needs.
+func scopedKey(scope, key string) string {
+	// A user ID and a UUID fit the array; a longer pair grows onto the heap.
+	var buf [128]byte
+	b := utils.AppendUint(buf[:0], uint64(len(scope)))
+	b = append(b, ':')
+	b = append(b, scope...)
+	b = append(b, key...)
+	sum := sha256.Sum256(b)
+	var out [len(storagePrefix) + sha256.Size*2]byte
+	copy(out[:], storagePrefix)
+	hex.Encode(out[len(storagePrefix):], sum[:])
+	return string(out[:])
+}
 
 // IsFromCache reports whether the middleware served the response from the
 // cache for the current request.
@@ -47,14 +84,7 @@ func New(config ...Config) fiber.Handler {
 	// Set default config
 	cfg := configDefault(config...)
 
-	redactKeys := !cfg.DisableValueRedaction
-
-	maskKey := func(key string) string {
-		if redactKeys {
-			return redactedKey
-		}
-		return key
-	}
+	maskKey := redact.Masker(!cfg.DisableValueRedaction)
 
 	// Snapshot the configured names so later mutation of the caller's slice
 	// cannot change an already-constructed handler. Matching uses
@@ -62,7 +92,13 @@ func New(config ...Config) fiber.Handler {
 	// against the canonical-case names fasthttp reports stays allocation-free.
 	keepResponseHeaders := slices.Clone(cfg.KeepResponseHeaders)
 
-	shouldKeepHeader := func(header string) bool {
+	// keepHeader reports whether a header the handler wrote is stored and a
+	// stored one is replayed: with no list, every header but the cookies, which
+	// only a name in the list keeps; with one, the named headers alone.
+	keepHeader := func(header string) bool {
+		if keepResponseHeaders == nil {
+			return !isCookieHeader(header)
+		}
 		return slices.ContainsFunc(keepResponseHeaders, func(keep string) bool {
 			return utils.EqualFold(header, keep)
 		})
@@ -80,6 +116,12 @@ func New(config ...Config) fiber.Handler {
 			_ = c.Status(res.StatusCode)
 
 			for header, vals := range res.Headers {
+				// A stored entry goes through the same filter: one an earlier
+				// version wrote, or one written under another configuration,
+				// may hold more than this one keeps.
+				if !keepHeader(header) {
+					continue
+				}
 				for _, val := range vals {
 					c.RequestCtx().Response.Header.Add(header, val)
 				}
@@ -106,43 +148,79 @@ func New(config ...Config) fiber.Handler {
 		}
 
 		// Don't execute middleware if the idempotency key is empty
-		if c.Get(cfg.KeyHeader) == "" {
+		key := c.Get(cfg.KeyHeader)
+		if key == "" {
 			return c.Next()
 		}
+		// A refused request runs no handler, so there is nothing to store for its retry.
+		if errorreplay.Active(c.RequestCtx()) {
+			return c.Next()
+		}
+		// Copied once, before anything reads it: the validator may keep what it
+		// is handed, a handler that rewrote the header would not change what is
+		// hashed or logged, and the lock and the storage retain the unscoped key.
+		entryKey := storagePrefix + key
+		key = entryKey[len(storagePrefix):]
 
 		// Validate key
-		key := utils.CopyString(c.Get(cfg.KeyHeader))
 		if err := cfg.KeyHeaderValidate(key); err != nil {
 			return err
 		}
 
+		// The key a response is stored and locked under: a digest of the scope
+		// and the key when the config scopes it, otherwise the key alone.
+		storageKey := key
+		if cfg.KeyScope != nil {
+			entryKey = scopedKey(cfg.KeyScope(c), key)
+			storageKey = entryKey[len(storagePrefix):]
+		}
+
 		// First-pass: if the idempotency key is in the storage, get and return the response
-		if ok, err := maybeWriteCachedResponse(c, key); err != nil {
+		if ok, err := maybeWriteCachedResponse(c, entryKey); err != nil {
 			return fmt.Errorf("failed to write cached response at fastpath: %w", err)
 		} else if ok {
 			return nil
 		}
 
-		if err := cfg.Lock.Lock(key); err != nil {
+		if err := cfg.Lock.Lock(storageKey); err != nil {
 			return fmt.Errorf("failed to lock: %w", err)
 		}
 		defer func() {
-			if err := cfg.Lock.Unlock(key); err != nil {
+			if err := cfg.Lock.Unlock(storageKey); err != nil {
 				log.Errorf("[IDEMPOTENCY] failed to unlock key %q: %v", maskKey(key), err)
 			}
 		}()
 
 		// Lock acquired. If the idempotency key now is in the storage, get and return the response
-		if ok, err := maybeWriteCachedResponse(c, key); err != nil {
+		if ok, err := maybeWriteCachedResponse(c, entryKey); err != nil {
 			return fmt.Errorf("failed to write cached response while locked: %w", err)
 		} else if ok {
 			return nil
+		}
+
+		// Earlier middleware runs again on a replay. Count its header lines now,
+		// before downstream handlers can overwrite their backing buffers. Only
+		// new or changed lines belong in the stored response; counts preserve
+		// identical lines that downstream handlers deliberately add again.
+		upstream := make(map[string]int)
+		for k, v := range c.Response().Header.All() {
+			if keepHeader(utils.UnsafeString(k)) {
+				upstream[string(k)+"\x00"+string(v)]++
+			}
 		}
 
 		// Execute the request handler
 		if err := c.Next(); err != nil {
 			// If the request handler returned an error, return it and skip idempotency
 			return err
+		}
+
+		// Body reads a stream to its end, maybe never, and keeps a read error as the body. One that
+		// declares no length or more than maxStoredStream, or delivers other than it declares, goes out unrecorded.
+		if c.Response().IsBodyStream() {
+			if n := c.Response().Header.ContentLength(); n < 0 || n > maxStoredStream || !sizedstream.Read(c.Response(), n) {
+				return nil
+			}
 		}
 
 		// Construct response
@@ -157,22 +235,19 @@ func New(config ...Config) fiber.Handler {
 			// date into two broken lines on replay.
 			headers := make(map[string][]string)
 			for k, v := range c.Response().Header.All() {
+				// Judged before the name is copied, so a line that is not
+				// kept costs nothing.
+				if !keepHeader(utils.UnsafeString(k)) {
+					continue
+				}
+				if line := string(k) + "\x00" + string(v); upstream[line] > 0 {
+					upstream[line]--
+					continue
+				}
 				name := string(k)
 				headers[name] = append(headers[name], string(v))
 			}
-
-			if keepResponseHeaders == nil {
-				// Keep all
-				res.Headers = headers
-			} else {
-				// Filter
-				res.Headers = make(map[string][]string)
-				for h, vals := range headers {
-					if shouldKeepHeader(h) {
-						res.Headers[h] = vals
-					}
-				}
-			}
+			res.Headers = headers
 		}
 
 		// Marshal response
@@ -182,7 +257,7 @@ func New(config ...Config) fiber.Handler {
 		}
 
 		// Store response
-		if err := cfg.Storage.SetWithContext(c, key, bs, cfg.Lifetime); err != nil {
+		if err := cfg.Storage.SetWithContext(c, entryKey, bs, cfg.Lifetime); err != nil {
 			return fmt.Errorf("failed to save response: %w", err)
 		}
 

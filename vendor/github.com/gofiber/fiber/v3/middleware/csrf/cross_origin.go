@@ -4,8 +4,11 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/gofiber/fiber/v3/internal/redact"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/internal/headerlookup"
+	originpkg "github.com/gofiber/fiber/v3/internal/origin"
 )
 
 // ErrCrossOriginRequest is the error NewCrossOriginProtection denies a request with.
@@ -45,7 +48,7 @@ func NewCrossOriginProtection(config ...CrossOriginConfig) fiber.Handler {
 		cfg.ErrorHandler = defaultErrorHandler
 	}
 
-	trusted := parseTrustedOrigins(cfg.TrustedOrigins, func(string) string { return redactedKey })
+	trusted := parseTrustedOrigins(cfg.TrustedOrigins, redact.Masker(true))
 
 	return func(c fiber.Ctx) error {
 		if cfg.Next != nil && cfg.Next(c) {
@@ -59,7 +62,7 @@ func NewCrossOriginProtection(config ...CrossOriginConfig) fiber.Handler {
 }
 
 // checkCrossOrigin follows the decisions of net/http.CrossOriginProtection.Check.
-func checkCrossOrigin(c fiber.Ctx, trusted trustedOrigins) error {
+func checkCrossOrigin(c fiber.Ctx, trusted originpkg.AllowList) error {
 	switch c.Method() {
 	case fiber.MethodGet, fiber.MethodHead, fiber.MethodOptions:
 		return nil
@@ -94,7 +97,7 @@ func checkCrossOrigin(c fiber.Ctx, trusted trustedOrigins) error {
 	}
 
 	// Compared as sent: browsers serialize Origin in the normalized form.
-	if trusted.contains(origin) {
+	if trusted.Contains(origin) {
 		return nil
 	}
 	return ErrCrossOriginRequest

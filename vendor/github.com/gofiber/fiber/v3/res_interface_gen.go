@@ -130,6 +130,8 @@ type Res interface {
 	// This method also sets the content header to application/xml; charset=utf-8.
 	XML(data any) error
 	// Links joins the links followed by the property to populate the response's Link HTTP header field.
+	// Like Express, it adds to a Link header that is already set, such as the preload links
+	// SendEarlyHints writes, instead of replacing it.
 	Links(link ...string)
 	// Location sets the response Location HTTP header to the specified path parameter.
 	Location(path string)
@@ -152,6 +154,7 @@ type Res interface {
 	GetRouteURL(routeName string, params Map) (string, error)
 	// Render a template with data and sends a text/html response.
 	// We support the following engines: https://github.com/gofiber/template
+	// Render does not modify bind, so a Map may be reused across requests.
 	Render(name string, bind any, layouts ...string) error
 	renderExtensions(bind any)
 	// Body returns the response body buffered so far, or nil for a streamed one,

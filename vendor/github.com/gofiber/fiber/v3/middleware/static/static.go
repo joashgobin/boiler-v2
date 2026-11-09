@@ -1,13 +1,11 @@
 package static
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,20 +15,23 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/internal/byterange"
+	"github.com/gofiber/fiber/v3/internal/errorreplay"
+	"github.com/gofiber/fiber/v3/internal/fspath"
+	"github.com/gofiber/fiber/v3/internal/wiretarget"
 )
 
 var ErrInvalidPath = errors.New("invalid path")
 
+// invalidPathSentinel is the path PathRewrite falls back to when the handler
+// gave it none. The handler never opens a refused path, so it only matters if
+// the file server runs outside it.
 const invalidPathSentinel = "/__fiber_invalid__"
-
-// windowsOS is runtime.GOOS on Windows, where a path component loses its
-// trailing dots and spaces when a file is opened.
-const windowsOS = "windows"
 
 // rewrite carries the path the file server opens for one request. The handler
 // builds it before it calls fasthttp, so PathRewrite only has to read it.
 type rewrite struct {
 	path []byte
+	sent []byte // the request URI's path as sent, while a listing is built from the routed one
 }
 
 // rewriteKey is the fasthttp user-value key under which PathRewrite finds the rewrite.
@@ -46,11 +47,13 @@ type fileServer struct {
 	fsys          fs.FS
 	handler       fasthttp.RequestHandler
 	root          string
+	wildcard      string // a trailing wildcard after another parameter, whose value is the rest of the path
 	fsRootPrefix  []byte // the fs.FS subdirectory served, put before every path
-	prefixLen     int    // length of the route prefix stripped from the path
+	prefixLen     int    // length of the route prefix stripped from the path, without its trailing slash; -1 when a parameter hides it
 	decodeEscapes bool   // off under UnescapePath, which already decoded everything
 	rootIsFile    bool
-	segmentBound  bool // the route is a /prefix* mount, so the rest of the path starts at a /
+	strictRouting bool // the router keeps name and name/ apart, so a directory has the slash and a file has none
+	browse        bool
 	invalid       bool // the fs.FS root cannot be opened, so no path names a file
 }
 
@@ -61,35 +64,70 @@ type fileServerKey struct {
 	route string
 }
 
+// prefixEnd returns where the rest of the routed path p begins, or -1 when no
+// part of it is known to be a name below the root.
+func (s *fileServer) prefixEnd(c fiber.Ctx, p string) int {
+	if s.wildcard == "" {
+		return s.prefixLen
+	}
+	// the router matched the wildcard at the end of p without the trailing slashes it ignores
+	matched := p
+	if !s.strictRouting && len(matched) > 1 {
+		matched = utils.TrimRight(matched, '/')
+	}
+	end := len(matched) - len(c.Params(s.wildcard))
+	if end > 0 && p[end-1] == '/' {
+		end--
+	}
+	return end
+}
+
 // requestPath appends to dst the path the file server opens for the routed
-// path p, or invalidPathSentinel when p names nothing inside the root.
-func (s *fileServer) requestPath(dst []byte, p string) []byte {
-	addTrailingSlash := false
-	if len(p) >= s.prefixLen {
-		// a partial wildcard such as /static* also matches /staticx; the rest of
-		// the path must start at a segment boundary
-		if s.segmentBound && len(p) > s.prefixLen && p[s.prefixLen] != '/' {
-			return append(dst, invalidPathSentinel...)
+// path p, whose rest below the route begins at end. It reports false when p
+// names nothing inside the root, and then there is nothing to open: a file of
+// any name could stand in for that answer.
+func (s *fileServer) requestPath(dst []byte, p string, end int) ([]byte, bool) {
+	if s.invalid || end > len(p) {
+		return dst, false
+	}
+	// a wildcard right after the prefix, as in /static* or /static+, also
+	// matches /staticx; the rest of the path must start at a segment boundary
+	if end >= 0 && len(p) > end && p[end] != '/' {
+		return dst, false
+	}
+	if s.wildcard != "" && end > 0 && !s.plainPrefix(p[:end]) {
+		return dst, false
+	}
+	addTrailingSlash, mountPoint := false, false
+	switch {
+	case s.rootIsFile:
+		// If the root is a file, we need to reset the path to "/" always. What the
+		// request path says below the prefix is dropped, so no spelling of it can
+		// select another file, and an empty segment inside it, as in
+		// /web/https://example.com, is part of an opaque name. A root mount refuses
+		// a path that starts with "//" whatever it serves, as a directory root does
+		// in fspath.Valid; on a prefix, even one that starts with "//" itself, that
+		// segment is the route's own.
+		if end == 0 && len(p) > 1 && p[0] == '/' && p[1] == '/' {
+			return dst, false
 		}
-		if s.invalid {
-			return append(dst, invalidPathSentinel...)
-		}
-		// If the root is a file, we need to reset the path to "/" always.
-		switch {
-		case s.rootIsFile && s.fsys == nil:
-			p = "/"
-		case s.rootIsFile && s.fsys != nil:
+		p = "/"
+		if s.fsys != nil {
 			p = s.root
-		default:
-			p = p[s.prefixLen:]
-			// a trailing slash lets fasthttp serve a directory index without a redirect
-			addTrailingSlash = true
 		}
+	case end < 0:
+		return dst, false
+	default:
+		p = p[end:]
+		// the slash lets fasthttp serve a directory index without a redirect; under
+		// StrictRouting a directory named without it is redirected to dir/ instead
+		addTrailingSlash = !s.strictRouting
+		mountPoint = s.strictRouting && end > 0 && p == ""
 	}
 
 	dst = append(dst, s.fsRootPrefix...)
 	start := len(dst)
-	if p == "" || p[0] != '/' {
+	if !mountPoint && (p == "" || p[0] != '/') {
 		dst = append(dst, '/')
 	}
 	dst = append(dst, p...)
@@ -97,156 +135,46 @@ func (s *fileServer) requestPath(dst []byte, p string) []byte {
 		dst = append(dst, '/')
 	}
 
-	sanitized, err := sanitizePath(dst[start:], s.fsys, s.decodeEscapes)
-	if err != nil {
-		// return a guaranteed-missing path so fs responds with 404
-		return append(dst[:0], invalidPathSentinel...)
+	// PathRewrite skips fasthttp's Path() normalization; fspath lists what
+	// each check covers instead.
+	if !fspath.Valid(dst[start:], s.fsys, s.decodeEscapes) {
+		return dst[:0], false
 	}
-	return dst[:start+len(sanitized)]
+	// fasthttp drops a trailing slash before it opens the name, so file/ would
+	// serve the file the router and middleware matched only as file
+	if s.strictRouting && !s.rootIsFile && len(dst) > start+1 && dst[len(dst)-1] == '/' && s.namesFile(dst[:len(dst)-1]) {
+		return dst[:0], false
+	}
+	return dst, true
 }
 
-// decodeFileName validates the escapes the router left in p and returns p
-// unchanged. The router already produced the canonical resource name (it decoded
-// every escape of an unreserved character and kept the rest encoded; see
-// unescapeSafePath), so file lookup opens exactly the bytes the route and any
-// path-scoped middleware matched. It refuses what cannot name such a file: a
-// backslash or control character, a malformed or truncated escape, an escape of
-// a separator or control character, and an escape of an unreserved character.
-// That last one cannot survive the router's own decoding, so its only source is
-// a stray '%' the router kept literally that lines up with the following bytes
-// into a fresh escape ("%%370rivate" and "%7%30rivate" both normalize to
-// "%70rivate"); decoding it a second time here would reach a name ("private")
-// the router never matched and the middleware never guarded, so it is rejected.
-// When decodeEscapes is off, UnescapePath already decoded everything and no
-// escape remains to validate.
-func decodeFileName(p []byte, decodeEscapes bool) ([]byte, error) { //nolint:revive // the flag mirrors UnescapePath; see sanitizePath
-	if utils.IndexControl(p) >= 0 || bytes.IndexByte(p, '\\') >= 0 {
-		return nil, ErrInvalidPath
-	}
-	i := bytes.IndexByte(p, '%')
-	if !decodeEscapes || i < 0 {
-		return p, nil
-	}
-	for ; i < len(p); i++ {
-		if p[i] != '%' {
-			continue
-		}
-		if i+2 >= len(p) {
-			return nil, ErrInvalidPath
-		}
-		hi, lo := unhex(p[i+1]), unhex(p[i+2])
-		if hi < 0 || lo < 0 {
-			return nil, ErrInvalidPath
-		}
-		c := byte(hi<<4 | lo) //nolint:gosec // G115: both nibbles are 0-15
-		if c == '/' || c == '\\' || c < 0x20 || c == 0x7f || isUnreserved(c) {
-			return nil, ErrInvalidPath
-		}
-		i += 2
-	}
-	return p, nil
-}
-
-func isUnreserved(c byte) bool {
-	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' ||
-		c == '-' || c == '.' || c == '_' || c == '~'
-}
-
-// unhex returns the value of a hexadecimal digit, or -1 for any other byte.
-func unhex(c byte) int {
-	switch {
-	case c >= '0' && c <= '9':
-		return int(c - '0')
-	case c >= 'a' && c <= 'f':
-		return int(c-'a') + 10
-	case c >= 'A' && c <= 'F':
-		return int(c-'A') + 10
-	default:
-		return -1
-	}
-}
-
-// hasUnsafeSegment reports whether p holds a "." or ".." segment, or an empty
-// one other than the root's leading and a directory's trailing slash. The
-// router removes dot segments and keeps empty ones as sent, so none of them
-// is part of a path it matched to a file.
-func hasUnsafeSegment(p []byte) bool {
-	start := 0
-	for i := 0; i <= len(p); i++ {
-		if i < len(p) && p[i] != '/' {
-			continue
-		}
-		switch n := i - start; {
-		case n == 0:
-			if start > 0 && i < len(p) {
-				return true
-			}
-		case n == 1 && p[start] == '.', n == 2 && p[start] == '.' && p[start+1] == '.':
-			return true
-		}
-		start = i + 1
-	}
-	return false
-}
-
-// hasDriveLetter reports whether name starts with a Windows drive letter and a colon.
-func hasDriveLetter(name string) bool {
-	if len(name) < 2 || name[1] != ':' {
+// plainPrefix reports whether prefix, the routed path before the name on a parameter
+// route, has no empty segment and, for a listing, nothing fasthttp would decode or a
+// browser would drop: it writes the links from the prefix decoded twice.
+func (s *fileServer) plainPrefix(prefix string) bool {
+	if prefix[len(prefix)-1] == '/' || strings.Contains(prefix, "//") {
 		return false
 	}
-	drive := name[0]
-	return (drive >= 'a' && drive <= 'z') || (drive >= 'A' && drive <= 'Z')
+	return !s.browse || (!strings.ContainsAny(prefix, `%\?#`) && utils.IndexControl(prefix) < 0)
 }
 
-// hasTrailingDotOrSpaceSegment reports whether a segment of p ends in a dot or
-// a space. Windows drops both from a path component when it opens a file, so
-// "private./secret.txt" and "private /secret.txt" would open
-// "private/secret.txt": a path the router kept apart from "private", and one
-// that middleware guarding "private" never saw. Elsewhere such a name is an
-// ordinary file, so sanitizePath applies this only on Windows, and there to
-// every root: an fs.FS may be OS-backed (os.DirFS) and cannot be told apart
-// from a virtual one such as embed.FS, so a virtual name ending in a dot or a
-// space is refused on Windows rather than leave the alias open for the rest.
-func hasTrailingDotOrSpaceSegment(p []byte) bool {
-	for i, c := range p {
-		if (c == '.' || c == ' ') && (i+1 == len(p) || p[i+1] == '/') {
-			return true
-		}
+// namesFile reports whether p, a path for the file server without its
+// trailing slash, names a regular file.
+func (s *fileServer) namesFile(p []byte) bool {
+	var info fs.FileInfo
+	var err error
+	if s.fsys != nil {
+		info, err = fs.Stat(s.fsys, string(p[1:]))
+	} else {
+		info, err = os.Stat(s.root + string(p))
 	}
-	return false
+	return err == nil && info.Mode().IsRegular()
 }
 
-// sanitizePath validates the routed path p, with the route's prefix stripped,
-// and returns the path the file server opens, which is p unchanged. It fails
-// with ErrInvalidPath when p cannot name a file inside the root: an escape of a
-// slash ("private%2Fsecret.txt" never reaches the "private/secret.txt" the
-// router did not match), an escape of an unreserved character (a stray '%' the
-// router kept that would otherwise double-decode past the route and middleware),
-// a malformed escape, a backslash, a control character, a ".", ".." or empty
-// segment, a drive letter and, on Windows, a segment ending in a dot or a space
-// that the OS would strip. Escapes the router kept remain encoded, keeping file
-// lookup aligned with route and middleware matching.
-func sanitizePath(p []byte, filesystem fs.FS, decodeEscapes bool) ([]byte, error) { //nolint:revive // the flag mirrors UnescapePath
-	p, err := decodeFileName(p, decodeEscapes)
-	if err != nil {
-		return nil, err
-	}
-	if hasUnsafeSegment(p) || (runtime.GOOS == windowsOS && hasTrailingDotOrSpaceSegment(p)) {
-		return nil, ErrInvalidPath
-	}
-
-	name := strings.TrimPrefix(utils.UnsafeString(p), "/")
-	if filesystem != nil {
-		if name = strings.TrimSuffix(name, "/"); name != "" && !fs.ValidPath(name) {
-			return nil, ErrInvalidPath
-		}
-		return p, nil
-	}
-	if filepath.VolumeName(name) != "" || hasDriveLetter(name) {
-		return nil, ErrInvalidPath
-	}
-	return p, nil
-}
+// errEmptyRoot is the panic for a root on disk left empty: it would name the
+// filesystem root, and guessing the working directory instead would serve
+// whatever the process runs from.
+const errEmptyRoot = "static: root must name a directory or file on disk; use \".\" for the working directory"
 
 // New creates a new middleware handler.
 // The root argument specifies the root directory from which to serve static assets.
@@ -254,6 +182,12 @@ func sanitizePath(p []byte, filesystem fs.FS, decodeEscapes bool) ([]byte, error
 // Note: Root has to be string or fs.FS; otherwise, it will panic.
 func New(root string, cfg ...Config) fiber.Handler {
 	config := configDefault(cfg...)
+
+	// An empty root on disk is the filesystem root, which fasthttp serves without
+	// confinement, so an unset variable would expose every file the process can read.
+	if config.FS == nil && root == "" {
+		panic(errEmptyRoot)
+	}
 
 	var (
 		rootCheck    sync.Once
@@ -279,22 +213,34 @@ func New(root string, cfg ...Config) fiber.Handler {
 		}
 	}
 
-	// newFileServer builds the fasthttp file server for one route prefix;
-	// decodeEscapes is off under UnescapePath, which already decoded everything.
-	newFileServer := func(prefix string, compressedFileSuffixes map[string]string, decodeEscapes bool) *fileServer {
-		// Is prefix a partial wildcard?
-		segmentBound := false
-		if before, _, found := utils.CutByte(prefix, '*'); found {
-			// /john* -> /john
-			prefix = before
-			// only /john* must not match /johnx; /john/* and /* end in a slash
-			segmentBound = before != "" && before[len(before)-1] != '/'
+	// newFileServer builds the fasthttp file server for one route of an app.
+	newFileServer := func(route *fiber.Route, cfg *fiber.Config) *fileServer {
+		// The router matches the pattern's text without escapes and, unless StrictRouting
+		// is set, trailing slashes; a parameter before a trailing wildcard hides its end.
+		pattern := route.Path
+		if !cfg.StrictRouting && len(pattern) > 1 {
+			pattern = utils.TrimRight(pattern, '/')
 		}
-
-		prefixLen := len(prefix)
-		if prefixLen > 1 && prefix[prefixLen-1:] == "/" {
-			// /john/ -> /john
-			prefixLen--
+		prefixLen, wildcard := -1, ""
+		prefix, constant := pattern, true
+		switch params := route.Params; {
+		case len(params) == 0:
+		case isWildcard(params[0]):
+			// /john*, /john+ and /john/*.js -> /john; the text after the wildcard is part of the name
+			prefix = pattern[:firstWildcard(pattern)]
+		case endsInWildcard(pattern, params[len(params)-1]):
+			wildcard, constant = params[len(params)-1], false
+		default:
+			constant = false
+		}
+		if constant {
+			prefix = fiber.RemoveEscapeChar(prefix)
+			prefixLen = len(prefix)
+			if prefixLen > 0 && prefix[prefixLen-1] == '/' {
+				// /john/ -> /john and / -> "", so "//john" keeps the empty segment
+				// that fspath.Valid refuses
+				prefixLen--
+			}
 		}
 
 		// For io/fs.FS, Root must be empty so fasthttp's pathToFilePath
@@ -313,19 +259,26 @@ func New(root string, cfg ...Config) fiber.Handler {
 			fsRootPrefix = append([]byte{'/'}, root...)
 		}
 
+		// a listing links below the prefix, which the cache key leaves out; fasthttp
+		// can only skip its whole cache, so files on such a route are not cached either
+		skipCache := config.CacheDuration < 0 || (config.Browse && wildcard != "")
+
 		files := &fasthttp.FS{
-			Root:                   fsRoot,
-			FS:                     config.FS,
-			AllowEmptyRoot:         true,
-			GenerateIndexPages:     config.Browse,
-			AcceptByteRange:        config.ByteRange,
-			Compress:               config.Compress,
-			CompressBrotli:         config.Compress, // Brotli compression won't work without this
-			CompressZstd:           config.Compress, // Zstd compression won't work without this
-			CompressedFileSuffixes: compressedFileSuffixes,
-			CacheDuration:          config.CacheDuration,
-			SkipCache:              config.CacheDuration < 0,
-			IndexNames:             config.IndexNames,
+			Root: fsRoot,
+			FS:   config.FS,
+			// An io/fs root is served at "" (see fsRoot above); a root on disk is never empty.
+			AllowEmptyRoot: config.FS != nil,
+			// A file root serves only itself, and its compressed copy lies beside it, outside the root.
+			AllowSymlinksOutsideRoot: config.AllowSymlinksOutsideRoot || (rootIsFile && config.FS == nil),
+			GenerateIndexPages:       config.Browse,
+			AcceptByteRange:          config.ByteRange,
+			Compress:                 config.Compress,
+			CompressBrotli:           config.Compress, // Brotli compression won't work without this
+			CompressZstd:             config.Compress, // Zstd compression won't work without this
+			CompressedFileSuffixes:   cfg.CompressedFileSuffixes,
+			CacheDuration:            config.CacheDuration,
+			SkipCache:                skipCache,
+			IndexNames:               config.IndexNames,
 			PathNotFound: func(fctx *fasthttp.RequestCtx) {
 				fctx.Response.SetStatusCode(fiber.StatusNotFound)
 			},
@@ -349,18 +302,21 @@ func New(root string, cfg ...Config) fiber.Handler {
 			handler:       handler,
 			fsys:          config.FS,
 			root:          root,
+			wildcard:      wildcard,
 			fsRootPrefix:  fsRootPrefix,
 			prefixLen:     prefixLen,
-			segmentBound:  segmentBound,
-			decodeEscapes: decodeEscapes,
+			decodeEscapes: !cfg.UnescapePath,
 			rootIsFile:    rootIsFile,
+			strictRouting: cfg.StrictRouting,
+			browse:        config.Browse,
 			invalid:       rootCheckErr != nil && config.FS != nil,
 		}
 	}
 
 	// serverFor returns the file server for the app and route serving c, built on first use.
 	serverFor := func(c fiber.Ctx) *fileServer {
-		key := fileServerKey{app: c.App(), route: c.Route().Path}
+		route := c.Route()
+		key := fileServerKey{app: c.App(), route: route.Path}
 		if s, ok := servers.Load(key); ok {
 			if server, ok := s.(*fileServer); ok {
 				return server
@@ -378,7 +334,7 @@ func New(root string, cfg ...Config) fiber.Handler {
 			rootIsFile, rootCheckErr = isFile(root, config.FS)
 		})
 		cfg := c.App().Config()
-		server := newFileServer(key.route, cfg.CompressedFileSuffixes, !cfg.UnescapePath)
+		server := newFileServer(route, &cfg)
 		servers.Store(key, server)
 		return server
 	}
@@ -395,6 +351,11 @@ func New(root string, cfg ...Config) fiber.Handler {
 			return c.Next()
 		}
 
+		// A refused request skipped any route guarding the file, and its headers would go out with the refusal.
+		if errorreplay.Active(c.RequestCtx()) {
+			return c.Next()
+		}
+
 		server := serverFor(c)
 
 		// PathRewrite only receives the fasthttp context; hand it the path to open.
@@ -402,14 +363,43 @@ func New(root string, cfg ...Config) fiber.Handler {
 		if !ok {
 			rw = &rewrite{}
 		}
-		rw.path = server.requestPath(rw.path[:0], c.Path())
+		var valid bool
+		path := c.Path()
+		rw.path, valid = server.requestPath(rw.path[:0], path, server.prefixEnd(c, path))
 		fctx := c.RequestCtx()
-		fctx.SetUserValue(rewriteKey{}, rw)
 
-		// Serve file
-		server.handler(fctx)
+		if valid {
+			fctx.SetUserValue(rewriteKey{}, rw)
 
-		fctx.RemoveUserValue(rewriteKey{})
+			// fasthttp caches a listing under the routed path but writes its links from
+			// the request URI, which reads "/pub/..%2F..%2Fx/.." as "/x/", not "/pub/"
+			rerouted := config.Browse && path != utils.UnsafeString(fctx.URI().PathOriginal())
+			if rerouted {
+				uri := fctx.URI()
+				rw.sent = append(rw.sent[:0], uri.PathOriginal()...)
+				target := wiretarget.Routed(c)
+				uri.SetPath(target[:pathEnd(target)])
+			}
+
+			// Serve file
+			server.handler(fctx)
+
+			if rerouted {
+				fctx.URI().SetPathBytes(rw.sent)
+			}
+			fctx.RemoveUserValue(rewriteKey{})
+
+			// fasthttp redirects a directory named without its slash to the path
+			// it opened, which lacks the route prefix
+			if fctx.Response.StatusCode() == fiber.StatusFound {
+				target := wiretarget.Routed(c)
+				end := pathEnd(target)
+				c.Location(target[:end] + "/" + target[end:])
+			}
+		} else {
+			// A refused path is a miss as fasthttp reports one, without a lookup
+			fctx.Response.SetStatusCode(fiber.StatusNotFound)
+		}
 		rewritePool.Put(rw)
 
 		// Return request if found and not forbidden
@@ -456,6 +446,38 @@ func New(root string, cfg ...Config) fiber.Handler {
 		// Next middleware
 		return c.Next()
 	}
+}
+
+// endsInWildcard reports whether pattern ends in param, a wildcard.
+func endsInWildcard(pattern, param string) bool {
+	n := len(pattern)
+	return isWildcard(param) && pattern[n-1] == param[0] && pattern[n-2] != '\\'
+}
+
+// isWildcard reports whether param names a '*' or '+' parameter.
+func isWildcard(param string) bool {
+	return param != "" && (param[0] == '*' || param[0] == '+')
+}
+
+// firstWildcard returns the index of the first unescaped '*' or '+' in pattern.
+func firstWildcard(pattern string) int {
+	for i := 0; i < len(pattern); i++ {
+		switch pattern[i] {
+		case '\\':
+			i++
+		case '*', '+':
+			return i
+		}
+	}
+	return len(pattern)
+}
+
+// pathEnd returns where the path of a request target ends.
+func pathEnd(target string) int {
+	if i := strings.IndexByte(target, '?'); i >= 0 {
+		return i
+	}
+	return len(target)
 }
 
 // isFile checks if the root is a file.

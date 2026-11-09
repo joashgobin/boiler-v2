@@ -24,10 +24,14 @@ type Session struct {
 	data        *data             // key value data
 	rawData     []byte            // snapshot from the last decode, reused by Save while the data is unchanged
 	id          string            // session id
+	key         string            // storage key of id, built on first use
 	extractor   extractors.Result // provenance of the extractor that supplied the session ID
 	idleTimeout time.Duration     // idleTimeout of this session
+	loadGen     uint64            // idLock generation when the data was read from storage
 	mu          sync.RWMutex      // Mutex to protect non-data fields
 	isFresh     bool              // if new session
+	loaded      bool              // the data was read from storage under the current id
+	dropped     bool              // another request ended or rotated it: never stored or sent again
 }
 
 type absExpirationKeyType int
@@ -94,11 +98,14 @@ func (s *Session) Release() {
 func releaseSession(s *Session) {
 	s.mu.Lock()
 	s.id = ""
+	s.key = ""
 	s.idleTimeout = 0
 	s.ctx = nil
 	s.config = nil
 	s.extractor = extractors.Result{}
 	s.rawData = nil
+	s.loaded = false
+	s.dropped = false
 	if s.data != nil {
 		s.data.Reset()
 	}
@@ -144,7 +151,9 @@ func (s *Session) ID() string {
 //
 // Note: returning a value that can alias the session (map, slice, array,
 // pointer, struct) makes every later Save re-encode, since the caller may
-// mutate it in place without calling Set.
+// mutate it in place without calling Set. Such an edit counts as the request's
+// own change, as a Set does, so its save stands over a change another request
+// stored meanwhile; a read alone yields to it.
 //
 // Usage:
 //
@@ -222,7 +231,7 @@ func (s *Session) DestroyWithContext(ctx context.Context) error {
 	defer s.mu.Unlock()
 
 	// Use external Storage if exist
-	if err := s.config.Storage.DeleteWithContext(ctx, s.id); err != nil {
+	if err := s.config.deleteKey(ctx, s.storageKey()); err != nil {
 		return err
 	}
 
@@ -230,6 +239,7 @@ func (s *Session) DestroyWithContext(ctx context.Context) error {
 	// canceled/failed delete leaves the session data intact.
 	s.data.Reset()
 	s.rawData = nil
+	s.loaded = false
 
 	// Expire session
 	s.delSession()
@@ -267,14 +277,37 @@ func (s *Session) RegenerateWithContext(ctx context.Context) error {
 	defer s.mu.Unlock()
 
 	// Delete old id from storage
-	if err := s.config.Storage.DeleteWithContext(ctx, s.id); err != nil {
+	var (
+		stored []byte
+		ended  bool
+		err    error
+	)
+	if s.loaded {
+		stored, ended, err = s.config.deleteLoadedKey(ctx, s.storageKey(), s.loadGen)
+	} else {
+		err = s.config.deleteKey(ctx, s.storageKey())
+	}
+	if err != nil {
 		return err
+	}
+	// Another request ended or rotated it: still rotate, as another instance may write
+	// the old ID back, but store and send nothing.
+	if ended {
+		s.dropped = true
+	}
+	// Another request changed it since the load and this one changed nothing, in place
+	// included: the rotated session carries that change, not the snapshot this request loaded.
+	if stored != nil && s.overtakenBy(stored) {
+		// Rotated even when the decode fails: the old key is already gone, so the save
+		// stores this request's snapshot, which a failed decode leaves as it was, under
+		// the new ID rather than nothing.
+		err = s.decodeSessionData(stored)
 	}
 
 	// Generate a new session, and set session.isFresh to true
 	s.refresh()
 
-	return nil
+	return err
 }
 
 // Reset generates a new session id, deletes the old one from storage, and resets the associated data.
@@ -308,7 +341,7 @@ func (s *Session) ResetWithContext(ctx context.Context) error {
 	defer s.mu.Unlock()
 
 	// Delete old id from storage
-	if err := s.config.Storage.DeleteWithContext(ctx, s.id); err != nil {
+	if err := s.config.deleteKey(ctx, s.storageKey()); err != nil {
 		return err
 	}
 
@@ -336,7 +369,17 @@ func (s *Session) ResetWithContext(ctx context.Context) error {
 // refresh generates a new session, and sets session.isFresh to be true.
 func (s *Session) refresh() {
 	s.id = s.config.KeyGenerator()
+	s.key = ""
 	s.isFresh = true
+	s.loaded = false
+}
+
+// storageKey returns the key the session is stored under; the caller holds s.mu.
+func (s *Session) storageKey() string {
+	if s.key == "" {
+		s.key = storageKeyPrefix + s.id
+	}
+	return s.key
 }
 
 // Save saves the session data and updates the cookie
@@ -396,30 +439,94 @@ func (s *Session) saveSessionWithContext(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.dropped {
+		return nil
+	}
+
 	// Set idleTimeout if not already set
 	if s.idleTimeout <= 0 {
 		s.idleTimeout = s.config.IdleTimeout
 	}
 
+	// Unchanged since the decode: write the snapshot back so the idle timeout still
+	// slides. Lock-free is enough; the flags are set before what they report.
+	data := s.rawData
+	// Set, Delete or Reset changed the session. A read of a value the caller may change
+	// in place only makes the snapshot stale: the data is encoded again, and whether it
+	// changed is asked only once another request's change is there to yield to.
+	mutated := s.data.mutated.Load()
+	changed := data == nil || mutated || s.data.dirty.Load()
+	if changed {
+		s.data.RLock()
+		encoded, err := s.encodeSessionData()
+		s.data.RUnlock()
+		if err != nil {
+			return fmt.Errorf("failed to encode data: %w", err)
+		}
+		data = encoded
+	}
+
+	key := s.storageKey()
+	if s.loaded {
+		l := lockFor(key)
+		if changed {
+			// Held alone, so no write-back of an older snapshot lands after this change.
+			l.mu.Lock()
+			defer l.mu.Unlock()
+		} else {
+			l.mu.RLock()
+			defer l.mu.RUnlock()
+		}
+		raw, moved, err := s.config.storedSince(ctx, key, s.loadGen)
+		if err != nil {
+			return err
+		}
+		if moved {
+			if raw == nil {
+				return nil // ended by another request: neither store it nor send its cookie again
+			}
+			if s.overtakenBy(raw) {
+				s.setSession()
+				return nil // changed by another request: a snapshot this one did not change must not undo that
+			}
+		}
+		if changed {
+			defer l.gen.Add(1) // before the unlock: the shard changed, which a save that stored nothing leaves as it was
+		}
+	}
+
 	// Update client cookie
 	s.setSession()
+	return s.config.Storage.SetWithContext(ctx, key, data, s.idleTimeout)
+}
 
-	// Unchanged since the decode: write the snapshot back so the idle timeout still
-	// slides. Lock-free is enough; dirty is set before the mutation it reports.
-	if s.rawData != nil && !s.data.dirty.Load() {
-		return s.config.Storage.SetWithContext(ctx, s.id, s.rawData, s.idleTimeout)
+// overtakenBy reports whether raw, what the storage holds now, is a change another request
+// stored since the load that this one must not undo: one that neither called Set, Delete or
+// Reset nor changed a value Get returned in place. Such an edit counts as the request's own
+// change, as a Set does; it is told from a read by decoding the snapshot again, which only the
+// rare save that a concurrent change reaches pays for.
+func (s *Session) overtakenBy(raw []byte) bool {
+	if s.data.mutated.Load() || bytes.Equal(raw, s.rawData) {
+		return false
 	}
+	return !s.data.dirty.Load() || !s.editedInPlace()
+}
 
-	// Encode session data
+// editedInPlace reports whether the data differs from the snapshot it was decoded from, as it
+// does once a value Get returned was changed in place. gob writes a map in no fixed order, so the
+// snapshot is decoded again and compared as data rather than as bytes, a NaN being the same as a
+// NaN (see sameData); one that no longer decodes counts as edited, which keeps the request's data.
+func (s *Session) editedInPlace() bool {
+	var snapshot map[any]any
+	if err := gob.NewDecoder(bytes.NewReader(s.rawData)).Decode(&snapshot); err != nil {
+		return true
+	}
 	s.data.RLock()
-	encodedBytes, err := s.encodeSessionData()
-	s.data.RUnlock()
-	if err != nil {
-		return fmt.Errorf("failed to encode data: %w", err)
+	defer s.data.RUnlock()
+	if len(snapshot) == 0 && len(s.data.Data) == 0 {
+		return false
 	}
-
-	// Pass copied bytes with session id to provider
-	return s.config.Storage.SetWithContext(ctx, s.id, encodedBytes, s.idleTimeout)
+	return !sameData(snapshot, s.data.Data)
 }
 
 // Keys retrieves all keys in the current session.
@@ -609,11 +716,22 @@ func (s *Session) decodeSessionData(rawData []byte) error {
 	defer byteBuffer.Reset()
 	_, _ = byteBuffer.Write(raw)
 	decCache := gob.NewDecoder(byteBuffer)
-	if err := decCache.Decode(&s.data.Data); err != nil {
+	s.data.Lock()
+	defer s.data.Unlock()
+	// A decode replaces the data. gob merges into a map that holds keys, so one that does
+	// is decoded beside, which also leaves it as it was when the decode fails; the empty
+	// map of a session being loaded is decoded into in place.
+	decoded := s.data.Data
+	if len(decoded) > 0 {
+		decoded = make(map[any]any, len(decoded))
+	}
+	if err := decCache.Decode(&decoded); err != nil {
 		return fmt.Errorf("failed to decode session data: %w", err)
 	}
+	s.data.Data = decoded
 	s.rawData = raw
 	s.data.dirty.Store(false)
+	s.data.mutated.Store(false)
 	return nil
 }
 

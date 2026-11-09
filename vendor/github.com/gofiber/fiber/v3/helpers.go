@@ -6,6 +6,7 @@ package fiber
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -31,6 +32,7 @@ import (
 	"github.com/gofiber/fiber/v3/binder"
 	"github.com/gofiber/fiber/v3/internal/contextvalue"
 	etagpkg "github.com/gofiber/fiber/v3/internal/etag"
+	"github.com/gofiber/fiber/v3/internal/fieldname"
 	"github.com/gofiber/fiber/v3/internal/headerlist"
 	"github.com/gofiber/fiber/v3/internal/mediatype"
 	"github.com/gofiber/fiber/v3/log"
@@ -570,11 +572,35 @@ func lookupJoinedRequestHeader(h *fasthttp.RequestHeader, key string) ([]byte, b
 	//
 	// VisitAllInOrder is deliberately not used: it reparses rawHeaders, which
 	// only holds headers read off the wire, so headers set programmatically
-	// (e.g. by net/http adaptors) would be missed entirely. VisitAll already
-	// preserves the relative order of repeated field lines sharing a key,
-	// which is all this helper needs; it only reorders across distinct keys.
+	// (e.g. by net/http adaptors) would be missed entirely. VisitAll keeps
+	// repeated field lines in received order only until a line is removed,
+	// see fieldname.ReceivedOrder.
 	h.VisitAll(j.visit)
 	return j.combined, j.seen
+}
+
+// peekReceivedRequestHeader is peekJoinedRequestHeader for a chain whose line
+// order decides whom to trust, such as X-Forwarded-For.
+func peekReceivedRequestHeader(req *fasthttp.Request, key string) []byte {
+	j := joinedHeaderValue{key: key}
+	req.Header.VisitAll(j.visit)
+	if !j.multi {
+		return j.combined
+	}
+	raw := fieldname.Received(req)
+	if len(raw) == 0 || fieldname.JoinedInReceivedOrder(raw, key, j.combined) {
+		return j.combined
+	}
+	// Rejoined in the buffer JoinNext allocated, which the lines do not alias.
+	joined, n := j.combined[:0], 0
+	fieldname.ReceivedOrder(&req.Header, raw, key, func(v []byte) {
+		if n > 0 {
+			joined = append(joined, ',')
+		}
+		joined = append(joined, v...)
+		n++
+	})
+	return joined
 }
 
 // peekJoinedResponseHeader is peekJoinedRequestHeader for response headers.
@@ -835,11 +861,28 @@ func offerQuality(types []acceptedType, isAccepted func(spec, offer string, spec
 	return quality, rank, bestSpecificity > 0 && quality > 0
 }
 
+// maxInsertionSortedTypes is the longest list sortAcceptedTypes sorts by insertion.
+const maxInsertionSortedTypes = 32
+
 // sortAcceptedTypes sorts accepted types by quality and specificity, preserving order of equal elements
 // A type with parameters has higher priority than an equivalent one without parameters.
 // e.g., text/html;a=1;b=2 comes before text/html;a=1
 // See: https://www.rfc-editor.org/rfc/rfc9110#name-content-negotiation-fields
 func sortAcceptedTypes(at []acceptedType) {
+	// The insertion sort swaps once per inversion, quadratic in a list the client controls.
+	if len(at) > maxInsertionSortedTypes {
+		// order is unique, so no two elements tie and an unstable sort is exact.
+		slices.SortFunc(at, func(a, b acceptedType) int {
+			return cmp.Or(
+				cmp.Compare(b.quality, a.quality),
+				cmp.Compare(b.specificity, a.specificity),
+				cmp.Compare(len(b.params), len(a.params)),
+				cmp.Compare(a.order, b.order),
+			)
+		})
+		return
+	}
+
 	for i := 1; i < len(at); i++ {
 		lo, hi := 0, i-1
 		for lo <= hi {
@@ -901,41 +944,6 @@ func identityListed(header []byte) bool {
 // weak as defined by RFC 9110 §8.8.3.2.
 func (app *App) isEtagStale(etag string, noneMatchBytes []byte) bool {
 	return !etagpkg.AnyMatch(app.toString(noneMatchBytes), etag)
-}
-
-func parseAddr(raw string) (host, port string) { //nolint:nonamedreturns // gocritic unnamedResult requires naming host and port parts for clarity
-	if raw == "" {
-		return "", ""
-	}
-
-	raw = utils.TrimSpace(raw)
-
-	// Handle IPv6 addresses enclosed in brackets as defined by RFC 3986
-	if strings.HasPrefix(raw, "[") {
-		if end := strings.IndexByte(raw, ']'); end != -1 {
-			host = raw[:end+1] // keep the closing ]
-			if len(raw) > end+1 && raw[end+1] == ':' {
-				return host, raw[end+2:]
-			}
-			return host, ""
-		}
-	}
-
-	// Everything else with a colon
-	if i := strings.LastIndexByte(raw, ':'); i != -1 {
-		host, port = raw[:i], raw[i+1:]
-
-		// If “host” still contains ':', we must have hit an un-bracketed IPv6
-		// literal. In that form a port is impossible, so treat the whole thing
-		// as host.
-		if strings.IndexByte(host, ':') >= 0 {
-			return raw, ""
-		}
-		return host, port
-	}
-
-	// No colon, nothing to split
-	return raw, ""
 }
 
 // isNoCache checks if the cacheControl header value contains a `no-cache` directive.
@@ -1085,6 +1093,23 @@ func (*testConn) SetReadDeadline(_ time.Time) error { return nil }
 // SetWriteDeadline implements net.Conn but is a no-op for the in-memory connection.
 func (*testConn) SetWriteDeadline(_ time.Time) error { return nil }
 
+// testTLSConn is the testConn Test serves a request with a TLS state on;
+// fasthttp detects TLS by its Handshake and ConnectionState methods.
+type testTLSConn struct {
+	*testConn
+	state tls.ConnectionState
+}
+
+// errTestTLSHandshake keeps fasthttp from passing the connection to a NextProto handler.
+var errTestTLSHandshake = errors.New("testTLSConn has no TLS handshake")
+
+// ConnectionState returns the TLS state of the request being served.
+func (c *testTLSConn) ConnectionState() tls.ConnectionState { return c.state }
+
+// Handshake fails, so fasthttp serves the dumped request even when the state names a
+// negotiated protocol such as h2.
+func (*testTLSConn) Handshake() error { return errTestTLSHandshake }
+
 func toStringImmutable(b []byte) string {
 	return string(b)
 }
@@ -1227,10 +1252,23 @@ var (
 // sentinel is enough and avoids a per-call fmt.Errorf alloc on the hot default path.
 func genericParseType[V GenericType](str string) (V, error) {
 	var v V
+	// Empty numeric/bool inputs allocate parser errors that are discarded below.
+	if str == "" {
+		switch any(v).(type) {
+		case string:
+			return v, errParsedEmptyString
+		case []byte:
+			return v, errParsedEmptyBytes
+		default:
+			return v, errParseValue
+		}
+	}
 	switch any(v).(type) {
 	case int:
 		result, err := utils.ParseInt(str)
-		if err != nil {
+		// int is 32 bits on 386 and arm: reject a value that does not fit
+		// instead of wrapping it.
+		if err != nil || int64(int(result)) != result {
 			return v, errParseValue
 		}
 		return any(int(result)).(V), nil //nolint:errcheck,forcetypeassert // not needed
@@ -1260,7 +1298,8 @@ func genericParseType[V GenericType](str string) (V, error) {
 		return any(result).(V), nil //nolint:errcheck,forcetypeassert // not needed
 	case uint:
 		result, err := utils.ParseUint(str)
-		if err != nil {
+		// uint is 32 bits on 386 and arm, as int is above.
+		if err != nil || uint64(uint(result)) != result {
 			return v, errParseValue
 		}
 		return any(uint(result)).(V), nil //nolint:errcheck,forcetypeassert // not needed

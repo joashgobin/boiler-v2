@@ -17,6 +17,7 @@ import (
 
 	"github.com/gofiber/fiber/v3/internal/fieldname"
 	"github.com/gofiber/fiber/v3/internal/schemehost"
+	"github.com/gofiber/fiber/v3/internal/urlnorm"
 )
 
 // Pool for redirection
@@ -37,6 +38,9 @@ var (
 )
 
 const maxPoolableMapSize = 64
+
+// maxPoolableMessages matches the msgp arrays limit below: a redirect holding more sets no cookie.
+const maxPoolableMessages = 256
 
 // FlashCookieName Cookie name to send flash messages when to use redirection.
 const (
@@ -116,6 +120,11 @@ func AcquireRedirect() *Redirect {
 // It is forbidden accessing req and/or its members after returning
 // it to redirect pool.
 func ReleaseRedirect(r *Redirect) {
+	// A large WithInput form grows the array past what the cookie can carry; once
+	// pooled, every later release would clear all of it.
+	if len(r.messages) > maxPoolableMessages {
+		return
+	}
 	r.release()
 	redirectPool.Put(r)
 }
@@ -457,7 +466,7 @@ func (r *Redirect) sameOriginReferer(location string) (string, bool) {
 	// The normalized value is what gets redirected to, so a client that does
 	// not apply these rules itself cannot resolve a different origin than the
 	// one validated here.
-	location = normalizeRefererURL(location)
+	location = urlnorm.Referer(location)
 	if location == "" {
 		return "", false
 	}
@@ -480,55 +489,6 @@ func (r *Redirect) sameOriginReferer(location string) (string, bool) {
 	}
 
 	return location, schemehost.Match(parsed.Scheme, parsed.Host, r.c.Scheme(), r.c.Host())
-}
-
-// normalizeRefererURL applies the parts of the WHATWG parser that decide which
-// origin a Referer resolves to: strip surrounding C0 controls, drop tab and
-// newline, fold backslashes, collapse a leading slash run to two.
-func normalizeRefererURL(location string) string {
-	location = strings.TrimFunc(location, func(c rune) bool { return c <= ' ' })
-
-	var b []byte
-	inPath := true
-	for i := 0; i < len(location); i++ {
-		c := location[i]
-		switch {
-		case c == '\t' || c == '\n' || c == '\r':
-			if b == nil {
-				b = append(make([]byte, 0, len(location)), location[:i]...)
-			}
-			continue
-		case c == '?' || c == '#':
-			inPath = false
-		case c == '\\' && inPath:
-			if b == nil {
-				b = append(make([]byte, 0, len(location)), location[:i]...)
-			}
-			b = append(b, '/')
-			continue
-		}
-		if b != nil {
-			b = append(b, c)
-		}
-	}
-	if b != nil {
-		location = string(b)
-	}
-
-	// "///evil.com" reaches the same authority state as "//evil.com", so keep
-	// at most the two slashes that introduce it.
-	if strings.HasPrefix(location, "//") {
-		n := 0
-		for n < len(location) && location[n] == '/' {
-			n++
-		}
-		if n == len(location) {
-			return "/"
-		}
-		location = location[n-2:]
-	}
-
-	return location
 }
 
 // parseAndClearFlashMessages is a method to get flash messages before they are getting removed
