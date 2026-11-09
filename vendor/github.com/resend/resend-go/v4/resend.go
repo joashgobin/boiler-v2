@@ -1,0 +1,325 @@
+package resend
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+const (
+	version     = "4.12.0"
+	userAgent   = "resend-go/" + version
+	contentType = "application/json"
+)
+
+var defaultBaseURL = getEnv("RESEND_BASE_URL", "https://api.resend.com/")
+
+var defaultHTTPClient = &http.Client{
+	Timeout: time.Minute,
+}
+
+// Options interface is used to define additional options that can be passed
+// to the API methods.
+type Options interface {
+	// GetIdempotencyKey returns the idempotency key
+	GetIdempotencyKey() string
+}
+
+// Client handles communication with Resend API.
+type Client struct {
+	// HTTP client
+	client *http.Client
+
+	// Api Key
+	ApiKey string
+
+	// Base URL
+	BaseURL *url.URL
+
+	// User agent for client
+	UserAgent string
+
+	// HTTP headers
+	headers map[string]string
+
+	// Services
+	Emails       *EmailsSvcImpl
+	Batch        BatchSvc
+	ApiKeys      ApiKeysSvc
+	Domains      DomainsSvc
+	DomainClaims DomainClaimsSvc
+	Segments     SegmentsSvc
+	// Deprecated: Use Segments instead. Audiences have been renamed to Segments.
+	Audiences         AudiencesSvc
+	Contacts          *ContactsSvcImpl
+	ContactProperties ContactPropertiesSvc
+	Broadcasts        BroadcastsSvc
+	Templates         TemplatesSvc
+	Topics            TopicsSvc
+	Webhooks          WebhooksSvc
+	Logs              LogsSvc
+	Automations       AutomationsSvc
+	Events            EventsSvc
+	OAuthGrants       OAuthGrantsSvc
+	Suppressions      *SuppressionsSvcImpl
+	Usage             UsageSvc
+	Inboxes           *InboxesSvcImpl
+}
+
+// NewClient is the default client constructor
+func NewClient(apiKey string) *Client {
+	key := strings.Trim(strings.TrimSpace(apiKey), "'")
+	return NewCustomClient(defaultHTTPClient, key)
+}
+
+// NewCustomClient builds a new Resend API client, using a provided Http client.
+func NewCustomClient(httpClient *http.Client, apiKey string) *Client {
+	if httpClient == nil {
+		httpClient = defaultHTTPClient
+	}
+
+	baseURL, _ := url.Parse(defaultBaseURL)
+
+	c := &Client{client: httpClient, BaseURL: baseURL, UserAgent: userAgent}
+
+	emailsSvc := &EmailsSvcImpl{client: c}
+	emailsSvc.Receiving = &ReceivingSvcImpl{client: c}
+	c.Emails = emailsSvc
+
+	contactsSvc := &ContactsSvcImpl{client: c}
+	contactsSvc.Topics = &ContactTopicsSvcImpl{client: c}
+	contactsSvc.Segments = &ContactSegmentsSvcImpl{client: c}
+	contactsSvc.Properties = &ContactPropertiesSvcImpl{client: c}
+	contactsSvc.Imports = &ContactImportsSvcImpl{client: c}
+	c.Contacts = contactsSvc
+
+	suppressionsSvc := &SuppressionsSvcImpl{client: c}
+	suppressionsSvc.Batch = &SuppressionsBatchSvcImpl{client: c}
+	c.Suppressions = suppressionsSvc
+
+	c.Batch = &BatchSvcImpl{client: c}
+	c.ApiKeys = &ApiKeysSvcImpl{client: c}
+	c.Domains = &DomainsSvcImpl{client: c}
+	c.DomainClaims = &DomainClaimsSvcImpl{client: c}
+	segmentsSvc := &SegmentsSvcImpl{client: c}
+	c.Segments = segmentsSvc
+	// Audiences is a deprecated alias for Segments for backward compatibility
+	c.Audiences = &AudiencesSvcImpl{segments: segmentsSvc}
+	c.ContactProperties = &ContactPropertiesSvcImpl{client: c}
+	c.Broadcasts = &BroadcastsSvcImpl{client: c}
+	c.Templates = &TemplatesSvcImpl{client: c}
+	c.Topics = &TopicsSvcImpl{client: c}
+	c.Webhooks = &WebhooksSvcImpl{client: c}
+	c.Logs = &LogsSvcImpl{client: c}
+	c.Automations = &AutomationsSvcImpl{client: c}
+	c.Events = &EventsSvcImpl{client: c}
+	c.OAuthGrants = &OAuthGrantsSvcImpl{client: c}
+	c.Usage = &UsageSvcImpl{client: c}
+
+	inboxesSvc := &InboxesSvcImpl{client: c}
+	inboxesSvc.Agent = &InboxAgentSvcImpl{client: c}
+	inboxesSvc.Labels = &InboxLabelsSvcImpl{client: c}
+	inboxThreadsSvc := &InboxThreadsSvcImpl{client: c}
+	inboxThreadsSvc.Emails = &InboxThreadEmailsSvcImpl{client: c}
+	inboxThreadsSvc.Labels = &InboxThreadLabelsSvcImpl{client: c}
+	inboxesSvc.Threads = inboxThreadsSvc
+	inboxesSvc.Drafts = &InboxDraftsSvcImpl{client: c}
+	c.Inboxes = inboxesSvc
+
+	c.ApiKey = apiKey
+	c.headers = make(map[string]string)
+	return c
+}
+
+// NewRequestWithOptions builds and returns a new HTTP request object
+// based on the given arguments and options
+// It is used to set additional options like idempotency key
+func (c *Client) NewRequestWithOptions(ctx context.Context, method, path string, params any, options Options) (*http.Request, error) {
+	req, err := c.NewRequest(ctx, method, path, params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the idempotency key if provided and the method is POST for now.
+	if options != nil {
+		if options.GetIdempotencyKey() != "" && method == http.MethodPost {
+			req.Header.Set("Idempotency-Key", options.GetIdempotencyKey())
+		}
+
+		// Handle batch-specific options
+		if batchOptions, ok := options.(*BatchSendEmailOptions); ok {
+			if batchOptions.GetBatchValidation() != "" {
+				req.Header.Set("x-batch-validation", batchOptions.GetBatchValidation())
+			}
+		}
+	}
+
+	return req, nil
+}
+
+// NewRequest builds and returns a new HTTP request object
+// based on the given arguments
+func (c *Client) NewRequest(ctx context.Context, method, path string, params any) (*http.Request, error) {
+	u, err := c.BaseURL.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Passing the *bytes.Buffer itself (not a wrapping io.Reader) lets
+	// net/http set ContentLength and GetBody, so 307/308 redirects can
+	// resend the request body.
+	var body io.Reader
+	if params != nil {
+		buf := new(bytes.Buffer)
+		if err := json.NewEncoder(buf).Encode(params); err != nil {
+			return nil, err
+		}
+		body = buf
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	for k, v := range c.headers {
+		req.Header.Add(k, v)
+	}
+
+	req.Header.Set("Accept", contentType)
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("Authorization", "Bearer "+c.ApiKey)
+
+	return req, nil
+}
+
+// Perform sends the request to the Resend API
+func (c *Client) Perform(req *http.Request, ret any) (*http.Response, error) {
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Handle possible errors.
+	// Any 2xx status code is considered success
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, handleError(resp)
+	}
+
+	if resp.StatusCode != http.StatusNoContent && ret != nil {
+		if w, ok := ret.(io.Writer); ok {
+			_, err = io.Copy(w, resp.Body)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			if resp.Body != nil {
+				err = json.NewDecoder(resp.Body).Decode(ret)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	return resp, err
+}
+
+// handleError tries to handle errors based on HTTP status codes
+func handleError(resp *http.Response) error {
+	switch resp.StatusCode {
+
+	// Handle rate limit errors (429)
+	case http.StatusTooManyRequests:
+		r := &DefaultError{}
+		if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+			err := json.NewDecoder(resp.Body).Decode(r)
+			if err != nil {
+				r.Message = resp.Status
+			}
+		} else {
+			r.Message = resp.Status
+		}
+
+		return &RateLimitError{
+			Message:    r.Message,
+			Limit:      resp.Header.Get("ratelimit-limit"),
+			Remaining:  resp.Header.Get("ratelimit-remaining"),
+			Reset:      resp.Header.Get("ratelimit-reset"),
+			RetryAfter: resp.Header.Get("retry-after"),
+		}
+
+	default:
+		r := &ResendError{}
+		if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
+			if err := json.NewDecoder(resp.Body).Decode(r); err != nil {
+				// A failed decode can leave fields partially populated, so discard them.
+				*r = ResendError{Message: resp.Status}
+			}
+		} else {
+			r.Message = resp.Status
+		}
+
+		// The HTTP status is authoritative, even if the body carries its own statusCode.
+		r.StatusCode = resp.StatusCode
+		if r.Message == "" {
+			r.Message = "Unknown Error"
+		}
+		return r
+	}
+}
+
+// InvalidRequestError is no longer returned by the SDK.
+//
+// Deprecated: Use ResendError instead.
+type InvalidRequestError struct {
+	StatusCode int    `json:"statusCode"`
+	Name       string `json:"name"`
+	Message    string `json:"message"`
+}
+
+type DefaultError struct {
+	Message string `json:"message"`
+}
+
+// ListOptions contains pagination parameters for list methods
+type ListOptions struct {
+	Limit  *int    `json:"limit,omitempty"`
+	After  *string `json:"after,omitempty"`
+	Before *string `json:"before,omitempty"`
+}
+
+// buildPaginationQuery constructs query parameters for pagination
+func buildPaginationQuery(options *ListOptions) string {
+	if options == nil {
+		return ""
+	}
+
+	query := make(url.Values)
+	if options.Limit != nil {
+		query.Set("limit", fmt.Sprintf("%d", *options.Limit))
+	}
+	if options.After != nil {
+		query.Set("after", *options.After)
+	}
+	if options.Before != nil {
+		query.Set("before", *options.Before)
+	}
+
+	if len(query) > 0 {
+		return "?" + query.Encode()
+	}
+	return ""
+}

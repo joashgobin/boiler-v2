@@ -14,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/joashgobin/boiler-v2/email/cfg"
 	"github.com/joashgobin/boiler-v2/helpers"
+	resend "github.com/resend/resend-go/v4"
 )
 
 //go:embed templates/*
@@ -263,4 +264,85 @@ func (m *MailModel) Send(opts ...cfg.MailOption) error {
 	}
 	SendEmail(config)
 	return nil
+}
+
+type ResendMailer struct {
+	client      *resend.Client
+	wg          *sync.WaitGroup
+	db          *sql.DB
+	senderName  string
+	senderEmail string
+}
+
+func (rm *ResendMailer) Send(opts ...cfg.MailOption) error {
+	config := cfg.NewMailConfig(rm.wg, opts...)
+
+	if len(config.Recipients) == 0 {
+		return fmt.Errorf("send mail error: no recipients specified")
+	}
+	if config.Subject == "" {
+		return fmt.Errorf("send mail error: no subject specified")
+	}
+	if config.Body == "" {
+		return fmt.Errorf("send mail error: no body specified")
+	}
+
+	recipients := fmt.Sprintf("%v", config.Recipients)
+
+	cc := ""
+	if len(config.Bcc) > 0 {
+		cc = fmt.Sprintf("%v", config.Cc)
+	}
+	bcc := ""
+	if len(config.Bcc) > 0 {
+		bcc = fmt.Sprintf("%v", config.Bcc)
+	}
+
+	query := `
+	INSERT INTO mail (recipient, cc, bcc, subject, body)
+	VALUES (?,?,?,?,?)
+	`
+	result, err := rm.db.Exec(query, recipients, cc, bcc, config.Subject, config.Body)
+	if err != nil {
+		return fmt.Errorf("store email exec error: %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store email rows error: %v", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("store email error: no rows affected")
+	}
+
+	params := &resend.SendEmailRequest{
+		From:    fmt.Sprintf("%s <%s>", rm.senderName, rm.senderEmail),
+		To:      config.Recipients,
+		Html:    config.Body,
+		Subject: config.Subject,
+		Cc:      config.Cc,
+		Bcc:     config.Bcc,
+	}
+
+	helpers.Background(func() {
+		sent, err := rm.client.Emails.Send(params)
+		if err != nil {
+			log.Errorf("resend send email error: %v", err)
+			return
+		}
+		log.Infof("resend send email success: %v", sent)
+	}, rm.wg)
+	return nil
+}
+
+func NewResendMailer(db *sql.DB, waitGroup *sync.WaitGroup) *ResendMailer {
+	client := resend.NewClient(helpers.GetEnv("RESEND_API_KEY"))
+	senderName := helpers.GetEnv("RESEND_SENDER_NAME")
+	senderEmail := helpers.GetEnv("RESEND_SENDER_EMAIL")
+	return &ResendMailer{
+		client:      client,
+		wg:          waitGroup,
+		db:          db,
+		senderName:  senderName,
+		senderEmail: senderEmail,
+	}
 }
