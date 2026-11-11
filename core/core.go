@@ -1029,6 +1029,9 @@ exec bash
 		"now": func() time.Time {
 			return time.Now()
 		},
+		"startupTime": func() string {
+			return start.Format(time.RFC3339)
+		},
 		"input": func(key string) ht.HTML {
 			return ht.HTML(formPresets[key])
 		},

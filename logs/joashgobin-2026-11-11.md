@@ -2,3 +2,4 @@
 
 - Updated packages
 - Updated packages
+- Added function for startup time
