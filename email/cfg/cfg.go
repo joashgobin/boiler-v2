@@ -50,19 +50,21 @@ func WithBlindRecipients(bcc ...string) MailOption {
 	}
 }
 
-func WithSubject(subject string) MailOption {
+func WithSubject(subjectStr string, args ...any) MailOption {
 	return func(c *MailConfig) {
+		subject := subjectStr
+		if len(args) > 0 {
+			subject = fmt.Sprintf(subjectStr, args...)
+		}
 		c.Subject = subject
 	}
 }
 
-func WithBody(swaps ...any) MailOption {
+func WithBody(bodyStr string, args ...any) MailOption {
 	return func(c *MailConfig) {
-		body := ""
-		if len(swaps) > 1 {
-			body = fmt.Sprintf(swaps[0].(string), swaps[1:]...)
-		} else {
-			body = swaps[0].(string)
+		body := bodyStr
+		if len(args) > 0 {
+			body = fmt.Sprintf(bodyStr, args...)
 		}
 		c.Body = body
 	}

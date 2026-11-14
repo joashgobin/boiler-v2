@@ -334,6 +334,10 @@ func (rm *ResendMailer) Send(opts ...cfg.MailOption) error {
 	return nil
 }
 
+func (rm *ResendMailer) Ping() {
+	log.Infof("resend mailer is functional...")
+}
+
 func NewResendMailer(db *sql.DB, waitGroup *sync.WaitGroup) *ResendMailer {
 	client := resend.NewClient(helpers.GetEnv("RESEND_API_KEY"))
 	senderName := helpers.GetEnv("RESEND_SENDER_NAME")
