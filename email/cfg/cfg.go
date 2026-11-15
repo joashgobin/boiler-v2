@@ -38,13 +38,19 @@ func WithSenderName(senderName string) MailOption {
 	}
 }
 
-func WithRecipients(cc ...string) MailOption {
+func WithRecipients(recipients ...string) MailOption {
 	return func(c *MailConfig) {
-		c.Recipients = cc
+		c.Recipients = recipients
 	}
 }
 
-func WithBlindRecipients(bcc ...string) MailOption {
+func WithCC(cc ...string) MailOption {
+	return func(c *MailConfig) {
+		c.Cc = cc
+	}
+}
+
+func WithBCC(bcc ...string) MailOption {
 	return func(c *MailConfig) {
 		c.Bcc = bcc
 	}
