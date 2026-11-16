@@ -5,8 +5,8 @@ go 1.27.4
 require (
 	github.com/a-h/templ v0.3.1118
 	github.com/aws/aws-sdk-go-v2 v1.48.0
-	github.com/aws/aws-sdk-go-v2/config v1.33.18
-	github.com/aws/aws-sdk-go-v2/credentials v1.21.0
+	github.com/aws/aws-sdk-go-v2/config v1.33.19
+	github.com/aws/aws-sdk-go-v2/credentials v1.21.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.10
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.10.1
@@ -19,7 +19,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/resend/resend-go/v4 v4.12.1
 	github.com/spf13/viper v1.21.0
-	github.com/tdewolff/minify/v2 v2.24.25
+	github.com/tdewolff/minify/v2 v2.25.0
 	github.com/wneessen/go-mail v0.8.2
 	github.com/yeqown/go-qrcode/v2 v2.3.0
 	github.com/yeqown/go-qrcode/writer/standard v1.4.0
@@ -63,9 +63,9 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.1.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tdewolff/parse/v2 v2.8.20 // indirect
+	github.com/tdewolff/parse/v2 v2.25.0 // indirect
 	github.com/tinylib/msgp v1.6.5 // indirect
-	github.com/valkey-io/valkey-go v1.0.79 // indirect
+	github.com/valkey-io/valkey-go v1.0.80 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.79.0 // indirect
 	github.com/yeqown/reedsolomon v1.0.0 // indirect
