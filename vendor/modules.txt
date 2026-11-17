@@ -83,7 +83,7 @@ github.com/aws/aws-sdk-go-v2/service/internal/presigned-url
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared/arn
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared/config
-# github.com/aws/aws-sdk-go-v2/service/s3 v1.114.10
+# github.com/aws/aws-sdk-go-v2/service/s3 v1.115.0
 ## explicit; go 1.24
 github.com/aws/aws-sdk-go-v2/service/s3
 github.com/aws/aws-sdk-go-v2/service/s3/internal/arn
@@ -218,10 +218,10 @@ github.com/gofiber/fiber/v3/middleware/pprof
 github.com/gofiber/fiber/v3/middleware/recover
 github.com/gofiber/fiber/v3/middleware/session
 github.com/gofiber/fiber/v3/middleware/static
-# github.com/gofiber/schema v1.9.4
+# github.com/gofiber/schema v1.9.5
 ## explicit; go 1.26.0
 github.com/gofiber/schema
-# github.com/gofiber/storage/valkey v0.4.3
+# github.com/gofiber/storage/valkey v0.5.0
 ## explicit; go 1.26.0
 github.com/gofiber/storage/valkey
 # github.com/gofiber/template/html/v3 v3.1.0
@@ -402,7 +402,7 @@ golang.org/x/image/math/fixed
 # golang.org/x/mod v0.43.0
 ## explicit; go 1.26.0
 golang.org/x/mod/semver
-# golang.org/x/net v0.62.0
+# golang.org/x/net v0.63.0
 ## explicit; go 1.26.0
 golang.org/x/net/http/httpguts
 golang.org/x/net/idna
