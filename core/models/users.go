@@ -36,6 +36,7 @@ type UserModelInterface interface {
 	RemoveRole(email, role string) error
 	ParseFromCSV(path string) error
 	GetAll(limit int) []User
+	Get(userID int) User
 }
 
 type User struct {
@@ -60,6 +61,32 @@ func NewUserModel(newDB *sql.DB, newStore *session.Store) *UserModel {
 }
 
 var _ UserModelInterface = (*UserModel)(nil)
+
+func (um *UserModel) Get(userID int) User {
+	var defaultUser User
+	query := `
+	SELECT name,email,roles,created
+	FROM users
+	WHERE id = ?
+	`
+	row := um.db.QueryRow(query, userID)
+	if row == nil {
+		log.Errorf("get user query row error: row not found")
+		return defaultUser
+	}
+	var user User
+	err := row.Scan(
+		&user.Name,
+		&user.Email,
+		&user.Roles,
+		&user.Created,
+	)
+	if err != nil {
+		log.Errorf("get user scan error: %v", err)
+	}
+	user.ID = userID
+	return user
+}
 
 func (u User) HasRole(role string) bool {
 	return strings.Contains(u.Roles, "|"+role+"|")
