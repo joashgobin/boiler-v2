@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math/bits"
 	"mime/multipart"
 	"reflect"
 	"strconv"
@@ -98,9 +99,20 @@ func (d *Decoder) MaxSize(size int) {
 	d.maxSize = size
 }
 
-// RegisterConverter registers a converter function for a custom type.
+// RegisterConverter registers a converter function for a custom type,
+// replacing any converter registered for the type before, including one
+// registered with RegisterConverterE.
 func (d *Decoder) RegisterConverter(value any, converterFunc Converter) {
 	d.cache.registerConverter(value, converterFunc)
+}
+
+// RegisterConverterE registers a converter function for a custom type that
+// reports why a value does not convert: a non-nil error fails the conversion
+// and is kept as the Err of the returned ConversionError. It replaces any
+// converter registered for the type before, including one registered with
+// RegisterConverter.
+func (d *Decoder) RegisterConverterE(value any, converterFunc ConverterE) {
+	d.cache.registerConverterE(value, converterFunc)
 }
 
 // Decode decodes a map[string][]string to a struct.
@@ -199,13 +211,23 @@ func (d *Decoder) decodeSource(dst any, src *source, multipartFiles map[string][
 	// Required-key bookkeeping rides along with the loop below so src is
 	// walked once: the direct lookups settle almost every group here, and
 	// the rest are answered by the nested keys the loop visits anyway.
-	var satisfied []uint64
+	var satisfied, decided []uint64
 	pending := 0
 	if len(rootInfo.requiredGroups) > 0 {
 		// Declared here so a struct with no required keys never pays to
 		// zero it.
 		var requiredBits [requiredBitWords]uint64
 		satisfied, pending = markProvidedDirectly(rootInfo.requiredGroups, src, requiredBits[:])
+		if d.zeroEmpty {
+			// The groups an empty value has zeroed, which the decode order
+			// settles from then on (see markAssigned).
+			var decidedBits [requiredBitWords]uint64
+			if len(satisfied) <= len(decidedBits) {
+				decided = decidedBits[:len(satisfied)]
+			} else {
+				decided = make([]uint64, len(satisfied))
+			}
+		}
 	}
 	var grow growTracker
 	// The state decodeKey carries from key to key is kept in variables of
@@ -217,16 +239,20 @@ func (d *Decoder) decodeSource(dst any, src *source, multipartFiles map[string][
 		var scratch [8]string
 		for i, path := range p.keys {
 			if p.first(i) {
-				errs, pending = d.decodeKey(v, rootInfo, multipartFiles, &grow, satisfied, path, p.group(i, scratch[:0]), errs, pending)
+				errs, pending = d.decodeKey(v, rootInfo, multipartFiles, &grow, satisfied, decided, path, p.group(i, scratch[:0]), errs, pending)
 			}
 		}
 	} else {
 		for path, values := range src.m {
-			errs, pending = d.decodeKey(v, rootInfo, multipartFiles, &grow, satisfied, path, values, errs, pending)
+			errs, pending = d.decodeKey(v, rootInfo, multipartFiles, &grow, satisfied, decided, path, values, errs, pending)
 		}
 	}
 	if pending > 0 {
-		pending = markProvidedFolded(d.cache, rootInfo, src, satisfied, pending)
+		if anyBit(decided) {
+			pending = markProvidedFoldedUndecided(d.cache, rootInfo, src, satisfied, decided, pending)
+		} else {
+			pending = markProvidedFolded(d.cache, rootInfo, src, satisfied, pending)
+		}
 	}
 	if rootInfo.needsDefaultsWalk {
 		errs = mergeErrors(errs, d.setDefaults(t, v, src, ""))
@@ -243,9 +269,14 @@ func (d *Decoder) decodeSource(dst any, src *source, multipartFiles map[string][
 // pending less the required groups the key settles in satisfied.
 func (d *Decoder) decodeKey(
 	v reflect.Value, rootInfo *structInfo, files map[string][]*multipart.FileHeader, grow *growTracker,
-	satisfied []uint64, path string, values []string, errs MultiError, pending int,
+	satisfied, decided []uint64, path string, values []string, errs MultiError, pending int,
 ) (MultiError, int) {
 	if parts, err := d.cache.parsePathInfo(path, rootInfo); err == nil {
+		// Only an empty value can zero a required field, and only a key
+		// after one did can provide it again.
+		if decided != nil && (len(values) == 0 || values[len(values)-1] == "" || anyBit(decided)) {
+			pending = markAssigned(rootInfo, path, values, satisfied, decided, pending)
+		}
 		if pending > 0 {
 			if i := strings.IndexByte(path, '.'); i >= 0 && len(values) > 0 {
 				pending = markProvidedByNestedKey(d.cache, true, rootInfo, path, i+1, values, satisfied, pending)
@@ -517,6 +548,66 @@ func markProvidedByNestedKey(c *cache, parsed bool, info *structInfo, key string
 		off += i + 1
 	}
 	return pending
+}
+
+// markAssigned settles the required groups key names through one of their own
+// paths by the value the decoder assigns from it. With ZeroEmpty an empty value
+// zeroes the field, so the last key to reach a field decides whether it is
+// provided, not whether any of them was non-empty; the groups an empty value
+// zeroed are recorded in decided.
+func markAssigned(info *structInfo, key string, val []string, satisfied, decided []uint64, pending int) int {
+	var buf [maxDirectKeyLen]byte
+	lower := key
+	if len(key) <= maxDirectKeyLen {
+		if foldASCIILower(buf[:len(key)], key) {
+			lower = utils.UnsafeString(buf[:len(key)])
+		}
+	} else {
+		lower = utilstrings.ToLower(key)
+	}
+	for _, p := range info.foldedRequiredPaths[lower] {
+		word, bit := p.group>>6, uint64(1)<<uint(p.group&63)
+		if isEmpty(p.typ, val) {
+			decided[word] |= bit
+			if satisfied[word]&bit != 0 {
+				satisfied[word] &^= bit
+				pending++
+			}
+		} else if satisfied[word]&bit == 0 {
+			satisfied[word] |= bit
+			pending--
+		}
+	}
+	return pending
+}
+
+// markProvidedFoldedUndecided is markProvidedFolded for a decode in which
+// markAssigned zeroed some groups: it leaves alone the ones the decode left
+// zeroed, since a key in another case seen before the empty value no longer
+// counts for them. decided is reused to hold those groups, so it is not
+// meaningful afterwards.
+func markProvidedFoldedUndecided(c *cache, info *structInfo, src *source, satisfied, decided []uint64, pending int) int {
+	for w := range satisfied {
+		decided[w] &^= satisfied[w]
+	}
+	pending = markProvidedFolded(c, info, src, satisfied, pending)
+	for w := range satisfied {
+		if again := satisfied[w] & decided[w]; again != 0 {
+			satisfied[w] &^= again
+			pending += bits.OnesCount64(again)
+		}
+	}
+	return pending
+}
+
+// anyBit reports whether any bit of set is set.
+func anyBit(set []uint64) bool {
+	for _, w := range set {
+		if w != 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // markProvidedFolded matches src's keys case-insensitively against the groups still pending.
@@ -1011,14 +1102,15 @@ func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart, values 
 
 		// Try to get a converter for the element type.
 		customConv := d.cache.converter(elemT)
-		conv := customConv
-		if conv == nil {
-			conv = getBuiltinConverter(elemT.Kind())
-			if conv == nil {
-				// As we are not dealing with slice of structs here, we don't need to check if the type
-				// implements TextUnmarshaler interface
-				return fmt.Errorf("schema: converter not found for %v", elemT)
-			}
+		var conv valueConverter
+		if customConv != nil {
+			conv = *customConv
+		} else if builtin := getBuiltinConverter(elemT.Kind()); builtin != nil {
+			conv.plain = builtin
+		} else {
+			// As we are not dealing with slice of structs here, we don't need to check if the type
+			// implements TextUnmarshaler interface
+			return fmt.Errorf("schema: converter not found for %v", elemT)
 		}
 
 		// Fast path: builtin element kinds without unmarshalers, custom
@@ -1041,15 +1133,16 @@ func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart, values 
 		}
 
 		if conv != nil {
-			if value := conv(val); value.IsValid() {
-				v.Set(value.Convert(t))
-			} else {
+			value, err := conv.convert(val)
+			if err != nil || !value.IsValid() {
 				return ConversionError{
 					Key:   path,
 					Type:  t,
 					Index: -1,
+					Err:   err,
 				}
 			}
+			v.Set(value.Convert(t))
 		} else if m.IsValid {
 			if m.IsPtr {
 				// A zero v is what reflect.New would hand UnmarshalText, so
@@ -1155,7 +1248,7 @@ func (d *Decoder) decodeMapEntry(v reflect.Value, path string, part *pathPart, v
 // decodeBoxedSlice decodes values into the slice field v whose elements have
 // to round-trip through a reflect.Value: a custom converter, or pointer
 // elements. Split out so that decode carries no defer of its own.
-func (d *Decoder) decodeBoxedSlice(v reflect.Value, t, elemT reflect.Type, path string, values []string, conv Converter, m unmarshaler, isPtrElem bool) error {
+func (d *Decoder) decodeBoxedSlice(v reflect.Value, t, elemT reflect.Type, path string, values []string, conv valueConverter, m unmarshaler, isPtrElem bool) error {
 	itemsBuf := decodeValueBufferPool.Get().(*[]reflect.Value)
 	items := (*itemsBuf)[:0]
 	defer func() {
@@ -1169,7 +1262,9 @@ func (d *Decoder) decodeBoxedSlice(v reflect.Value, t, elemT reflect.Type, path 
 			if d.zeroEmpty {
 				items = append(items, reflect.Zero(t.Elem()))
 			}
-		} else if m.IsValid {
+			continue
+		}
+		if m.IsValid {
 			// Only pointer elements get here, so u itself is the element.
 			u := reflect.New(elemT)
 			um, _ := reflect.TypeAssert[encoding.TextUnmarshaler](u)
@@ -1182,30 +1277,45 @@ func (d *Decoder) decodeBoxedSlice(v reflect.Value, t, elemT reflect.Type, path 
 				}
 			}
 			items = append(items, u)
-		} else if item := conv(value); item.IsValid() {
-			items = appendConvertedItem(items, item, elemT, isPtrElem)
+			continue
+		}
+		// conv.convert, spelled out: it is too big to inline, and this
+		// runs once per element.
+		var item reflect.Value
+		var err error
+		if conv.withErr == nil {
+			item = conv.plain(value)
 		} else {
-			if strings.IndexByte(value, ',') != -1 {
-				for value := range strings.SplitSeq(value, ",") {
-					if value == "" {
-						if d.zeroEmpty {
-							items = append(items, reflect.Zero(t.Elem()))
-						}
-					} else if item := conv(value); item.IsValid() {
-						items = appendConvertedItem(items, item, elemT, isPtrElem)
-					} else {
-						return ConversionError{
-							Key:   path,
-							Type:  elemT,
-							Index: key,
-						}
-					}
+			item, err = conv.withErr(value)
+		}
+		if err == nil && item.IsValid() {
+			items = appendConvertedItem(items, item, elemT, isPtrElem)
+			continue
+		}
+		if strings.IndexByte(value, ',') == -1 {
+			return ConversionError{
+				Key:   path,
+				Type:  elemT,
+				Index: key,
+				Err:   err,
+			}
+		}
+		// The value did not convert as a whole, so it is retried as a
+		// comma-separated list; the whole value's error is dropped, and an
+		// item that fails reports its own.
+		for value := range strings.SplitSeq(value, ",") {
+			if value == "" {
+				if d.zeroEmpty {
+					items = append(items, reflect.Zero(t.Elem()))
 				}
+			} else if item, err := conv.convert(value); err == nil && item.IsValid() {
+				items = appendConvertedItem(items, item, elemT, isPtrElem)
 			} else {
 				return ConversionError{
 					Key:   path,
 					Type:  elemT,
 					Index: key,
+					Err:   err,
 				}
 			}
 		}
@@ -1531,6 +1641,11 @@ func (e ConversionError) Error() string {
 	}
 
 	return output
+}
+
+// Unwrap returns Err, so errors.Is and errors.As reach the converter's error.
+func (e ConversionError) Unwrap() error {
+	return e.Err
 }
 
 // UnknownKeyError stores information about an unknown key in the source map.

@@ -5,19 +5,19 @@ go 1.27.4
 require (
 	github.com/a-h/templ v0.3.1118
 	github.com/aws/aws-sdk-go-v2 v1.48.0
-	github.com/aws/aws-sdk-go-v2/config v1.33.19
-	github.com/aws/aws-sdk-go-v2/credentials v1.21.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.115.0
+	github.com/aws/aws-sdk-go-v2/config v1.33.20
+	github.com/aws/aws-sdk-go-v2/credentials v1.21.2
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.116.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/go-sql-driver/mysql v1.10.2
 	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/gofiber/storage/valkey v0.5.0
-	github.com/gofiber/template/html/v3 v3.1.0
+	github.com/gofiber/template/html/v3 v3.1.1
 	github.com/molecule-man/go-brrr v1.3.1
 	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/resend/resend-go/v4 v4.12.1
+	github.com/resend/resend-go/v4 v4.12.2
 	github.com/spf13/viper v1.21.0
 	github.com/tdewolff/minify/v2 v2.25.0
 	github.com/wneessen/go-mail v0.8.2
@@ -39,7 +39,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.12 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.13.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.52.0 // indirect
@@ -47,8 +47,8 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/gofiber/schema v1.9.5 // indirect
-	github.com/gofiber/template/v2 v2.1.6 // indirect
+	github.com/gofiber/schema v1.10.0 // indirect
+	github.com/gofiber/template/v2 v2.1.7 // indirect
 	github.com/gofiber/utils/v2 v2.6.5 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
