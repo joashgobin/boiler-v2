@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ func (files *FilesModel) UploadImage(c fiber.Ctx, imageFormField string) (string
 		return "", err
 	}
 	filename := strings.ReplaceAll(uuid.NewV4().String(), "-", "")
-	fileExt := strings.Split(file.Filename, ".")[1]
+	fileExt := filepath.Ext(file.Filename)
 	imagePath := fmt.Sprintf("%s-%v.%s", filename, time.Now().Unix(), fileExt)
 
 	err = c.SaveFile(file, fmt.Sprintf("./uploads/%s", imagePath))

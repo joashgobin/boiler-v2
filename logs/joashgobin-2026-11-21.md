@@ -4,3 +4,4 @@
 - Added function to generate background images from uploads
 - Tweaks
 - Updated Makefiles
+- Updated file upload function
