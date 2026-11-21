@@ -920,6 +920,39 @@ exec bash
 			}
 			return ht.HTMLAttr(`style="background-image:url('/` + ii.Fallback + `'),url('/` + fullPath + `');background-image:image-set(` + srcBuilder.String() + `)"`)
 		},
+		"bgu": func(imgPath string, dimensions ...int) ht.HTMLAttr {
+			fullPath := "uploads/" + imgPath
+			ii := helpers.ConvertInline(&imageChannel, lru, imageLru, fullPath, "uploads/gen", dimensions...)
+			var srcBuilder strings.Builder
+			srcBuilder.WriteString(`url('/`)
+			srcBuilder.WriteString(ii.AVIF)
+			srcBuilder.WriteString(`') type('image/avif'),`)
+
+			srcBuilder.WriteString(`url('/`)
+			srcBuilder.WriteString(ii.WEBP)
+			srcBuilder.WriteString(`') type('image/webp'),`)
+
+			ext := filepath.Ext(imgPath)
+			switch ext {
+			case ".png":
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(ii.Fallback)
+				srcBuilder.WriteString(`') type('image/png'),`)
+
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(fullPath)
+				srcBuilder.WriteString(`') type('image/png')`)
+			default:
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(ii.Fallback)
+				srcBuilder.WriteString(`') type('image/jpeg'),`)
+
+				srcBuilder.WriteString(`url('/`)
+				srcBuilder.WriteString(fullPath)
+				srcBuilder.WriteString(`') type('image/jpeg')`)
+			}
+			return ht.HTMLAttr(`style="background-image:url('/` + ii.Fallback + `'),url('/` + fullPath + `');background-image:image-set(` + srcBuilder.String() + `)"`)
+		},
 		"preload": func(imgPath string, dimensions ...int) ht.HTML {
 			outputPath := "/" + helpers.ConvertInlineWebp(&imageChannel, lru, imgPath, "static/gen/img", dimensions...)
 			return ht.HTML("<link rel='preload' href='" + outputPath + "' as='image' fetchpriority='high'>")
