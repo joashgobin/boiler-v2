@@ -10,3 +10,7 @@ update:
 	go get -u -v ./...
 	go mod tidy
 	go mod vendor
+
+.PHONY: audit
+audit:
+	staticcheck ./...
