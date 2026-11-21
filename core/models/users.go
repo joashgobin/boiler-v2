@@ -37,6 +37,8 @@ type UserModelInterface interface {
 	ParseFromCSV(path string) error
 	GetAll(limit int) []User
 	Get(userID int) User
+
+	Delete(userID int) error
 }
 
 type User struct {
@@ -61,6 +63,25 @@ func NewUserModel(newDB *sql.DB, newStore *session.Store) *UserModel {
 }
 
 var _ UserModelInterface = (*UserModel)(nil)
+
+func (um *UserModel) Delete(userID int) error {
+	query := `
+	DELETE FROM users
+	WHERE id = ?
+	`
+	result, err := um.db.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("delete user exec error: %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("delete user rows affected error: %v", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("delete user error: no users deleted")
+	}
+	return nil
+}
 
 func (um *UserModel) Get(userID int) User {
 	var defaultUser User
@@ -212,6 +233,8 @@ func (m *UserModel) AssignRole(email, role string) error {
 		return err
 	}
 
+	log.Infof("%s has roles: %s", email, roles)
+
 	newRoles := roles
 	if !strings.Contains(roles, "|"+role+"|") {
 		newRoles += "|" + role + "|"
@@ -242,7 +265,7 @@ func (m *UserModel) RemoveRole(email, role string) error {
 	var roles string
 	var id int
 
-	err := m.db.QueryRow(selectStmt, id).Scan(&id, &roles)
+	err := m.db.QueryRow(selectStmt, email).Scan(&id, &roles)
 
 	if err != nil {
 		return err
