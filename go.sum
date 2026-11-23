@@ -210,8 +210,8 @@ github.com/valkey-io/valkey-go v1.0.80 h1:nyjeE1W9RpUU1KcsApBLlzjisZMVmgTQBGmlsu
 github.com/valkey-io/valkey-go v1.0.80/go.mod h1:9M4jE0WGI4fBPijXwbmnO3T7hu5UCjI9ABx+jMCvekQ=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
-github.com/valyala/fasthttp v1.79.0 h1:32ur91W4kWG+1s6x3oDlP8/KNmjlZZlUzSSC4p9LSWE=
-github.com/valyala/fasthttp v1.79.0/go.mod h1:NQN+PlgP93+JRPnCiApN5XwnI24oMQf8kuzrxtsTy9A=
+github.com/valyala/fasthttp v1.80.0 h1:10pVr/QLFGbSX8ikDS0i+wOi2AGY2Sy0TACVpoiG+7U=
+github.com/valyala/fasthttp v1.80.0/go.mod h1:oulvtxx5dQeORu6sKWaJItcnWXRqiGmrTFQ4gmZjLFM=
 github.com/wneessen/go-mail v0.8.2 h1:JVeSmRX9oPjYFH77irWIFy8t1vJRDU/+ri4H38FMAK8=
 github.com/wneessen/go-mail v0.8.2/go.mod h1:rJb+LDvSMcOzSeNZ4rFyS7PLMy0DEFz/uU3A0T5JY50=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
