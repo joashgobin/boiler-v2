@@ -44,8 +44,8 @@ github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.5 h1:uIOBLMhef4N16WguadoHKuBy
 github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.5/go.mod h1:NwWmkFLtsTVyXQpbzPOlYLwEoANkdCFjJRtrNcbg/vY=
 github.com/aws/aws-sdk-go-v2/service/sts v1.53.0 h1:my9Y6lxcqvPV5k4OTqnxr8XbiTDDRos1leEh050Z93U=
 github.com/aws/aws-sdk-go-v2/service/sts v1.53.0/go.mod h1:MG6N8U9+lY4LqchrlHPqCOSr7hyxw70XU0Et2YR3eNA=
-github.com/aws/smithy-go v1.28.9 h1:zkZ058OpNX0iGTK24b+ZUEQSMc11CBA6oO7xtKZfzkY=
-github.com/aws/smithy-go v1.28.9/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
+github.com/aws/smithy-go v1.28.10 h1:SfPnj8fGCVAI/P5YC4/1JjuMsucbPp2dROnSTYNo2PE=
+github.com/aws/smithy-go v1.28.10/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
@@ -92,8 +92,8 @@ github.com/go-viper/mapstructure/v2 v2.5.0 h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPE
 github.com/go-viper/mapstructure/v2 v2.5.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/gofiber/fiber/v3 v3.7.0 h1:aF+GfB7nP9Dd0wVsv6wmr8675v66OGfjSyoDhPmvKEo=
 github.com/gofiber/fiber/v3 v3.7.0/go.mod h1:7dlbpUZ789TJg4q/VfdS1UWDtB6Fl/Smk6ZYZusMpAQ=
-github.com/gofiber/schema v1.10.0 h1:d/2/NpHOVD0f29aNvM3KSPmaEDLJZvxW5edtN4Ymd8U=
-github.com/gofiber/schema v1.10.0/go.mod h1:scfpXbReJ8y9xKlNnrwlewJ8nIGVZZmzoHZ4i5yGxG0=
+github.com/gofiber/schema v1.10.2 h1:mjqtglIvi/+NK3gJTra6wKOaBLZYx+tdNu7xtaCVPOg=
+github.com/gofiber/schema v1.10.2/go.mod h1:scfpXbReJ8y9xKlNnrwlewJ8nIGVZZmzoHZ4i5yGxG0=
 github.com/gofiber/storage/testhelpers/redis v0.1.0 h1:lDUwtanDf3f5YwlDwhbqnqCtj9Y/xc8ctxRE6HpQcws=
 github.com/gofiber/storage/testhelpers/redis v0.1.0/go.mod h1:Y1UccxbGVL04+TF5RuyCsksX+76hu6nJIWjPukBBgJ4=
 github.com/gofiber/storage/valkey v0.5.0 h1:Y5cNWhl1Jbhdr/xUQie0cVzKt0S8knLg6iPmzwWe9hU=

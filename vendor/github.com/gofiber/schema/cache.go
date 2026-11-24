@@ -6,8 +6,10 @@ package schema
 
 import (
 	"errors"
+	"fmt"
 	"maps"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -257,7 +259,8 @@ func (c *cache) parsePathInfo(p string, rootInfo *structInfo) ([]pathPart, error
 			if err != nil {
 				return nil, errInvalidPath
 			}
-			if index64, err = utils.ParseInt(segment); err != nil {
+			// A negative index would wrap to a large one where int is 32 bits.
+			if index64, err = utils.ParseInt(segment); err != nil || index64 < 0 {
 				return nil, errInvalidPath
 			}
 			if index64 > maxParserIndex {
@@ -300,7 +303,7 @@ func (c *cache) parsePathInfo(p string, rootInfo *structInfo) ([]pathPart, error
 		if keyStart >= len(p) {
 			return nil, errInvalidPath
 		}
-		if t.Kind() != reflect.Struct {
+		if t.Kind() != reflect.Struct || field.whole {
 			return nil, errInvalidPath
 		}
 		struc = c.get(t)
@@ -557,12 +560,16 @@ func (c *cache) create(t reflect.Type, parentAlias string) *structInfo {
 		if f := c.createField(structField, parentAlias, tag); f != nil {
 			f.index = structField.Index
 			info.fields = append(info.fields, f)
-			if ft := indirectType(f.typ); ft.Kind() == reflect.Struct && f.isAnonymous {
+			if ft := indirectType(f.typ); ft.Kind() == reflect.Struct && f.isAnonymous && !f.whole {
 				anonymousInfos = append(anonymousInfos, c.create(ft, f.canonicalAlias))
 				anonymousIdx = append(anonymousIdx, structField.Index)
 			}
 		}
 	}
+	// The shadow check below reads the struct's own fields from fieldsByName.
+	info.fieldsByName = make(map[string]*fieldInfo, len(info.fields))
+	info.addByName(info.fields)
+	own := len(info.fields)
 	for i, a := range anonymousInfos {
 		others := []*structInfo{info}
 		others = append(others, anonymousInfos[:i]...)
@@ -578,18 +585,8 @@ func (c *cache) create(t reflect.Type, parentAlias string) *structInfo {
 			}
 		}
 	}
-	info.fieldsByName = make(map[string]*fieldInfo, len(info.fields))
-	for _, field := range info.fields {
-		if _, exists := info.fieldsByName[field.aliasLower]; !exists {
-			info.fieldsByName[field.aliasLower] = field
-		}
-	}
+	info.addByName(info.fields[own:])
 	for _, f := range info.fields {
-		// A promoted struct is walked through its embedded field, under the same prefix.
-		if k := f.typ.Kind(); f.def != nil || len(f.index) == 1 && (k == reflect.Struct ||
-			(k == reflect.Pointer && f.typ.Elem().Kind() == reflect.Struct)) {
-			info.defaultFields = append(info.defaultFields, f)
-		}
 		if f.mapValue != nil {
 			// Per field, not per type: a promoted copy's path is its own.
 			hops := []pathHop{{index: f.index, ensure: info.anonymousPtrFields}}
@@ -605,7 +602,76 @@ func (c *cache) create(t reflect.Type, parentAlias string) *structInfo {
 	// so it can only be skipped when neither defaults nor such pointers
 	// exist anywhere in the tree.
 	info.needsDefaultsWalk = c.needsDefaultsWalk(t, tag, map[reflect.Type]bool{})
+	if info.needsDefaultsWalk && parentAlias == "" { // promotion-only builds never walk
+		info.defaults = c.buildDefaults(info)
+	}
 	return info
+}
+
+// maxDefaultKeys bounds the spellings kept per field: each embedding level can
+// be spelled or skipped, so they double per level.
+const maxDefaultKeys = 8
+
+// buildDefaults plans every defaulted field with its spellings through embedded
+// structs, so the walk joins prefixes only at named pointers.
+func (c *cache) buildDefaults(info *structInfo) defaultsPlan {
+	var p defaultsPlan
+	at := map[string]int{} // index chain -> step, merging the paths to one field
+	add := func(f *fieldInfo, index []int, keys ...string) {
+		chain := fmt.Sprint(index)
+		i, ok := at[chain]
+		if !ok {
+			i = len(p.steps)
+			at[chain] = i
+			p.steps = append(p.steps, defaultStep{field: f, index: index})
+		}
+		for _, key := range keys {
+			if !slices.Contains(p.steps[i].keys, key) {
+				p.steps[i].keys = append(p.steps[i].keys, key)
+			}
+		}
+	}
+	for _, idx := range info.anonymousPtrFields {
+		p.allocs = append(p.allocs, []int{idx})
+	}
+	for _, f := range info.fields {
+		if len(f.index) > 1 && info.fieldsByName[f.aliasLower] != f {
+			continue // shadowed promoted copy, reached through its embedded struct
+		}
+		if f.def != nil {
+			add(f, f.index, f.alias)
+		}
+		k := f.typ.Kind()
+		structPtr := k == reflect.Pointer && f.typ.Elem().Kind() == reflect.Struct
+		switch {
+		case f.def != nil && !f.isAnonymous: // a defaulted named struct is reported, never descended
+		case k == reflect.Struct || structPtr && f.isAnonymous:
+			child := c.get(indirectType(f.typ)).defaults
+			if len(f.index) == 1 && f.def == nil { // a defaulted embedded struct stays zero, so its error is reported
+				for _, a := range child.allocs {
+					p.allocs = append(p.allocs, slices.Concat(f.index, a))
+				}
+			}
+			for _, s := range child.steps {
+				keys := make([]string, len(s.keys))
+				for i, sk := range s.keys {
+					keys[i] = f.alias + "." + sk
+				}
+				add(s.field, slices.Concat(f.index, s.index), keys...)
+			}
+		case structPtr:
+			add(f, f.index, f.alias+".") // walked when set, under its keys
+		}
+	}
+	for i := range p.steps {
+		// Shortest first: a pointer step's first and last keys are its bare and full spellings.
+		keys := p.steps[i].keys
+		slices.SortStableFunc(keys, func(a, b string) int { return len(a) - len(b) })
+		if len(keys) > maxDefaultKeys {
+			p.steps[i].keys = append(keys[:maxDefaultKeys-1], keys[len(keys)-1])
+		}
+	}
+	return p
 }
 
 // buildDirectPaths precomputes, keyed by lowercase path, the parsed paths for
@@ -632,7 +698,7 @@ func (c *cache) buildDirectPaths(info *structInfo) map[string][]pathPart {
 		if len(direct) >= maxDirectPaths {
 			break
 		}
-		if !directEligible(info, f) || f.typ.Kind() != reflect.Struct {
+		if !directEligible(info, f) || f.typ.Kind() != reflect.Struct || f.whole {
 			continue
 		}
 		// Non-pointer struct nesting cannot recurse (the type would be
@@ -788,7 +854,6 @@ func (c *cache) createField(field reflect.StructField, parentAlias, tag string) 
 		alias:            alias,
 		aliasLower:       utilstrings.ToLower(alias),
 		canonicalAlias:   canonicalAlias,
-		canonicalDot:     canonicalAlias + ".",
 		unmarshalerInfo:  m,
 		derefUnmarshaler: derefU,
 		elemUnmarshaler:  elemU,
@@ -798,6 +863,7 @@ func (c *cache) createField(field reflect.StructField, parentAlias, tag string) 
 		isRequired:       options.Contains("required"),
 		defaultValue:     options.getDefaultOptionValue(),
 	}
+	f.whole = f.isMultipart || isStruct && (elemU.IsValid || c.converter(ft) != nil)
 	f.resolveDefault()
 	return f
 }
@@ -826,7 +892,6 @@ func (c *cache) createMapField(field reflect.StructField, alias, canonicalAlias 
 		alias:          alias,
 		aliasLower:     utilstrings.ToLower(alias),
 		canonicalAlias: canonicalAlias,
-		canonicalDot:   canonicalAlias + ".",
 		isAnonymous:    field.Anonymous,
 		isRequired:     options.Contains("required"),
 		defaultValue:   options.getDefaultOptionValue(),
@@ -892,10 +957,8 @@ type structInfo struct {
 	// so they never alias reused request buffers.
 	paths        pathCache
 	hasMapFields bool
-	// defaultFields are the fields the setDefaults walk has to visit: those
-	// with a default, and the structs and pointers to structs it descends
-	// into. The rest of the fields can never be affected by it.
-	defaultFields []*fieldInfo
+	// defaults is the setDefaults walk of this struct tree, see buildDefaults.
+	defaults defaultsPlan
 	// needsDefaultsWalk reports whether the setDefaults walk can have any
 	// effect on this struct tree: it is set when a default tag option or an
 	// anonymous embedded pointer field (which the walk allocates) exists
@@ -903,6 +966,15 @@ type structInfo struct {
 	needsDefaultsWalk bool
 	// requiredMixedCase is set if a required path or prefix is not lowercase.
 	requiredMixedCase bool
+}
+
+// addByName indexes fields by lowercase alias; the first field of an alias wins.
+func (i *structInfo) addByName(fields []*fieldInfo) {
+	for _, field := range fields {
+		if _, exists := i.fieldsByName[field.aliasLower]; !exists {
+			i.fieldsByName[field.aliasLower] = field
+		}
+	}
 }
 
 func (i *structInfo) get(alias string) *fieldInfo {
@@ -938,8 +1010,9 @@ func (c *cache) buildRequiredFields(info *structInfo) []requiredGroup {
 		groups = append(groups, requiredGroup{key: key, fields: []fieldWithPrefix{f}})
 	}
 	for _, field := range info.fields {
-		if field.typ.Kind() == reflect.Struct {
-			nested := c.get(field.typ)
+		// Fields promoted through an embedded pointer are required as through a value.
+		if ft := indirectType(field.typ); ft.Kind() == reflect.Struct && (ft == field.typ || field.isAnonymous) && !field.whole {
+			nested := c.get(ft)
 			for _, prefix := range field.paths("") {
 				nestedPrefix := prefix + "."
 				for _, group := range nested.requiredGroups {
@@ -1052,15 +1125,15 @@ type fieldInfo struct {
 	// multipart file header shapes, precomputed so the decoder can skip the
 	// type comparisons on every other field.
 	isMultipart bool
+	// whole marks a file field, or a struct (or slice of them) that a converter or
+	// encoding.TextUnmarshaler fills: no key continues into the struct's own fields.
+	whole bool
 	// isSliceOfStructs indicates if the field type is a slice of structs.
 	isSliceOfStructs bool
 	// isAnonymous indicates whether the field is embedded in the struct.
 	isAnonymous  bool
 	isRequired   bool
 	defaultValue string
-	// canonicalDot is canonicalAlias with the trailing separator, the prefix
-	// the fields of a nested struct are looked up under.
-	canonicalDot string
 	// def is the default option resolved at build time, nil for the fields
 	// that have none; see resolveDefault.
 	def *fieldDefault
@@ -1071,6 +1144,19 @@ type fieldInfo struct {
 	// mapRoot is the path of an entry named by the bare alias, the same for every key.
 	mapRoot []pathPart
 	entries *sync.Pool
+}
+
+type defaultsPlan struct {
+	allocs [][]int // nil embedded pointers to allocate, parents first
+	steps  []defaultStep
+}
+
+// defaultStep is a defaulted field, or a named struct pointer walked when set,
+// whose keys then end in the separator.
+type defaultStep struct {
+	field *fieldInfo
+	index []int
+	keys  []string
 }
 
 // fieldDefault is what setDefaults assigns for a field's default option:

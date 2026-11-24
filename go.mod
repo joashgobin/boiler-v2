@@ -43,11 +43,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.53.0 // indirect
-	github.com/aws/smithy-go v1.28.9 // indirect
+	github.com/aws/smithy-go v1.28.10 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/gofiber/schema v1.10.0 // indirect
+	github.com/gofiber/schema v1.10.2 // indirect
 	github.com/gofiber/template/v2 v2.1.7 // indirect
 	github.com/gofiber/utils/v2 v2.6.5 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
