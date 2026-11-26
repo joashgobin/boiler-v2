@@ -17,7 +17,7 @@ require (
 	github.com/orisano/wyhash v1.1.0
 	github.com/pahanini/go-sitemap-generator v0.0.0-20161102132113-fe0794d1e806
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/resend/resend-go/v4 v4.14.0
+	github.com/resend/resend-go/v4 v4.15.0
 	github.com/spf13/viper v1.21.0
 	github.com/tdewolff/minify/v2 v2.25.0
 	github.com/wneessen/go-mail v0.8.2
