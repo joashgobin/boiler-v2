@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/go-sql-driver/mysql/internal/compression"
 )
 
 var (
@@ -82,12 +84,17 @@ func zCompress(src []byte, dst io.Writer) error {
 type compIO struct {
 	mc   *mysqlConn
 	buff bytes.Buffer
+	zstd compression.Codec
 }
 
 func newCompIO(mc *mysqlConn) *compIO {
-	return &compIO{
+	c := &compIO{
 		mc: mc,
 	}
+	if mc.capabilities&clientZstdCompression != 0 {
+		c.zstd = compression.Zstd
+	}
+	return c
 }
 
 func (c *compIO) reset() {
@@ -157,11 +164,25 @@ func (c *compIO) readCompressedPacket(limit int) error {
 
 	// use existing capacity in bytesBuf if possible
 	c.buff.Grow(uncompressedLength)
-	decodeLimit := limit
-	if decodeLimit > 0 {
-		decodeLimit -= c.buff.Len()
+	var nread int
+	if c.zstd != nil {
+		// Limit the decoder to the announced size even when a previous
+		// packet left a larger buffer. Write only successfully decoded data.
+		dst := c.buff.AvailableBuffer()[:0:uncompressedLength]
+		var decoded []byte
+		decoded, err = c.zstd.Decode(comprData, dst)
+		if err == nil {
+			nread = len(decoded)
+			// decoded points into buff's spare capacity; Write only commits the length.
+			c.buff.Write(decoded)
+		}
+	} else {
+		decodeLimit := limit
+		if decodeLimit > 0 {
+			decodeLimit -= c.buff.Len()
+		}
+		nread, err = zDecompress(comprData, &c.buff, decodeLimit)
 	}
-	nread, err := zDecompress(comprData, &c.buff, decodeLimit)
 	if err != nil {
 		return err
 	}
@@ -172,7 +193,7 @@ func (c *compIO) readCompressedPacket(limit int) error {
 	return nil
 }
 
-const minCompressLength = 150
+const minCompressLength = 512
 const maxPayloadLen = maxPacketSize - 4
 
 // writePackets sends one or some packets with compression.
@@ -195,7 +216,14 @@ func (c *compIO) writePackets(packets []byte) (int, error) {
 			buf.Write(payload)
 			uncompressedLen = 0
 		} else {
-			err := zCompress(payload, buf)
+			var err error
+			if c.zstd != nil {
+				// Encode may grow dst. Write copies that result, or commits its
+				// length if it still aliases buf's spare capacity.
+				buf.Write(c.zstd.Encode(payload, buf.AvailableBuffer()))
+			} else {
+				err = zCompress(payload, buf)
+			}
 			if debug && err != nil {
 				fmt.Printf("zCompress error: %v", err)
 			}
